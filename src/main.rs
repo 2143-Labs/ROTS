@@ -1,14 +1,36 @@
 use bevy::{prelude::{*}, window, diagnostic::FrameTimeDiagnosticsPlugin}; 
+use bevy_asset_loader::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use sprite::{Sprite3dPlugin, AtlasSprite3d};
-mod sprite;
+use bevy_sprite3d::{Sprite3dPlugin, AtlasSprite3d, Sprite3dParams, AtlasSprite3dComponent};
 
 pub const HEIGHT: f32 = 720.0;
 pub const WIDTH: f32 = 1280.0;
 pub const PI: f32 = 3.1415926536897932;
 
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq, States, Default)]
+enum GameState { 
+    #[default]
+    Loading, 
+    Ready
+}
+
+#[derive(AssetCollection, Resource)]
+struct ImageAssets {
+    #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 44.))]
+    #[asset(texture_atlas(columns = 2, rows = 1))]
+    #[asset(path = "MrMan.png")]
+    pub run: Handle<TextureAtlas>,
+}
+
 fn main() {
     App::new()
+        .add_state::<GameState>()
+        .add_loading_state(
+            LoadingState::new(GameState::Loading)
+                .continue_to_state(GameState::Ready)
+        )
+        .add_collection_to_loading_state::<_,ImageAssets>(GameState::Loading)
         .insert_resource(ClearColor(Color::hex("212121").unwrap()))
         // .add_startup_system(Window{
         // })
@@ -17,7 +39,6 @@ fn main() {
         .add_startup_system(spawn_scene)
         .add_startup_system(spawn_camera)
         .add_startup_system(spawn_tower)
-        .add_startup_system(spawn_player)
         // Load Assets
         .add_plugin(Sprite3dPlugin)
         .add_plugins(DefaultPlugins.set(WindowPlugin {
@@ -32,7 +53,11 @@ fn main() {
                 ..default()
             }),
             ..default()
-        }))
+            })
+            .set(ImagePlugin::default_nearest())
+        )
+        .add_system(spawn_player_sprite.run_if(in_state(GameState::Ready)))
+        .add_system(animate_sprite.run_if(in_state(GameState::Ready)))
         .register_type::<Tower>()
         .add_plugin(FrameTimeDiagnosticsPlugin)
         .add_plugin(WorldInspectorPlugin::new())
@@ -56,12 +81,12 @@ fn spawn_scene(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>
 ) {
-    let plane = commands.spawn(PbrBundle {
+    commands.spawn(PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Plane { size: 10. , subdivisions: 1 })),
         material: materials.add(Color::hex("#ff00ff").unwrap().into()),
         ..default()
     }).insert(Name::new("Plane"));
-    let cube = commands.spawn(PbrBundle {
+    commands.spawn(PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Cube { size: 1.})),
         material: materials.add(Color::hex("#FFFFFF").unwrap().into()),
         transform: Transform::from_xyz(0.,0.5,0.),
@@ -95,25 +120,40 @@ fn spawn_tower(
     .insert(Name::new("Tower"));
 }
 
-fn spawn_player(
-    mut commands: Commands,
-    mut sprite_params: sprite::Sprite3dParams,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    asset_server: Res<AssetServer>,
+fn spawn_player_sprite(
+    mut commands: Commands, 
+    images: Res<ImageAssets>,
+    mut sprite_params: Sprite3dParams
 ){
-    let texture_handle = asset_server.load("MrMan.png");
-    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(32.,44.),2, 1, None, None);
-    let texture_atlas_handle = texture_atlases.add(texture_atlas);
     commands.spawn(AtlasSprite3d {
-        atlas: texture_atlas_handle,
+        atlas: images.run.clone(),
+
         pixels_per_metre: 32.,
         partial_alpha: true,
         unlit: true,
-        index: 1, 
+
+        index: 1,
+
+        transform: Transform::from_xyz(-3., 1., 2.),
+        // pivot: Some(Vec2::new(0.5, 0.5)),
+
         ..default()
     }.bundle(&mut sprite_params))
-    .insert(Name::new("Player"));
+    .insert(Name::new("PlayerSprite"))
+    .insert(AnimationTimer(Timer::from_seconds(0.4, TimerMode::Repeating)));
 }
+fn animate_sprite(
+    time: Res<Time>,
+    mut query: Query<(&mut AnimationTimer, &mut AtlasSprite3dComponent)>,
+) {
+    for (mut timer, mut sprite) in query.iter_mut() {
+        timer.tick(time.delta());
+        if timer.just_finished() {
+            sprite.index = (sprite.index + 1) % sprite.atlas.len();
+        }
+    }
+}
+
 pub struct Player {
     position: Vec3,
     velocity: Vec3,
