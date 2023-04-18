@@ -1,7 +1,9 @@
-use bevy::{prelude::{*}, window, diagnostic::FrameTimeDiagnosticsPlugin}; 
+use bevy::{prelude::{*}, window::{self, CursorGrabMode}, diagnostic::FrameTimeDiagnosticsPlugin, utils::tracing::instrument::WithSubscriber}; 
 use bevy_asset_loader::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_sprite3d::{Sprite3dPlugin, AtlasSprite3d, Sprite3dParams, AtlasSprite3dComponent};
+use bevy_fly_camera::{FlyCamera, FlyCameraPlugin};
+
 
 pub const HEIGHT: f32 = 720.0;
 pub const WIDTH: f32 = 1280.0;
@@ -40,21 +42,12 @@ fn main() {
         .insert_resource(ClearColor(Color::hex("212121").unwrap()))
         
         // Load Assets
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "Realm of the OctoSurvivors!".into(),
-                resolution: (1280.,720.).into(),
-                present_mode: window::PresentMode::AutoVsync,
-                resizable: false,
-                // Tells wasm to resize the window according to the available canvas
-                // Tells wasm not to override default event handling, like F5, Ctrl+R etc.
-                prevent_default_event_handling: false,
-                ..default()
-            }),
-            ..default()
-            })
+        .add_plugin(FlyCameraPlugin)
+        .add_plugins(DefaultPlugins
+            .set(WindowPlugin: None)
             .set(ImagePlugin::default_nearest())
         )
+        //.add_startup_system(spawn_window)
         .add_startup_systems((spawn_camera, spawn_scene, spawn_tower))
         .add_system(spawn_player_sprite.run_if(in_state(GameState::Ready).and_then(run_once())))
         .add_system(animate_sprite.run_if((in_state(GameState::Ready))))
@@ -68,13 +61,43 @@ fn main() {
         .run()
 }
 
+fn spawn_window(mut commands: Commands){
+    commands.spawn(Window {
+        title: "Realm of the OctoSurvivors!".into(),
+        resolution: (1280.,720.).into(),
+        present_mode: window::PresentMode::AutoVsync,
+        resizable: false,
+        // Tells wasm to resize the window according to the available canvas
+        // Tells wasm not to override default event handling, like F5, Ctrl+R etc.
+        prevent_default_event_handling: false,
+        ..default()
+    });
+}
 
 fn spawn_camera(mut commands: Commands) {
     commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(10., 10., 10.).looking_at(Vec3::ZERO, Vec3::Y),
         ..default()
+    }).insert(Name::new("Camera"))
+    .insert(FlyCamera::default());
+}
+
+/// This system toggles the cursor's visibility when the space bar is pressed
+fn toggle_cursor(
+    input: Res<Input<KeyCode>>,
+    mut windows: Query<&mut Window>
+) {
+    windows.iter_mut().for_each(|mut window| {
+        if input.just_pressed(KeyCode::Escape) {
+            window.cursor.grab_mode = (match window.cursor.grab_mode {
+                CursorGrabMode::None => CursorGrabMode::Locked,
+                CursorGrabMode::Locked | CursorGrabMode::Confined => CursorGrabMode::None,
+            });
+            window.cursor.visible = !window.cursor.visible;
+        }
     });
 }
+
 fn spawn_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,

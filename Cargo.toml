@@ -9,4 +9,5 @@ edition = "2021"
 bevy = { version = "0.10.1", features = ["dynamic_linking"] }
 bevy-inspector-egui = "0.18.1"
 bevy_asset_loader = { version = "0.16.0", features = ["2d"] } 
+bevy_fly_camera = "0.10.0"
 bevy_sprite3d = "2.4.0"
