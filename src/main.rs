@@ -18,30 +18,28 @@ enum GameState {
 
 #[derive(AssetCollection, Resource)]
 struct ImageAssets {
-    #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 44.))]
-    #[asset(texture_atlas(columns = 2, rows = 1))]
-    #[asset(path = "MrMan.png")]
+    #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 32.))]
+    #[asset(texture_atlas(columns = 3, rows = 1))]
+    #[asset(path = "brownSheet.png")]
     pub run: Handle<TextureAtlas>,
 }
 
 fn main() {
     App::new()
+        // bevy_sprite3d
         .add_state::<GameState>()
         .add_loading_state(
             LoadingState::new(GameState::Loading)
                 .continue_to_state(GameState::Ready)
         )
-        .add_collection_to_loading_state::<_,ImageAssets>(GameState::Loading)
-        .insert_resource(ClearColor(Color::hex("212121").unwrap()))
-        // .add_startup_system(Window{
-        // })
-        //.insert_resource(ImageSettings::default_nearest())
-        
-        .add_startup_system(spawn_scene)
-        .add_startup_system(spawn_camera)
-        .add_startup_system(spawn_tower)
-        // Load Assets
         .add_plugin(Sprite3dPlugin)
+        .add_collection_to_loading_state::<_,ImageAssets>(GameState::Loading)
+
+
+        // Background Color
+        .insert_resource(ClearColor(Color::hex("212121").unwrap()))
+        
+        // Load Assets
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "Realm of the OctoSurvivors!".into(),
@@ -57,13 +55,13 @@ fn main() {
             })
             .set(ImagePlugin::default_nearest())
         )
-        .add_system(spawn_player_sprite.run_if(in_state(GameState::Ready)))
-        .add_system(animate_sprite.run_if(in_state(GameState::Ready)))
+        .add_startup_systems((spawn_camera, spawn_scene, spawn_tower))
+        .add_system(spawn_player_sprite.run_if(in_state(GameState::Ready).and_then(run_once())))
+        .add_system(animate_sprite.run_if((in_state(GameState::Ready))))
         .register_type::<Tower>()
         .add_plugin(FrameTimeDiagnosticsPlugin)
         .add_plugin(WorldInspectorPlugin::new())
-        // .add_plugins(DefaultPlugins)
-        .add_system(tower_shooting)
+        //.add_system(tower_shooting)
         .add_system(lifetime_despawn)
         // run `setup` every frame while loading. Once it detects the right
         // conditions it'll switch to the next state.
@@ -135,7 +133,7 @@ fn spawn_player_sprite(
 
         index: 1,
 
-        transform: Transform::from_xyz(-3., 1., 2.),
+        transform: Transform::from_xyz(-3., 1., 2.).looking_at( Vec3::new(10.,10.,10.), Vec3::Y),
         // pivot: Some(Vec2::new(0.5, 0.5)),
 
         ..default()
