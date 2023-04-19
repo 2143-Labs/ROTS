@@ -58,6 +58,7 @@ fn main() {
         )
         .add_startup_systems((spawn_camera, spawn_scene, spawn_tower))
         .add_system(spawn_player_sprite.run_if(in_state(GameState::Ready).and_then(run_once())))
+        .add_system(player_movement.run_if(in_state(FreeCamState::Locked)))
         .add_systems(
             (animate_sprite, face_sprite_to_camera)
                 .distributive_run_if((in_state(GameState::Ready))),

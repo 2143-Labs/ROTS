@@ -34,14 +34,17 @@ pub fn toggle_cursor(
             };
             window.cursor.visible = !window.cursor.visible;
         });
+        println!("::: ESCAPE PRESSED! :::");
         next_state.set(match cam_state.0 {
             FreeCamState::Free => {
+                println!("::: FreeCamState::Free :::");
                 for player in players.iter_mut() {
                     commands.entity(player).remove::<FlyCamera>();
                 }
                 FreeCamState::Locked
             }
             FreeCamState::Locked => {
+                print!("::: FreeCamState::Locked :::");
                 for player in players.iter_mut() {
                     commands.entity(player).insert(FlyCamera::default());
                 }
