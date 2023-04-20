@@ -3,14 +3,33 @@ use bevy::prelude::*;
 #[derive(Component)]
 struct PlayerCamera; // tag entity to make it always face the camera
 
+
+#[derive(Reflect, Component)]
+pub struct CameraFollow {
+    pub distance: f32,
+    pub min_distance: f32,
+    pub max_distance: f32
+}
+impl Default for CameraFollow{
+    fn default() -> Self {
+        Self {
+            distance: 10.,
+            min_distance: 2.,
+            max_distance: 200.
+        }
+    }
+}
+
+
 pub fn spawn_camera(mut commands: Commands) {
     commands
-        .spawn(Camera3dBundle {
-            transform: Transform::from_xyz(10., 10., 10.).looking_at(Vec3::ZERO, Vec3::Y),
-            ..default()
-        })
-        .insert(Name::new("Camera"))
-        .insert(PlayerCamera);
+    .spawn(Camera3dBundle {
+        transform: Transform::from_xyz(10., 10., 10.).looking_at(Vec3::ZERO, Vec3::Y),
+        ..default()
+    })
+    .insert(CameraFollow::default())
+    .insert(Name::new("Camera"))
+    .insert(PlayerCamera);
 }
 
 pub fn spawn_scene(
