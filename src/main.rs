@@ -65,7 +65,7 @@ fn main() {
             (animate_sprite, face_sprite_to_camera)
                 .distributive_run_if((in_state(GameState::Ready))),
         )
-        .add_system(toggle_cursor)
+        .add_system(toggle_freecam)
         .register_type::<Tower>()
         .add_plugin(FrameTimeDiagnosticsPlugin)
         .add_plugin(WorldInspectorPlugin::new())

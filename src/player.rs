@@ -50,7 +50,7 @@ pub fn spawn_player_sprite(
 
         index: 1,
 
-        transform: Transform::from_xyz(-3., 1., 2.)
+        transform: Transform::from_xyz(-3., 0.5, 2.)
             .looking_at(Vec3::new(10., 10., 10.), Vec3::Y),
         // pivot: Some(Vec2::new(0.5, 0.5)),
         ..default()

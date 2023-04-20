@@ -43,7 +43,7 @@ pub fn spawn_scene(
                 size: 10.,
                 subdivisions: 1,
             })),
-            material: materials.add(Color::hex("#ff00ff").unwrap().into()),
+            material: materials.add(Color::hex("#1f7840").unwrap().into()),
             ..default()
         })
         .insert(Name::new("Plane"));
@@ -56,15 +56,18 @@ pub fn spawn_scene(
         })
         .insert(Name::new("Cube"));
 
-    commands
-        .spawn(PointLightBundle {
-            point_light: PointLight {
-                intensity: 1500.,
+        commands.spawn(DirectionalLightBundle {
+            transform: Transform::from_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
+                .mul_transform(Transform::from_rotation(Quat::from_rotation_y(
+                    -std::f32::consts::FRAC_PI_4,
+                ))),
+            directional_light: DirectionalLight {
+                color: Color::rgb(1.0, 0.9, 0.8),
+                illuminance: 15_000.0,
                 shadows_enabled: true,
                 ..default()
             },
-            transform: Transform::from_xyz(4., 8., 4.),
-            ..default()
-        })
+        ..Default::default()
+    })
         .insert(Name::new("Sun"));
 }
