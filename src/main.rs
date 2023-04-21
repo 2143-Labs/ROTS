@@ -52,6 +52,8 @@ fn main() {
         .register_type::<Tower>()
         .add_plugin(FrameTimeDiagnosticsPlugin)
         .add_plugin(WorldInspectorPlugin::new())
+        // TODO refactor into another system
+        .add_startup_system(spawn_tower)
         //.add_system(tower_shooting)
         // run `setup` every frame while loading. Once it detects the right
         // conditions it'll switch to the next state.

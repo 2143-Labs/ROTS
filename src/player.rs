@@ -1,4 +1,4 @@
-use crate::{setup::CameraFollow, sprites::AnimationTimer};
+use crate::{setup::CameraFollow, sprites::AnimationTimer, states::{GameState, FreeCamState}};
 use bevy::{input::mouse::MouseWheel, prelude::*};
 use bevy_asset_loader::prelude::AssetCollection;
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
@@ -7,11 +7,11 @@ pub fn init(app: &mut App) -> &mut App {
     app
         .add_system(
             spawn_player_sprite
-                .run_if(in_state(crate::states::GameState::Ready).and_then(run_once())),
+                .run_if(in_state(GameState::Ready).and_then(run_once())),
         )
         .add_systems(
             (player_movement, camera_follow_system)
-                .distributive_run_if(in_state(crate::states::FreeCamState::Locked)),
+                .distributive_run_if(in_state(FreeCamState::Locked)),
         )
 }
 
@@ -82,11 +82,11 @@ pub fn spawn_player_sprite(
 pub const PLAYER_SPEED: f32 = 5.;
 pub fn player_movement(
     mut player_query: Query<&mut Transform, With<Player>>,
-    camera_query: Query<&Transform, (With<CameraFollow>, Without<Player>)>,
+    _camera_query: Query<&Transform, (With<CameraFollow>, Without<Player>)>,
     keyboard_input: Res<Input<KeyCode>>,
     time: Res<Time>,
 ) {
-    let mut rotation = Vec3::ONE;
+    let rotation = Vec3::ONE;
     // if let Ok(transform) = camera_query.get_single(){
     //     rotation = transform.rotation * Vec3::ONE;
     // }

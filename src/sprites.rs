@@ -1,12 +1,12 @@
-use crate::player::FaceCamera;
-use bevy::{asset, prelude::*};
-use bevy_sprite3d::{AtlasSprite3d, AtlasSprite3dComponent, Sprite3dParams};
+use crate::{player::FaceCamera, states::GameState};
+use bevy::prelude::*;
+use bevy_sprite3d::AtlasSprite3dComponent;
 
 pub fn init(app: &mut App) -> &mut App {
     app
         .add_systems(
             (animate_sprite, face_sprite_to_camera)
-                .distributive_run_if(in_state(crate::states::GameState::Ready)),
+                .distributive_run_if(in_state(GameState::Ready)),
         )
 }
 
