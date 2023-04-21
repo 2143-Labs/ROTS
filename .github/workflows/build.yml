@@ -1,0 +1,93 @@
+name: Game
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  create_release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      release_upload_url: ${{ steps.create_release.outputs.upload_url }}
+      release_tag_name: ${{ steps.create_release.outputs.tag_name }}
+      release_id: ${{ steps.create_release.outputs.id }}
+      release_node_id: ${{ steps.create_release.outputs.node_id }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: Release ${{ github.run_number }}
+          draft: false
+          prerelease: false
+
+  build:
+    runs-on: ${{ matrix.os }}
+    needs: create_release
+    permissions:
+      contents: write
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        rust: [nightly]
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.3
+
+    - name: Install alsa
+      run: sudo apt-get install libasound2-dev libudev-dev
+      if: matrix.os == 'ubuntu-latest'
+
+    - name: Build
+      run: cargo build --release --no-default-features
+
+    - name: Upload Ubuntu Executable
+      uses: actions/upload-artifact@v2
+      with:
+        name: executable-ubuntu
+        path: target/release/bevy
+      if: matrix.os == 'ubuntu-latest'
+
+    - name: Upload Windows Executable
+      uses: actions/upload-artifact@v2
+      with:
+        name: executable-windows
+        path: target/release/bevy.exe
+      if: matrix.os == 'windows-latest'
+
+    - name: Attach Ubuntu Executable to Release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create_release.outputs.release_upload_url }}
+        asset_path: ${{ github.workspace }}/target/release/bevy
+        asset_name: realm-linux
+        asset_content_type: application/octet-stream
+      if: matrix.os == 'ubuntu-latest'
+
+    - name: Attach Windows Executable to Release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create_release.outputs.release_upload_url }}
+        asset_path: ${{ github.workspace }}/target/release/bevy.exe
+        asset_name: realm-windows.exe
+        asset_content_type: application/octet-stream
+      if: matrix.os == 'windows-latest'
