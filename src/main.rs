@@ -93,20 +93,23 @@ fn _tower_shooting(
 ) {
     for mut tower in &mut towers {
         tower.shooting_timer.tick(time.delta());
-        if tower.shooting_timer.just_finished() {
-            let spawn_transform: Transform =
-                Transform::from_xyz(2., 2., 2.).with_rotation(Quat::from_rotation_y(-PI / 2.));
-            commands
-                .spawn(PbrBundle {
-                    mesh: meshes.add(Mesh::from(shape::Cube::new(0.4))),
-                    material: materials.add(Color::AZURE.into()),
-                    transform: spawn_transform,
-                    ..default()
-                })
-                .insert(lifetime::Lifetime {
-                    timer: Timer::from_seconds(0.4, TimerMode::Once),
-                })
-                .insert(Name::new("Bullet"));
+        if !tower.shooting_timer.just_finished() {
+            continue;
         }
+
+        let spawn_transform: Transform =
+            Transform::from_xyz(2., 2., 2.).with_rotation(Quat::from_rotation_y(-PI / 2.));
+
+        commands
+            .spawn(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Cube::new(0.4))),
+                material: materials.add(Color::AZURE.into()),
+                transform: spawn_transform,
+                ..default()
+            })
+            .insert(lifetime::Lifetime {
+                timer: Timer::from_seconds(0.4, TimerMode::Once),
+            })
+            .insert(Name::new("Bullet"));
     }
 }
