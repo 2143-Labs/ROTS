@@ -1,7 +1,7 @@
 use bevy::{prelude::*, window::CursorGrabMode};
 use bevy_fly_camera::FlyCamera;
 
-use crate::{setup::CameraFollow};
+use crate::setup::CameraFollow;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, States, Default)]
 
@@ -26,29 +26,29 @@ pub fn toggle_freecam(
     mut windows_query: Query<&mut Window>,
 ) {
     if input.just_pressed(KeyCode::Escape) {
-    if let Ok(mut window) = windows_query.get_single_mut() {
-        window.cursor.grab_mode = match window.cursor.grab_mode {
-            CursorGrabMode::None => CursorGrabMode::Locked,
-            CursorGrabMode::Locked | CursorGrabMode::Confined => CursorGrabMode::None,
+        if let Ok(mut window) = windows_query.get_single_mut() {
+            window.cursor.grab_mode = match window.cursor.grab_mode {
+                CursorGrabMode::None => CursorGrabMode::Locked,
+                CursorGrabMode::Locked | CursorGrabMode::Confined => CursorGrabMode::None,
+            };
+            window.cursor.visible = !window.cursor.visible;
         };
-        window.cursor.visible = !window.cursor.visible;
-    };
-    println!("::: ESCAPE PRESSED! :::");
-    next_state.set(match cam_state.0 {
-        FreeCamState::Free => {
-            println!("::: FreeCamState::Free :::");
-            for player in players.iter_mut() {
-                commands.entity(player).remove::<FlyCamera>();
+        println!("::: ESCAPE PRESSED! :::");
+        next_state.set(match cam_state.0 {
+            FreeCamState::Free => {
+                println!("::: FreeCamState::Free :::");
+                for player in players.iter_mut() {
+                    commands.entity(player).remove::<FlyCamera>();
+                }
+                FreeCamState::Locked
             }
-            FreeCamState::Locked
-        }
-        FreeCamState::Locked => {
-            println!("::: FreeCamState::Locked :::");
-            for player in players.iter_mut() {
-                commands.entity(player).insert(FlyCamera::default());
+            FreeCamState::Locked => {
+                println!("::: FreeCamState::Locked :::");
+                for player in players.iter_mut() {
+                    commands.entity(player).insert(FlyCamera::default());
+                }
+                FreeCamState::Free
             }
-            FreeCamState::Free
-        }
-    });
-}
+        });
+    }
 }

@@ -1,19 +1,16 @@
 use std::f32::consts::PI;
 
-use bevy::{
-    diagnostic::FrameTimeDiagnosticsPlugin,
-    prelude::*,
-};
+use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*};
 use bevy_asset_loader::prelude::*;
 use bevy_fly_camera::FlyCameraPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_sprite3d::Sprite3dPlugin;
 
+pub mod lifetime;
 pub mod player;
 pub mod setup;
 pub mod sprites;
 pub mod states;
-pub mod lifetime;
 
 pub const HEIGHT: f32 = 720.0;
 pub const WIDTH: f32 = 1280.0;
@@ -24,10 +21,13 @@ fn main() {
         .add_state::<states::GameState>()
         .add_state::<states::FreeCamState>()
         .add_loading_state(
-            LoadingState::new(states::GameState::Loading).continue_to_state(states::GameState::Ready),
+            LoadingState::new(states::GameState::Loading)
+                .continue_to_state(states::GameState::Ready),
         )
         .add_plugin(Sprite3dPlugin)
-        .add_collection_to_loading_state::<_, player::PlayerSpriteAssets>(states::GameState::Loading)
+        .add_collection_to_loading_state::<_, player::PlayerSpriteAssets>(
+            states::GameState::Loading,
+        )
         // Background Color
         .insert_resource(ClearColor(Color::hex("212121").unwrap()))
         // Load Assets
@@ -50,10 +50,14 @@ fn main() {
                 .set(ImagePlugin::default_nearest()),
         )
         .add_startup_systems((setup::spawn_camera, setup::spawn_scene, spawn_tower))
-        .add_system(player::spawn_player_sprite.run_if(in_state(states::GameState::Ready).and_then(run_once())))
+        .add_system(
+            player::spawn_player_sprite
+                .run_if(in_state(states::GameState::Ready).and_then(run_once())),
+        )
         .add_systems(
             (player::player_movement, player::camera_follow_system)
-            .distributive_run_if(in_state(states::FreeCamState::Locked)))
+                .distributive_run_if(in_state(states::FreeCamState::Locked)),
+        )
         .add_systems(
             (sprites::animate_sprite, sprites::face_sprite_to_camera)
                 .distributive_run_if(in_state(states::GameState::Ready)),
@@ -92,7 +96,6 @@ fn spawn_tower(
 pub struct Tower {
     shooting_timer: Timer,
 }
-
 
 fn _tower_shooting(
     mut commands: Commands,
