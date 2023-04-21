@@ -1,8 +1,7 @@
 use bevy::prelude::*;
 
 pub fn init(app: &mut App) -> &mut App {
-    app
-        .add_startup_systems((spawn_camera, spawn_scene))
+    app.add_startup_systems((spawn_camera, spawn_scene))
 }
 
 #[derive(Component)]

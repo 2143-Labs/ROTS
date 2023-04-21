@@ -2,19 +2,15 @@ use bevy::{prelude::*, window::CursorGrabMode};
 use bevy_asset_loader::prelude::*;
 use bevy_fly_camera::FlyCamera;
 
-use crate::{setup::CameraFollow, player::PlayerSpriteAssets};
+use crate::{player::PlayerSpriteAssets, setup::CameraFollow};
 
 pub fn init(app: &mut App) -> &mut App {
-    app
-        .add_state::<GameState>()
+    app.add_state::<GameState>()
         .add_state::<FreeCamState>()
         .add_loading_state(
-            LoadingState::new(GameState::Loading)
-                .continue_to_state(GameState::Ready),
+            LoadingState::new(GameState::Loading).continue_to_state(GameState::Ready),
         )
-        .add_collection_to_loading_state::<_, PlayerSpriteAssets>(
-            GameState::Loading,
-        )
+        .add_collection_to_loading_state::<_, PlayerSpriteAssets>(GameState::Loading)
         .add_system(toggle_freecam)
 }
 

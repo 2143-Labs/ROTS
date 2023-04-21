@@ -1,14 +1,14 @@
-use crate::{setup::CameraFollow, sprites::AnimationTimer, states::{GameState, FreeCamState}};
+use crate::{
+    setup::CameraFollow,
+    sprites::AnimationTimer,
+    states::{FreeCamState, GameState},
+};
 use bevy::{input::mouse::MouseWheel, prelude::*};
 use bevy_asset_loader::prelude::AssetCollection;
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 
 pub fn init(app: &mut App) -> &mut App {
-    app
-        .add_system(
-            spawn_player_sprite
-                .run_if(in_state(GameState::Ready).and_then(run_once())),
-        )
+    app.add_system(spawn_player_sprite.run_if(in_state(GameState::Ready).and_then(run_once())))
         .add_systems(
             (player_movement, camera_follow_system)
                 .distributive_run_if(in_state(FreeCamState::Locked)),
