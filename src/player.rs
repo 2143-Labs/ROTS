@@ -1,7 +1,19 @@
-use crate::{sprites::AnimationTimer, setup::CameraFollow};
-use bevy::{prelude::*, input::mouse::MouseWheel};
+use crate::{
+    setup::CameraFollow,
+    sprites::AnimationTimer,
+    states::{FreeCamState, GameState},
+};
+use bevy::{input::mouse::MouseWheel, prelude::*};
 use bevy_asset_loader::prelude::AssetCollection;
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
+
+pub fn init(app: &mut App) -> &mut App {
+    app.add_system(spawn_player_sprite.run_if(in_state(GameState::Ready).and_then(run_once())))
+        .add_systems(
+            (player_movement, camera_follow_system)
+                .distributive_run_if(in_state(FreeCamState::Locked)),
+        )
+}
 
 #[derive(Component)]
 pub struct PlayerCamera; // tag entity to make it always face the camera
@@ -50,8 +62,7 @@ pub fn spawn_player_sprite(
 
         index: 1,
 
-        transform: Transform::from_xyz(-3., 0.5, 2.)
-            .looking_at(Vec3::new(10., 10., 10.), Vec3::Y),
+        transform: Transform::from_xyz(-3., 0.5, 2.).looking_at(Vec3::new(10., 10., 10.), Vec3::Y),
         // pivot: Some(Vec2::new(0.5, 0.5)),
         ..default()
     }
@@ -71,49 +82,47 @@ pub fn spawn_player_sprite(
 pub const PLAYER_SPEED: f32 = 5.;
 pub fn player_movement(
     mut player_query: Query<&mut Transform, With<Player>>,
-    camera_query: Query<&Transform, (With<CameraFollow>, Without<Player>)>,
+    _camera_query: Query<&Transform, (With<CameraFollow>, Without<Player>)>,
     keyboard_input: Res<Input<KeyCode>>,
-    time: Res<Time>
-){
-    let mut rotation= Vec3::ONE;
+    time: Res<Time>,
+) {
+    let rotation = Vec3::ONE;
     // if let Ok(transform) = camera_query.get_single(){
     //     rotation = transform.rotation * Vec3::ONE;
     // }
     if let Ok(mut transform) = player_query.get_single_mut() {
-    //Get cameras facing vector
-    let mut direction = Vec3::ZERO;
-    if keyboard_input.pressed(KeyCode::W) {
-        direction += rotation * Vec3::new(-1.,0.,-1.);
+        //Get cameras facing vector
+        let mut direction = Vec3::ZERO;
+        if keyboard_input.pressed(KeyCode::W) {
+            direction += rotation * Vec3::new(-1., 0., -1.);
+        }
+        if keyboard_input.pressed(KeyCode::S) {
+            direction += rotation * Vec3::new(1., 0., 1.);
+        }
+        if keyboard_input.pressed(KeyCode::A) {
+            direction += rotation * Vec3::new(-1., 0., 1.);
+        }
+        if keyboard_input.pressed(KeyCode::D) {
+            direction += rotation * Vec3::new(1., 0., -1.);
+        }
+        if direction.length() > 0. {
+            direction = direction.normalize();
+        }
+        transform.translation += direction * PLAYER_SPEED * time.delta_seconds();
     }
-    if keyboard_input.pressed(KeyCode::S) {
-        direction += rotation * Vec3::new(1.,0.,1.);
-    }
-    if keyboard_input.pressed(KeyCode::A) {
-        direction += rotation * Vec3::new(-1.,0.,1.);
-    }
-    if keyboard_input.pressed(KeyCode::D) {
-        direction += rotation * Vec3::new(1.,0.,-1.);
-    }
-    if direction.length() > 0. {
-        direction = direction.normalize();
-    }
-    transform.translation += direction * PLAYER_SPEED * time.delta_seconds();
-   } 
 }
-
 
 pub fn camera_follow_system(
     mut mouse_wheel_events: EventReader<MouseWheel>,
     mut camera_query: Query<(&mut Transform, &mut CameraFollow), With<Camera3d>>,
     player_query: Query<&Transform, (With<Player>, Without<CameraFollow>)>,
 ) {
-    for event in mouse_wheel_events.iter()  {
+    for event in mouse_wheel_events.iter() {
         for (_, mut camera_follow) in camera_query.iter_mut() {
-            camera_follow.distance = 
-            match event.y {
-                y if y < 0. => {(camera_follow.distance+1.).abs()}
-                y if y > 0. => {(camera_follow.distance-1.).abs()}
-                _ => camera_follow.distance 
+            camera_follow.distance = match event.y {
+                y if y < 0. => (camera_follow.distance + 1.).abs(),
+                y if y > 0. => (camera_follow.distance - 1.).abs(),
+                _ => camera_follow.distance,
             };
             if camera_follow.distance < camera_follow.min_distance {
                 camera_follow.distance = camera_follow.min_distance;
@@ -124,7 +133,8 @@ pub fn camera_follow_system(
     }
     if let Ok(player_transform) = player_query.get_single() {
         for (mut transform, camera_follow) in camera_query.iter_mut() {
-            transform.translation = Vec3::new(1.,1.,1.)*camera_follow.distance + player_transform.translation;
+            transform.translation =
+                Vec3::new(1., 1., 1.) * camera_follow.distance + player_transform.translation;
             //.looking_at(Vec3::new(10., 10., 10.), Vec3::Y);
         }
     }
