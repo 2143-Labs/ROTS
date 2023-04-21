@@ -1,6 +1,11 @@
 use bevy::prelude::*;
 use bevy::reflect::Reflect;
 
+pub fn init(app: &mut App) -> &mut App {
+    app
+        .add_system(lifetime_despawn)
+}
+
 #[derive(Reflect, Component, Default)]
 #[reflect(Component)]
 pub struct Lifetime {

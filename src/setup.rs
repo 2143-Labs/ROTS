@@ -1,5 +1,10 @@
 use bevy::prelude::*;
 
+pub fn init(app: &mut App) -> &mut App {
+    app
+        .add_startup_systems((spawn_camera, spawn_scene, crate::spawn_tower))
+}
+
 #[derive(Component)]
 struct PlayerCamera; // tag entity to make it always face the camera
 
