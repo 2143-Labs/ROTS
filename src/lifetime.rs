@@ -34,6 +34,7 @@ enum BulletAI {
 struct BulletPhysics {
     fired_from: Vec2,
     fired_target: Vec2,
+    // Tiles per second
     speed: f32,
     ai: BulletAI,
 }
@@ -43,7 +44,7 @@ fn update_all_bullets(
 ) {
     for (lifetime, phys, mut transform) in bullets.iter_mut() {
         let nanos: f64 = lifetime.timer.elapsed().as_nanos() as f64;
-        let secs = nanos / 1_000_000.0;
+        let secs = nanos / 1_000_000_000.0;
         let distance = (secs as f32) * phys.speed;
 
         let dir: Vec2 = (phys.fired_target - phys.fired_from).normalize();
@@ -97,7 +98,7 @@ fn spawn_bullet(
             fired_from: Vec2 { x: 0.0, y: 0.0 },
             // randomize these
             fired_target: Vec2 { x: 1.0, y: 1.0 },
-            speed: 0.02,
+            speed: 10.0,
             ai,
         })
         .insert(Name::new("Bullet"));
