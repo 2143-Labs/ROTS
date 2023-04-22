@@ -309,6 +309,7 @@ dependencies = [
  "bevy-inspector-egui",
  "bevy_asset_loader",
  "bevy_fly_camera",
+ "bevy_mod_raycast",
  "bevy_sprite3d",
 ]
 
@@ -762,6 +763,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39106bc2ee21fce9496d2e15e0ba7925dff63e3eae10f7c1fc0094b56ad9f2bb"
 dependencies = [
  "glam",
+]
+
+[[package]]
+name = "bevy_mod_raycast"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc98a75743120396c8f3e3b47bfeb7f3d39248c46a625972005e51ca4d110a2a"
+dependencies = [
+ "bevy 0.10.1",
 ]
 
 [[package]]
