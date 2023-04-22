@@ -1,7 +1,10 @@
 use bevy::prelude::*;
+use bevy_mod_raycast::{RaycastSource, RaycastMesh, DefaultRaycastingPlugin};
 
 pub fn init(app: &mut App) -> &mut App {
-    app.add_startup_systems((spawn_camera, spawn_scene))
+    app
+        .add_startup_systems((spawn_camera, spawn_scene))
+        .add_plugin(DefaultRaycastingPlugin::<MyRaycastSet>::default())
 }
 
 #[derive(Component)]
@@ -23,12 +26,18 @@ impl Default for CameraFollow {
     }
 }
 
+#[derive(Reflect, Clone)]
+pub struct MyRaycastSet;
+
 pub fn spawn_camera(mut commands: Commands) {
     commands
-        .spawn(Camera3dBundle {
-            transform: Transform::from_xyz(10., 10., 10.).looking_at(Vec3::ZERO, Vec3::Y),
-            ..default()
-        })
+        .spawn((
+            Camera3dBundle {
+                transform: Transform::from_xyz(10., 10., 10.).looking_at(Vec3::ZERO, Vec3::Y),
+                ..default()
+            },
+            RaycastSource::<MyRaycastSet>::new_transform_empty()
+        ))
         .insert(CameraFollow::default())
         .insert(Name::new("Camera"))
         .insert(PlayerCamera);
@@ -40,15 +49,20 @@ pub fn spawn_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     commands
-        .spawn(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane {
-                size: 10.,
-                subdivisions: 1,
-            })),
-            material: materials.add(Color::hex("#1f7840").unwrap().into()),
-            ..default()
-        })
+        .spawn((
+            PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Plane {
+                    size: 10.,
+                    subdivisions: 1,
+                })),
+                material: materials.add(Color::hex("#1f7840").unwrap().into()),
+                ..default()
+            },
+            RaycastMesh::<MyRaycastSet>::default(),
+        ))
+        //.insert(Ground)
         .insert(Name::new("Plane"));
+
     commands
         .spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1. })),

@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 use bevy::reflect::Reflect;
+use bevy_mod_raycast::Intersection;
 
 use crate::player::Player;
+use crate::setup::MyRaycastSet;
 
 pub fn init(app: &mut App) -> &mut App {
     app.add_system(lifetime_despawn)
@@ -50,7 +52,7 @@ struct BulletPhysics {
 
 fn update_all_bullets(
     mut bullets: Query<(&Lifetime, &BulletPhysics, &mut Transform)>,
-    time: Res<Time>,
+    _time: Res<Time>,
 ) {
     for (lifetime, phys, mut transform) in bullets.iter_mut() {
         let nanos: f64 = lifetime.timer.elapsed().as_nanos() as f64;
@@ -88,6 +90,7 @@ fn spawn_bullet(
     keyboard_input: Res<Input<KeyCode>>,
     player: Query<&Transform, With<Player>>,
     towers: Query<&Transform, With<Tower>>,
+    intersect: Query<&Intersection<MyRaycastSet>>,
 ) {
     // Right click, red wavy, left click, blue direct
     let (color, ai) = if buttons.just_pressed(MouseButton::Left) {
@@ -98,6 +101,22 @@ fn spawn_bullet(
         (Color::OLIVE, BulletAI::Direct)
     } else {
         return;
+    };
+
+    let target: &Intersection<_> = match intersect.iter().next() {
+        Some(s) => s,
+        None => {
+            info!("No intersection with ground");
+            return;
+        }
+    };
+
+    let isect = match target.position() {
+        Some(s) => s,
+        None => {
+            error!("No intersect position?");
+            return;
+        }
     };
 
     let player_transform: &Transform = player.single();
@@ -115,8 +134,8 @@ fn spawn_bullet(
         })
         .insert(BulletPhysics {
             fired_target: Vec2 {
-                x: tower_transform.translation.x,
-                y: tower_transform.translation.z,
+                x: isect.x,
+                y: isect.z,
             },
             fired_from: Vec2 {
                 x: player_transform.translation.x,

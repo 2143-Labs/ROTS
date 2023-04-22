@@ -1,8 +1,7 @@
-use std::f32::consts::PI;
-
 use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*};
 use bevy_fly_camera::FlyCameraPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_mod_raycast::{DebugCursor, DefaultRaycastingPlugin};
 use bevy_sprite3d::Sprite3dPlugin;
 
 pub mod lifetime;
