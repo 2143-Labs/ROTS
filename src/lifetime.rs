@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use bevy::reflect::Reflect;
 
+use crate::player::Player;
+
 pub fn init(app: &mut App) -> &mut App {
     app.add_system(lifetime_despawn).add_system(update_all_bullets).add_system(spawn_bullet)
 }
@@ -28,6 +30,7 @@ enum BulletAI {
     /// Bullet directly travels from point to point
     Direct,
     Wavy,
+    Wavy2,
 }
 
 #[derive(Component)]
@@ -59,6 +62,11 @@ fn update_all_bullets(
                 let wavy_offset = rotate_right * distance.sin();
                 distance * dir + wavy_offset * 0.5
             }
+            BulletAI::Wavy2 => {
+                let rotate_right = Vec2::new(dir.x, dir.y);
+                let wavy_offset = rotate_right * distance.sin();
+                distance * dir + wavy_offset * 2.0
+            }
         };
 
         // Bullets float 0.5 above the ground
@@ -72,16 +80,18 @@ fn spawn_bullet(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     buttons: Res<Input<MouseButton>>,
+    player: Query<&Transform, With<Player>>,
 ) {
     // Right click, red wavy, left click, blue direct
     let (color, ai) = if buttons.just_pressed(MouseButton::Left) {
-        (Color::BLUE, BulletAI::Direct)
+        (Color::PINK, BulletAI::Wavy2)
     } else if buttons.just_pressed(MouseButton::Right) {
         (Color::RED, BulletAI::Wavy)
     } else {
         return
     };
 
+    let player_transform: &Transform = player.single();
     let spawn_transform = Transform::from_xyz(0.0, 0.5, 0.0);
     commands
         .spawn(PbrBundle {
@@ -97,7 +107,7 @@ fn spawn_bullet(
             // make this player position
             fired_from: Vec2 { x: 0.0, y: 0.0 },
             // randomize these
-            fired_target: Vec2 { x: 1.0, y: 1.0 },
+            fired_target: Vec2 { x: player_transform.translation.x, y: player_transform.translation.z },
             speed: 10.0,
             ai,
         })
