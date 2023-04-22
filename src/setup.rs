@@ -1,7 +1,12 @@
 use bevy::prelude::*;
+use bevy_asset_loader::prelude::AssetCollection;
+use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
+
+use crate::{player::{Player, FaceCamera}, sprites::AnimationTimer, states::GameState};
 
 pub fn init(app: &mut App) -> &mut App {
     app.add_startup_systems((spawn_camera, spawn_scene))
+    .add_system(spawn_muscle_man.run_if(in_state(GameState::Ready).and_then(run_once())))
 }
 
 #[derive(Component)]
@@ -49,14 +54,6 @@ pub fn spawn_scene(
             ..default()
         })
         .insert(Name::new("Plane"));
-    commands
-        .spawn(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube { size: 1. })),
-            material: materials.add(Color::hex("#FFFFFF").unwrap().into()),
-            transform: Transform::from_xyz(0., 0.5, 0.),
-            ..default()
-        })
-        .insert(Name::new("Cube"));
 
     commands
         .spawn(DirectionalLightBundle {
@@ -75,4 +72,40 @@ pub fn spawn_scene(
             ..Default::default()
         })
         .insert(Name::new("Sun"));
+}
+
+#[derive(AssetCollection, Resource)]
+pub struct MuscleManAssets{
+    #[asset(texture_atlas(tile_size_x = 64., tile_size_y = 64.))]
+    #[asset(texture_atlas(columns = 21, rows = 1))]
+    #[asset(path = "buff-Sheet.png")]
+    pub run: Handle<TextureAtlas>,
+}
+pub fn spawn_muscle_man(
+    mut commands: Commands,
+    images: Res<MuscleManAssets>,
+    mut sprite_params: Sprite3dParams,
+) {
+    let sprite = AtlasSprite3d {
+        atlas: images.run.clone(),
+
+        pixels_per_metre: 32.,
+        partial_alpha: true,
+        unlit: true,
+
+        index: 1,
+
+        transform: Transform::from_xyz(0., 1., 0.),
+        // pivot: Some(Vec2::new(0.5, 0.5)),
+        ..default()
+    }
+    .bundle(&mut sprite_params);
+
+    commands
+        .spawn(sprite)
+        .insert(FaceCamera)
+        .insert(AnimationTimer(Timer::from_seconds(
+            0.2,
+            TimerMode::Repeating,
+        )));
 }
