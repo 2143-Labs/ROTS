@@ -3,6 +3,17 @@
 version = 3
 
 [[package]]
+name = "ROTS"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy-inspector-egui",
+ "bevy_asset_loader",
+ "bevy_fly_camera",
+ "bevy_sprite3d",
+]
+
+[[package]]
 name = "ab_glyph"
 version = "0.2.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -303,17 +314,6 @@ checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
 name = "bevy"
-version = "0.1.0"
-dependencies = [
- "bevy 0.10.1",
- "bevy-inspector-egui",
- "bevy_asset_loader",
- "bevy_fly_camera",
- "bevy_sprite3d",
-]
-
-[[package]]
-name = "bevy"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b93f906133305915d63f04108e6873c1b93a6605fe374b8f3391f6bda093e396"
@@ -441,7 +441,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f32463c4be049c9535661f2debcd76a6ee7fc5c0e0c2335214bda671607ae7d9"
 dependencies = [
  "anyhow",
- "bevy 0.10.1",
+ "bevy",
  "bevy_asset_loader_derive",
 ]
 
@@ -584,7 +584,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f3c40ec476443b97d5d9c6f40668da7ded2d83b13955a7c94c062ad2b6f98120"
 dependencies = [
  "arboard",
- "bevy 0.10.1",
+ "bevy",
  "egui",
  "thread_local",
  "webbrowser",
@@ -606,7 +606,7 @@ version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6217548790087c7b79675f87397ea90d27158edb4d533cc428170ca963db2a2"
 dependencies = [
- "bevy 0.10.1",
+ "bevy",
 ]
 
 [[package]]
@@ -937,7 +937,7 @@ version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f873dd5be1022006f78f57cefb939e5f6bd106fda335da6170abb974e20ce28"
 dependencies = [
- "bevy 0.10.1",
+ "bevy",
 ]
 
 [[package]]
