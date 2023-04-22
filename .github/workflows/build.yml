@@ -28,8 +28,8 @@ jobs:
         with:
           tag_name: v${{ github.run_number }}
           release_name: Release ${{ github.run_number }}
-          draft: false
-          prerelease: false
+          draft: ${{ github.event_name == 'pull_request' }}
+          prerelease: ${{ github.event_name == 'pull_request' }}
 
   build:
     runs-on: ${{ matrix.os }}
