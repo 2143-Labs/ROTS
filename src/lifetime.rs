@@ -10,6 +10,7 @@ pub fn init(app: &mut App) -> &mut App {
         .add_system(update_all_bullets)
         .add_system(spawn_bullet)
         .add_system(tower_shooting)
+        .add_system(camera_aim)
         .register_type::<Tower>()
         .add_startup_system(spawn_tower)
 }
@@ -82,6 +83,21 @@ fn update_all_bullets(
     }
 }
 
+fn camera_aim(
+    intersect: Query<&Intersection<MyRaycastSet>>,
+    mut aim_target_cube: Query<&mut Transform, With<AimVectorTarget>>,
+) {
+    for i in &intersect {
+        if let Ok(mut s) = aim_target_cube.get_single_mut() {
+            let pos = i.position();
+            s.translation = *pos.unwrap();
+        }
+    }
+}
+
+#[derive(Component, Reflect)]
+struct AimVectorTarget;
+
 fn spawn_bullet(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -93,11 +109,11 @@ fn spawn_bullet(
     intersect: Query<&Intersection<MyRaycastSet>>,
 ) {
     // Right click, red wavy, left click, blue direct
-    let (color, ai) = if buttons.just_pressed(MouseButton::Left) {
+    let (color, ai) = if keyboard_input.just_pressed(KeyCode::E) {
         (Color::PINK, BulletAI::Wavy2)
-    } else if buttons.just_pressed(MouseButton::Right) {
+    } else if keyboard_input.just_pressed(KeyCode::R) {
         (Color::RED, BulletAI::Wavy)
-    } else if keyboard_input.just_pressed(KeyCode::G) {
+    } else if keyboard_input.just_pressed(KeyCode::T) {
         (Color::OLIVE, BulletAI::Direct)
     } else {
         return;
@@ -111,6 +127,8 @@ fn spawn_bullet(
         }
     };
 
+    info!(?target);
+
     let isect = match target.position() {
         Some(s) => s,
         None => {
@@ -119,8 +137,10 @@ fn spawn_bullet(
         }
     };
 
+    info!(?isect);
+
     let player_transform: &Transform = player.single();
-    let tower_transform: &Transform = towers.single();
+    let _tower_transform: &Transform = towers.single();
     let spawn_transform = Transform::from_xyz(0.0, 0.5, 0.0);
     commands
         .spawn(PbrBundle {
@@ -145,6 +165,16 @@ fn spawn_bullet(
             ai,
         })
         .insert(Name::new("Bullet"));
+
+    commands
+        .spawn(PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Cube::new(0.1))),
+            material: materials.add(Color::PURPLE.into()),
+            transform: spawn_transform,
+            ..default()
+        })
+        .insert(AimVectorTarget)
+        .insert(Name::new("AimVector"));
 }
 
 #[derive(Reflect, Component, Default)]

@@ -52,8 +52,8 @@ pub fn spawn_scene(
         .spawn((
             PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane {
-                    size: 10.,
-                    subdivisions: 1,
+                    size: 100.,
+                    subdivisions: 10,
                 })),
                 material: materials.add(Color::hex("#1f7840").unwrap().into()),
                 ..default()
