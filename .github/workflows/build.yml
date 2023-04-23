@@ -64,6 +64,7 @@ jobs:
         retention-days: 2
 
   create_release:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     needs: [ build, upload_assets_as_artifact ]
     permissions:
@@ -92,9 +93,9 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: v${{ github.run_number }}
-        release_name: Release ${{ github.run_number }}
-        draft: ${{ github.event_name == 'pull_request' }}
-        prerelease: ${{ github.event_name == 'pull_request' }}
+        release_name: "Build #${{ github.run_number }}"
+        draft: true
+        prerelease: false
 
     - name: Create Zip
       uses: thedoctor0/zip-release@0.7.1
