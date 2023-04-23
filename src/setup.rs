@@ -1,9 +1,10 @@
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::AssetCollection;
+use bevy_rapier3d::prelude::*;
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 use bevy_mod_raycast::{RaycastSource, RaycastMesh, DefaultRaycastingPlugin};
 
-use crate::{player::{FaceCamera}, sprites::AnimationTimer, states::GameState};
+use crate::{player::FaceCamera, sprites::AnimationTimer, states::GameState};
 
 pub fn init(app: &mut App) -> &mut App {
     app
@@ -53,17 +54,20 @@ pub fn spawn_scene(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+
+    let size = 10.;
     commands
         .spawn((
             PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane {
-                    size: 100.,
+                    size: size * 2.0,
                     subdivisions: 10,
                 })),
                 material: materials.add(Color::hex("#1f7840").unwrap().into()),
                 ..default()
             },
             RaycastMesh::<MyRaycastSet>::default(),
+            Collider::cuboid(size, 0.1, size)
         ))
         .insert(Name::new("Plane"));
 
@@ -87,7 +91,7 @@ pub fn spawn_scene(
 }
 
 #[derive(AssetCollection, Resource)]
-pub struct MuscleManAssets{
+pub struct MuscleManAssets {
     #[asset(texture_atlas(tile_size_x = 64., tile_size_y = 64.))]
     #[asset(texture_atlas(columns = 21, rows = 1))]
     #[asset(path = "buff-Sheet.png")]

@@ -1,10 +1,13 @@
 use crate::{
-    setup::{CameraFollow},
+    setup::CameraFollow,
     sprites::AnimationTimer,
     states::{FreeCamState, GameState},
 };
-use bevy::{input::mouse::MouseWheel, prelude::*};
+use bevy::{
+    input::mouse::MouseWheel, prelude::*, render::render_resource::BindGroupLayoutDescriptor,
+};
 use bevy_asset_loader::prelude::AssetCollection;
+use bevy_rapier3d::prelude::{Collider, GravityScale, LockedAxes, RigidBody};
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 
 pub fn init(app: &mut App) -> &mut App {
@@ -69,14 +72,20 @@ pub fn spawn_player_sprite(
     .bundle(&mut sprite_params);
 
     commands
-        .spawn(sprite)
+        .spawn((
+            sprite,
+            RigidBody::Dynamic
+        ))
         .insert(Name::new("PlayerSprite"))
         .insert(Player::default())
         .insert(FaceCamera)
         .insert(AnimationTimer(Timer::from_seconds(
             0.4,
             TimerMode::Repeating,
-        )));
+        )))
+        .insert(LockedAxes::ROTATION_LOCKED)
+        .insert(GravityScale(1.))
+        .insert(Collider::cuboid(0.1, 1., 1.));
 }
 
 pub const PLAYER_SPEED: f32 = 5.;
