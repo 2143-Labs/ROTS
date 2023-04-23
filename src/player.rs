@@ -7,7 +7,7 @@ use bevy::{
     input::mouse::MouseWheel, prelude::*, render::render_resource::BindGroupLayoutDescriptor,
 };
 use bevy_asset_loader::prelude::AssetCollection;
-use bevy_rapier3d::prelude::{Collider, GravityScale, LockedAxes, RigidBody};
+use bevy_rapier3d::prelude::{Collider, ExternalImpulse, GravityScale, LockedAxes, RigidBody};
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 
 pub fn init(app: &mut App) -> &mut App {
@@ -72,10 +72,7 @@ pub fn spawn_player_sprite(
     .bundle(&mut sprite_params);
 
     commands
-        .spawn((
-            sprite,
-            RigidBody::Dynamic
-        ))
+        .spawn((sprite, RigidBody::Dynamic))
         .insert(Name::new("PlayerSprite"))
         .insert(Player::default())
         .insert(FaceCamera)
@@ -83,8 +80,12 @@ pub fn spawn_player_sprite(
             0.4,
             TimerMode::Repeating,
         )))
-        .insert(LockedAxes::ROTATION_LOCKED)
+        // .insert(LockedAxes::ROTATION_LOCKED)
         .insert(GravityScale(1.))
+        .insert(ExternalImpulse {
+            impulse: Vec3::new(1.0, 8.0, 2.0),
+            torque_impulse: Vec3::new(0.4, 0.4, 0.4),
+        })
         .insert(Collider::cuboid(0.1, 1., 1.));
 }
 
