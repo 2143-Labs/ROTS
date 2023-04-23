@@ -89,8 +89,10 @@ fn camera_aim(
 ) {
     for i in &intersect {
         if let Ok(mut s) = aim_target_cube.get_single_mut() {
-            let pos = i.position();
-            s.translation = *pos.unwrap();
+            match i.position() {
+                Some(pos) => s.translation = *pos,
+                None => s.translation = Vec3::ZERO,
+            }
         }
     }
 }
@@ -165,16 +167,6 @@ fn spawn_bullet(
             ai,
         })
         .insert(Name::new("Bullet"));
-
-    commands
-        .spawn(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube::new(0.1))),
-            material: materials.add(Color::PURPLE.into()),
-            transform: spawn_transform,
-            ..default()
-        })
-        .insert(AimVectorTarget)
-        .insert(Name::new("AimVector"));
 }
 
 #[derive(Reflect, Component, Default)]
@@ -244,4 +236,14 @@ fn spawn_tower(
             shooting_timer: Timer::from_seconds(0.25, TimerMode::Repeating),
         })
         .insert(Name::new("Tower"));
+
+    commands
+        .spawn(PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Cube::new(0.1))),
+            material: materials.add(Color::PURPLE.into()),
+            transform: Transform::default(),
+            ..default()
+        })
+        .insert(AimVectorTarget)
+        .insert(Name::new("AimVector"));
 }
