@@ -104,7 +104,7 @@ fn spawn_bullet(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    buttons: Res<Input<MouseButton>>,
+    _buttons: Res<Input<MouseButton>>,
     keyboard_input: Res<Input<KeyCode>>,
     player: Query<&Transform, With<Player>>,
     towers: Query<&Transform, With<Tower>>,
