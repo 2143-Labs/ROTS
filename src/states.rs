@@ -2,7 +2,10 @@ use bevy::{prelude::*, window::CursorGrabMode};
 use bevy_asset_loader::prelude::*;
 use bevy_fly_camera::FlyCamera;
 
-use crate::{player::PlayerSpriteAssets, setup::{CameraFollow, MuscleManAssets}};
+use crate::{
+    player::PlayerSpriteAssets,
+    setup::{CameraFollow, MuscleManAssets},
+};
 
 pub fn init(app: &mut App) -> &mut App {
     app.add_state::<GameState>()

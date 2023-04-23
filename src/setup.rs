@@ -1,12 +1,13 @@
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::AssetCollection;
+use bevy_rapier3d::prelude::*;
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 
-use crate::{player::{Player, FaceCamera}, sprites::AnimationTimer, states::GameState};
+use crate::{player::FaceCamera, sprites::AnimationTimer, states::GameState};
 
 pub fn init(app: &mut App) -> &mut App {
     app.add_startup_systems((spawn_camera, spawn_scene))
-    .add_system(spawn_muscle_man.run_if(in_state(GameState::Ready).and_then(run_once())))
+        .add_system(spawn_muscle_man.run_if(in_state(GameState::Ready).and_then(run_once())))
 }
 
 #[derive(Component)]
@@ -46,7 +47,7 @@ pub fn spawn_scene(
 ) {
     commands
         .spawn(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane {
+            mesh: meshes.add(Mesh::from(bevy::prelude::shape::Plane {
                 size: 10.,
                 subdivisions: 1,
             })),
@@ -54,6 +55,11 @@ pub fn spawn_scene(
             ..default()
         })
         .insert(Name::new("Plane"));
+    // .with_children(|parent| {
+    //     parent
+    //         .spawn(Collider::cuboid(10., 1., 10.))
+    //         .insert(Transform::from_xyz(0., 0., 0.));
+    // });
 
     commands
         .spawn(DirectionalLightBundle {
@@ -75,7 +81,7 @@ pub fn spawn_scene(
 }
 
 #[derive(AssetCollection, Resource)]
-pub struct MuscleManAssets{
+pub struct MuscleManAssets {
     #[asset(texture_atlas(tile_size_x = 64., tile_size_y = 64.))]
     #[asset(texture_atlas(columns = 21, rows = 1))]
     #[asset(path = "buff-Sheet.png")]

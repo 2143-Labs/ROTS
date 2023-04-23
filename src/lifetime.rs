@@ -4,7 +4,9 @@ use bevy::reflect::Reflect;
 use crate::player::Player;
 
 pub fn init(app: &mut App) -> &mut App {
-    app.add_system(lifetime_despawn).add_system(update_all_bullets).add_system(spawn_bullet)
+    app.add_system(lifetime_despawn)
+        .add_system(update_all_bullets)
+        .add_system(spawn_bullet)
 }
 
 #[derive(Reflect, Component, Default)]
@@ -42,9 +44,7 @@ struct BulletPhysics {
     ai: BulletAI,
 }
 
-fn update_all_bullets(
-    mut bullets: Query<(&Lifetime, &BulletPhysics, &mut Transform)>,
-) {
+fn update_all_bullets(mut bullets: Query<(&Lifetime, &BulletPhysics, &mut Transform)>) {
     for (lifetime, phys, mut transform) in bullets.iter_mut() {
         let nanos: f64 = lifetime.timer.elapsed().as_nanos() as f64;
         let secs = nanos / 1_000_000_000.0;
@@ -54,9 +54,7 @@ fn update_all_bullets(
 
         // Bullet positions are deterministic, based purely on time elapsed
         let offset: Vec2 = match phys.ai {
-            BulletAI::Direct => {
-                distance * dir
-            }
+            BulletAI::Direct => distance * dir,
             BulletAI::Wavy => {
                 let rotate_right = Vec2::new(dir.y, -dir.x);
                 let wavy_offset = rotate_right * distance.sin();
@@ -88,7 +86,7 @@ fn spawn_bullet(
     } else if buttons.just_pressed(MouseButton::Right) {
         (Color::RED, BulletAI::Wavy)
     } else {
-        return
+        return;
     };
 
     let player_transform: &Transform = player.single();
@@ -107,7 +105,10 @@ fn spawn_bullet(
             // make this player position
             fired_from: Vec2 { x: 0.0, y: 0.0 },
             // randomize these
-            fired_target: Vec2 { x: player_transform.translation.x, y: player_transform.translation.z },
+            fired_target: Vec2 {
+                x: player_transform.translation.x,
+                y: player_transform.translation.z,
+            },
             speed: 10.0,
             ai,
         })
