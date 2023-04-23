@@ -7,15 +7,19 @@ use crate::{
     setup::{CameraFollow, MuscleManAssets},
 };
 
-pub fn init(app: &mut App) -> &mut App {
-    app.add_state::<GameState>()
-        .add_state::<FreeCamState>()
-        .add_loading_state(
-            LoadingState::new(GameState::Loading).continue_to_state(GameState::Ready),
-        )
-        .add_collection_to_loading_state::<_, PlayerSpriteAssets>(GameState::Loading)
-        .add_collection_to_loading_state::<_, MuscleManAssets>(GameState::Loading)
-        .add_system(toggle_freecam)
+pub struct StatePlugin;
+
+impl Plugin for StatePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_state::<GameState>()
+            .add_state::<FreeCamState>()
+            .add_loading_state(
+                LoadingState::new(GameState::Loading).continue_to_state(GameState::Ready),
+            )
+            .add_collection_to_loading_state::<_, PlayerSpriteAssets>(GameState::Loading)
+            .add_collection_to_loading_state::<_, MuscleManAssets>(GameState::Loading)
+            .add_system(toggle_freecam);
+    }
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, States, Default)]

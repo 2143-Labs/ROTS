@@ -3,6 +3,7 @@ use bevy_fly_camera::FlyCameraPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier3d::prelude::{NoUserData, RapierPhysicsPlugin};
 use bevy_sprite3d::Sprite3dPlugin;
+use states::StatePlugin;
 
 pub mod lifetime;
 pub mod physics;
@@ -17,7 +18,6 @@ pub const WIDTH: f32 = 1280.0;
 fn main() {
     let mut app = App::new();
 
-    states::init(&mut app);
     setup::init(&mut app);
     player::init(&mut app);
     sprites::init(&mut app);
@@ -53,9 +53,8 @@ fn main() {
         )
         .add_plugin(FrameTimeDiagnosticsPlugin)
         .add_plugin(WorldInspectorPlugin::new())
-        // TODO refactor into another system
-        //.add_system(tower_shooting)
-        // run `setup` every frame while loading. Once it detects the right
-        // conditions it'll switch to the next state.
+
+        .add_plugin(StatePlugin)
+
         .run()
 }
