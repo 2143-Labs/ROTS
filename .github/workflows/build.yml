@@ -39,7 +39,7 @@ jobs:
     - name: Upload Executable
       uses: actions/upload-artifact@v3
       with:
-        name: rots-${{ matrix.os }}
+        name: ${{ matrix.os }}
         path: |
           target/release/ROTS
           target/release/ROTS.exe
@@ -73,6 +73,13 @@ jobs:
     steps:
     - name: Download artifacts
       uses: actions/download-artifact@v3
+
+    - name: Move artifacts
+      run: |
+        mv windows-latest/* .
+        mv ubuntu-latest/* .
+        rm windows-latest
+        rm ubuntu-latest
 
     - name: Create Release
       id: create_release
