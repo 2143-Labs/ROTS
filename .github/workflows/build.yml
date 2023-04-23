@@ -83,7 +83,7 @@ jobs:
       run: |
         bash -c "mv ubuntu-latest/* ."
         bash -c "rm -rf ubuntu-latest"
-        bash -c "chmod +x ROTS*"
+        bash -c "chmod +x client server"
 
     - name: Create Release
       id: create_release
