@@ -27,6 +27,7 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Run sccache-cache
+      if: ${{ !github.event.act }}
       uses: mozilla-actions/sccache-action@v0.0.3
 
     - name: Install alsa
@@ -40,9 +41,11 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: ${{ matrix.os }}
+          #target/release/client.exe
+          #target/release/server.exe
         path: |
-          target/release/ROTS
-          target/release/ROTS.exe
+          target/release/client
+          target/release/server
         retention-days: 2
 
   upload_assets_as_artifact:
@@ -56,8 +59,8 @@ jobs:
       with:
         name: assets
         path: |
-          assets
-          !assets/**/*.aseprite
+          client/assets
+          !client/assets/**/*.aseprite
         retention-days: 2
 
   create_release:
