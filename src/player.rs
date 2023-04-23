@@ -1,5 +1,5 @@
 use crate::{
-    setup::{CameraFollow, spawn_muscle_man},
+    setup::{CameraFollow},
     sprites::AnimationTimer,
     states::{FreeCamState, GameState},
 };

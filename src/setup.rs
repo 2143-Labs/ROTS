@@ -3,7 +3,7 @@ use bevy_asset_loader::prelude::AssetCollection;
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 use bevy_mod_raycast::{RaycastSource, RaycastMesh, DefaultRaycastingPlugin};
 
-use crate::{player::{Player, FaceCamera}, sprites::AnimationTimer, states::GameState};
+use crate::{player::{FaceCamera}, sprites::AnimationTimer, states::GameState};
 
 pub fn init(app: &mut App) -> &mut App {
     app
