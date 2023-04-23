@@ -17,4 +17,4 @@ serde = {version = "1.0.160", features=["derive"]}
 rand = "0.8.5"
 message-io = "0.15.1"
 #bevy_egui = "0.2.0"
-shared = { path = "../shared" }
+rots-shared = { path = "../shared" }
