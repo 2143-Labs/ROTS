@@ -22,7 +22,8 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         rust: [nightly]
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout
+      uses: actions/checkout@v3
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.3
@@ -52,13 +53,29 @@ jobs:
     - name: Upload Executable
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ release }}
+        name: ${{ RELEASE }}
         path: target/release/${{ EXECUTABLE }}
+        retention-days: 2
+
+  upload_assets_as_artifact:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+    - name: Upload Assets
+      uses: actions/upload-artifact@v3
+      with:
+        name: assets
+        path: |
+          assets
+          !assets/**/*.aseprite
         retention-days: 2
 
   create_release:
     runs-on: ubuntu-latest
-    needs: build
+    needs: |
+      build
+      upload_assets_as_artifact
     permissions:
       contents: write
     #outputs:
@@ -67,38 +84,32 @@ jobs:
       #release_id: ${{ steps.create_release.outputs.id }}
       #release_node_id: ${{ steps.create_release.outputs.node_id }}
     steps:
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ github.run_number }}
-          release_name: Release ${{ github.run_number }}
-          draft: ${{ github.event_name == 'pull_request' }}
-          prerelease: ${{ github.event_name == 'pull_request' }}
-            w
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
 
-  #package_release:
-    #needs: build
-    #steps: 
-    #- name: Attach assets
-      #uses: actions/upload-release-asset@v1
-      #env:
-        #GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #with:
-        #upload_url: ${{ needs.create_release.outputs.release_upload_url }}
-        #asset_path: ${{ github.workspace }}/target/release/${{ EXECUTABLE }}
-        #asset_name: ${{ }}
-        #asset_content_type: application/octet-stream
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ github.run_number }}
+        release_name: Release ${{ github.run_number }}
+        draft: ${{ github.event_name == 'pull_request' }}
+        prerelease: ${{ github.event_name == 'pull_request' }}
 
-    #- name: Attach Executable to Release
-      #if: matrix.os == 'ubuntu-latest'
-      #uses: actions/upload-release-asset@v1
-      #env:
-        #GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #with:
-        #upload_url: ${{ needs.create_release.outputs.release_upload_url }}
-        #asset_path: ${{ github.workspace }}/target/release/${{ EXECUTABLE }}
-        #asset_name: ${{ EXECUTABLE }}
-        #asset_content_type: application/octet-stream
+    - name: Create Zip
+      uses: thedoctor0/zip-release@0.7.1
+      with:
+        type: 'zip'
+        filename: 'release.zip'
+
+    - name: Attach Executable to Release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create_release.outputs.release_upload_url }}
+        asset_path: release.zip
+        asset_name: release.zip
+        asset_content_type: application/octet-stream
