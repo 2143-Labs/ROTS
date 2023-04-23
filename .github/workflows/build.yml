@@ -39,22 +39,24 @@ jobs:
       run: cargo build --release --no-default-features
 
     - name: Set Linux Vars
+      id: var
       if: matrix.os == 'ubuntu-latest'
       run: |
-        EXECUTABLE="ROTS"
-        RELEASE="rots-linux"
+        echo "executable=ROTS\n" >> $GITHUB_OUTPUT
+        echo "release_suffix=linux\n" >> $GITHUB_OUTPUT
 
     - name: Set Windows Vars
+      id: var
       if: matrix.os == 'windows-latest'
       run: |
-        EXECUTABLE="ROTS.exe"
-        RELEASE="rots-windows"
+        echo "executable=ROTS.exe\n" >> $GITHUB_OUTPUT
+        echo "release_suffix=windows\n" >> $GITHUB_OUTPUT
 
     - name: Upload Executable
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ RELEASE }}
-        path: target/release/${{ EXECUTABLE }}
+        name: rots-${{ steps.var.outputs.release_suffix }}
+        path: target/release/${{ steps.var.outputs.executable }}
         retention-days: 2
 
   upload_assets_as_artifact:
