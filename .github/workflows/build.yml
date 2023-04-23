@@ -80,6 +80,7 @@ jobs:
         mv ubuntu-latest/* .
         rm windows-latest
         rm ubuntu-latest
+        chmod +x ROTS*
 
     - name: Create Release
       id: create_release
