@@ -78,9 +78,9 @@ jobs:
         #mv windows-latest/* .
         #rm windows-latest
       run: |
-        mv ubuntu-latest/* .
-        rm ubuntu-latest
-        chmod +x ROTS*
+        bash -c "mv ubuntu-latest/* ."
+        bash -c "rm -rf ubuntu-latest"
+        bash -c "chmod +x ROTS*"
 
     - name: Create Release
       id: create_release
