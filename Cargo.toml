@@ -1,5 +1,5 @@
 [package]
-name = "bevy"
+name = "ROTS"
 version = "0.1.0"
 edition = "2021"
 
@@ -10,6 +10,7 @@ bevy = "0.10.1"
 bevy-inspector-egui = "0.18.1"
 bevy_asset_loader = { version = "0.16.0", features = ["2d"] } 
 bevy_fly_camera = "0.10.0"
+bevy_mod_raycast = "0.8.0"
 bevy_sprite3d = "2.4.0"
 
 [features]
