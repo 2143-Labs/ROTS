@@ -32,31 +32,28 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get install libasound2-dev libudev-dev
 
-    - name: Test
-      run: cargo test --release --no-default-features
-
-    - name: Build
-      run: cargo build --release --no-default-features
+    - run: cargo test --release --no-default-features
+    - run: cargo build --release --no-default-features
 
     - name: Set Linux Vars
       id: var
       if: matrix.os == 'ubuntu-latest'
       run: |
-        echo "executable=ROTS\n" >> $GITHUB_OUTPUT
-        echo "release_suffix=linux\n" >> $GITHUB_OUTPUT
+        echo "executable=ROTS\n" >> "$GITHUB_ENV"
+        echo "release_suffix=linux\n" >> "$GITHUB_ENV"
 
     - name: Set Windows Vars
       id: var
       if: matrix.os == 'windows-latest'
       run: |
-        echo "executable=ROTS.exe\n" >> $GITHUB_OUTPUT
-        echo "release_suffix=windows\n" >> $GITHUB_OUTPUT
+        echo "executable=ROTS.exe\n" >> "$GITHUB_ENV"
+        echo "release_suffix=windows\n" >> "$GITHUB_ENV"
 
     - name: Upload Executable
       uses: actions/upload-artifact@v3
       with:
-        name: rots-${{ steps.var.outputs.release_suffix }}
-        path: target/release/${{ steps.var.outputs.executable }}
+        name: rots-${{ env.release_suffix }}
+        path: target/release/${{ env.executable }}
         retention-days: 2
 
   upload_assets_as_artifact:
