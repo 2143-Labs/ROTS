@@ -1,5 +1,5 @@
 [package]
-name = "rots-client"
+name = "client"
 version = "0.1.0"
 edition = "2021"
 
@@ -15,16 +15,13 @@ bevy_mod_raycast = "0.8.0"
 bevy_sprite3d = "2.4.0"
 rayon = "1.7.0"
 wide = "0.7.8"
-#serde_yaml = "0.9.21"
-#serde_json = "1.0.96"
-#serde = {version = "1.0.160", features=["derive"]}
-#rand = "0.8.5"
-#message-io = "0.15.1"
-#rots-shared = { path = "../shared" }
+serde_yaml = "0.9.21"
+serde_json = "1.0.96"
+serde = {version = "1.0.160", features=["derive"]}
+rand = "0.8.5"
+message-io = "0.15.1"
+shared = { path = "../shared" }
 
 [features]
 bevy_dynamic = ["bevy/dynamic_linking"]
 default = ["bevy_dynamic"]
-
-
-

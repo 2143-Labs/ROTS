@@ -1,5 +1,5 @@
 [package]
-name = "rots-server"
+name = "server"
 version = "0.1.0"
 authors = []
 edition = "2021"
@@ -17,4 +17,4 @@ serde = {version = "1.0.160", features=["derive"]}
 rand = "0.8.5"
 message-io = "0.15.1"
 #bevy_egui = "0.2.0"
-rots-shared = { path = "../shared" }
+shared = { path = "../shared" }
