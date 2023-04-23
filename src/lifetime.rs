@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use bevy::reflect::Reflect;
 use bevy_mod_raycast::Intersection;
+use bevy_rapier3d::prelude::{ActiveEvents, Collider, RigidBody};
+use bevy_rapier3d::rapier::prelude::RigidBodyActivation;
 
 use crate::player::Player;
 use crate::setup::MyRaycastSet;
@@ -191,22 +193,29 @@ fn tower_shooting(
 
         let color = Color::OLIVE;
 
-        if let Some(player_transform) = player.iter().next(){
-
+        if let Some(player_transform) = player.iter().next() {
+            let size = 0.5;
             let spawn_transform = Transform::from_xyz(0.0, 0.5, 0.0);
             commands
-                .spawn(PbrBundle {
-                    mesh: meshes.add(Mesh::from(shape::Cube::new(0.4))),
-                    material: materials.add(color.into()),
-                    transform: spawn_transform,
-                    ..default()
-                })
+                .spawn((
+                    PbrBundle {
+                        mesh: meshes.add(Mesh::from(shape::Cube::new(size * 2.))),
+                        material: materials.add(color.into()),
+                        transform: spawn_transform,
+                        ..default()
+                    },
+                    RigidBody::Dynamic,
+                ))
+                .insert(Collider::cuboid(size, size, size))
                 .insert(Lifetime {
                     timer: Timer::from_seconds(5.0, TimerMode::Once),
                 })
                 .insert(BulletPhysics {
                     // make this player position
-                    fired_from: Vec2 { x: tower_transform.translation.x, y: tower_transform.translation.z },
+                    fired_from: Vec2 {
+                        x: tower_transform.translation.x,
+                        y: tower_transform.translation.z,
+                    },
                     // randomize these
                     fired_target: Vec2 {
                         x: player_transform.translation.x,
@@ -215,6 +224,7 @@ fn tower_shooting(
                     speed: 10.0,
                     ai: BulletAI::Direct,
                 })
+                .insert(ActiveEvents::COLLISION_EVENTS)
                 .insert(Name::new("Bullet"));
         }
     }

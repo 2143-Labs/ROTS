@@ -8,6 +8,7 @@ use bevy_rapier3d::{
 use bevy_sprite3d::Sprite3dPlugin;
 
 pub mod lifetime;
+pub mod physics;
 pub mod player;
 pub mod setup;
 pub mod sprites;

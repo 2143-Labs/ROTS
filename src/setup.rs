@@ -1,14 +1,17 @@
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::AssetCollection;
+use bevy_mod_raycast::{DefaultRaycastingPlugin, RaycastMesh, RaycastSource};
 use bevy_rapier3d::prelude::*;
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
-use bevy_mod_raycast::{RaycastSource, RaycastMesh, DefaultRaycastingPlugin};
 
-use crate::{player::FaceCamera, sprites::AnimationTimer, states::GameState};
+use crate::{
+    physics::modify_collider_active_events, player::FaceCamera, sprites::AnimationTimer,
+    states::GameState,
+};
 
 pub fn init(app: &mut App) -> &mut App {
-    app
-        .add_startup_systems((spawn_camera, spawn_scene))
+    app.add_startup_systems((spawn_camera, spawn_scene))
+        .add_system(modify_collider_active_events)
         .add_system(spawn_muscle_man.run_if(in_state(GameState::Ready).and_then(run_once())))
         .add_plugin(DefaultRaycastingPlugin::<MyRaycastSet>::default())
 }
@@ -42,7 +45,7 @@ pub fn spawn_camera(mut commands: Commands) {
                 transform: Transform::from_xyz(10., 10., 10.).looking_at(Vec3::ZERO, Vec3::Y),
                 ..default()
             },
-            RaycastSource::<MyRaycastSet>::new_transform_empty()
+            RaycastSource::<MyRaycastSet>::new_transform_empty(),
         ))
         .insert(CameraFollow::default())
         .insert(Name::new("Camera"))
@@ -54,7 +57,6 @@ pub fn spawn_scene(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-
     let size = 10.;
     commands
         .spawn((
@@ -67,8 +69,12 @@ pub fn spawn_scene(
                 ..default()
             },
             RaycastMesh::<MyRaycastSet>::default(),
-            Collider::cuboid(size, 0.1, size)
         ))
+        .with_children(|parent| {
+            parent
+                .spawn(Collider::cuboid(size, 1., size))
+                .insert(TransformBundle::from(Transform::from_xyz(0., -2., 0.)));
+        })
         .insert(Name::new("Plane"));
 
     commands
