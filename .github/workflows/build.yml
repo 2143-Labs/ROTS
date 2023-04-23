@@ -21,7 +21,7 @@ jobs:
       matrix:
         os:
         - ubuntu-latest
-        - windows-latest
+        #- windows-latest
         rust: [nightly]
     steps:
     - uses: actions/checkout@v3
@@ -75,10 +75,10 @@ jobs:
       uses: actions/download-artifact@v3
 
     - name: Move artifacts
+        #mv windows-latest/* .
+        #rm windows-latest
       run: |
-        mv windows-latest/* .
         mv ubuntu-latest/* .
-        rm windows-latest
         rm ubuntu-latest
         chmod +x ROTS*
 
