@@ -72,7 +72,10 @@ pub fn spawn_player_sprite(
     .bundle(&mut sprite_params);
 
     commands
-        .spawn(sprite)
+        .spawn((
+            sprite,
+            RigidBody::Dynamic
+        ))
         .insert(Name::new("PlayerSprite"))
         .insert(Player::default())
         .insert(FaceCamera)
@@ -80,15 +83,9 @@ pub fn spawn_player_sprite(
             0.4,
             TimerMode::Repeating,
         )))
-        .with_children(|parent| {
-            parent
-                .spawn(RigidBody::Dynamic)
-                .insert(LockedAxes::ROTATION_LOCKED)
-                .insert(GravityScale(1.))
-                .insert(Collider::cuboid(0.1, 1., 1.))
-                .insert(Transform::from_xyz(-3., 0.5, 2.))
-                .insert(Name::new("rigidBody"));
-        });
+        .insert(LockedAxes::ROTATION_LOCKED)
+        .insert(GravityScale(1.))
+        .insert(Collider::cuboid(0.1, 1., 1.));
 }
 
 pub const PLAYER_SPEED: f32 = 5.;
