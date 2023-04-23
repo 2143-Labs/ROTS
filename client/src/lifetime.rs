@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy::reflect::Reflect;
 use bevy_mod_raycast::Intersection;
 use bevy_rapier3d::prelude::{ActiveEvents, Collider, RigidBody};
-use bevy_rapier3d::rapier::prelude::RigidBodyActivation;
+
 
 use crate::player::Player;
 use crate::setup::MyRaycastSet;

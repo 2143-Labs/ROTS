@@ -4,7 +4,7 @@ use crate::{
     states::{FreeCamState, GameState},
 };
 use bevy::{
-    input::mouse::MouseWheel, prelude::*, render::render_resource::BindGroupLayoutDescriptor,
+    input::mouse::MouseWheel, prelude::*,
 };
 use bevy_asset_loader::prelude::AssetCollection;
 use bevy_rapier3d::prelude::{
