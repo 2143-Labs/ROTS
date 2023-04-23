@@ -63,9 +63,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: assets
-        path: |
-          assets
-          !assets/**/*.aseprite
+        path: assets
         retention-days: 2
 
   create_release:
