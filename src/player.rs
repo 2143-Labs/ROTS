@@ -7,7 +7,9 @@ use bevy::{
     input::mouse::MouseWheel, prelude::*, render::render_resource::BindGroupLayoutDescriptor,
 };
 use bevy_asset_loader::prelude::AssetCollection;
-use bevy_rapier3d::prelude::{Collider, GravityScale, LockedAxes, RigidBody};
+use bevy_rapier3d::prelude::{
+    Collider, ColliderMassProperties, ExternalImpulse, GravityScale, LockedAxes, RigidBody,
+};
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 
 pub fn init(app: &mut App) -> &mut App {
@@ -72,10 +74,7 @@ pub fn spawn_player_sprite(
     .bundle(&mut sprite_params);
 
     commands
-        .spawn((
-            sprite,
-            RigidBody::Dynamic
-        ))
+        .spawn((sprite, RigidBody::KinematicVelocityBased))
         .insert(Name::new("PlayerSprite"))
         .insert(Player::default())
         .insert(FaceCamera)
@@ -85,12 +84,14 @@ pub fn spawn_player_sprite(
         )))
         .insert(LockedAxes::ROTATION_LOCKED)
         .insert(GravityScale(1.))
-        .insert(Collider::cuboid(0.1, 1., 1.));
+        .insert(Collider::cuboid(0.3, 1., 1.))
+        .insert(ColliderMassProperties::Density(12.0));
 }
 
 pub const PLAYER_SPEED: f32 = 5.;
 pub fn player_movement(
-    mut player_query: Query<&mut Transform, With<Player>>,
+    mut commands: Commands,
+    mut player_query: Query<(&mut Transform, Entity), With<Player>>,
     _camera_query: Query<&Transform, (With<CameraFollow>, Without<Player>)>,
     keyboard_input: Res<Input<KeyCode>>,
     time: Res<Time>,
@@ -99,7 +100,7 @@ pub fn player_movement(
     // if let Ok(transform) = camera_query.get_single(){
     //     rotation = transform.rotation * Vec3::ONE;
     // }
-    if let Ok(mut transform) = player_query.get_single_mut() {
+    if let Ok((mut transform, player_ent)) = player_query.get_single_mut() {
         //Get cameras facing vector
         let mut direction = Vec3::ZERO;
         if keyboard_input.pressed(KeyCode::W) {
@@ -113,6 +114,12 @@ pub fn player_movement(
         }
         if keyboard_input.pressed(KeyCode::D) {
             direction += rotation * Vec3::new(1., 0., -1.);
+        }
+        if keyboard_input.pressed(KeyCode::Space) {
+            commands.entity(player_ent).insert(ExternalImpulse {
+                impulse: Vec3::new(0., 10., 0.),
+                torque_impulse: Vec3::new(0., 0., 0.),
+            });
         }
         if direction.length() > 0. {
             direction = direction.normalize();
