@@ -2,12 +2,15 @@ use bevy::prelude::*;
 use bevy_asset_loader::prelude::AssetCollection;
 use bevy_rapier3d::prelude::*;
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
+use bevy_mod_raycast::{RaycastSource, RaycastMesh, DefaultRaycastingPlugin};
 
 use crate::{player::FaceCamera, sprites::AnimationTimer, states::GameState};
 
 pub fn init(app: &mut App) -> &mut App {
-    app.add_startup_systems((spawn_camera, spawn_scene))
+    app
+        .add_startup_systems((spawn_camera, spawn_scene))
         .add_system(spawn_muscle_man.run_if(in_state(GameState::Ready).and_then(run_once())))
+        .add_plugin(DefaultRaycastingPlugin::<MyRaycastSet>::default())
 }
 
 #[derive(Component)]
@@ -29,12 +32,18 @@ impl Default for CameraFollow {
     }
 }
 
+#[derive(Reflect, Clone)]
+pub struct MyRaycastSet;
+
 pub fn spawn_camera(mut commands: Commands) {
     commands
-        .spawn(Camera3dBundle {
-            transform: Transform::from_xyz(10., 10., 10.).looking_at(Vec3::ZERO, Vec3::Y),
-            ..default()
-        })
+        .spawn((
+            Camera3dBundle {
+                transform: Transform::from_xyz(10., 10., 10.).looking_at(Vec3::ZERO, Vec3::Y),
+                ..default()
+            },
+            RaycastSource::<MyRaycastSet>::new_transform_empty()
+        ))
         .insert(CameraFollow::default())
         .insert(Name::new("Camera"))
         .insert(PlayerCamera);
@@ -45,21 +54,22 @@ pub fn spawn_scene(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+
+    let size = 10.;
     commands
-        .spawn(PbrBundle {
-            mesh: meshes.add(Mesh::from(bevy::prelude::shape::Plane {
-                size: 10.,
-                subdivisions: 1,
-            })),
-            material: materials.add(Color::hex("#1f7840").unwrap().into()),
-            ..default()
-        })
+        .spawn((
+            PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Plane {
+                    size: size * 2.0,
+                    subdivisions: 10,
+                })),
+                material: materials.add(Color::hex("#1f7840").unwrap().into()),
+                ..default()
+            },
+            RaycastMesh::<MyRaycastSet>::default(),
+            Collider::cuboid(size, 0.1, size)
+        ))
         .insert(Name::new("Plane"));
-    // .with_children(|parent| {
-    //     parent
-    //         .spawn(Collider::cuboid(10., 1., 10.))
-    //         .insert(Transform::from_xyz(0., 0., 0.));
-    // });
 
     commands
         .spawn(DirectionalLightBundle {

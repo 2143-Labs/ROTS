@@ -1,5 +1,3 @@
-use std::f32::consts::PI;
-
 use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*};
 use bevy_fly_camera::FlyCameraPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
@@ -55,67 +53,11 @@ fn main() {
                 .set(window)
                 .set(ImagePlugin::default_nearest()),
         )
-        .register_type::<Tower>()
         .add_plugin(FrameTimeDiagnosticsPlugin)
         .add_plugin(WorldInspectorPlugin::new())
         // TODO refactor into another system
-        .add_startup_system(spawn_tower)
         //.add_system(tower_shooting)
         // run `setup` every frame while loading. Once it detects the right
         // conditions it'll switch to the next state.
         .run()
-}
-
-fn spawn_tower(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    commands
-        .spawn(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Box::new(0.5, 4., 0.5))),
-            material: materials.add(Color::hex("#FF0000").unwrap().into()),
-            transform: Transform::from_xyz(-4., 2., 4.),
-            ..default()
-        })
-        .insert(Tower {
-            shooting_timer: Timer::from_seconds(1., TimerMode::Repeating),
-        })
-        .insert(Name::new("Tower"));
-}
-
-#[derive(Reflect, Component, Default)]
-#[reflect(Component)]
-pub struct Tower {
-    shooting_timer: Timer,
-}
-
-fn _tower_shooting(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut towers: Query<&mut Tower>,
-    time: Res<Time>,
-) {
-    for mut tower in &mut towers {
-        tower.shooting_timer.tick(time.delta());
-        if !tower.shooting_timer.just_finished() {
-            continue;
-        }
-
-        let spawn_transform: Transform =
-            Transform::from_xyz(2., 2., 2.).with_rotation(Quat::from_rotation_y(-PI / 2.));
-
-        commands
-            .spawn(PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Cube::new(0.4))),
-                material: materials.add(Color::AZURE.into()),
-                transform: spawn_transform,
-                ..default()
-            })
-            .insert(lifetime::Lifetime {
-                timer: Timer::from_seconds(0.4, TimerMode::Once),
-            })
-            .insert(Name::new("Bullet"));
-    }
 }
