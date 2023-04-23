@@ -22,8 +22,7 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         rust: [nightly]
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
+    - uses: actions/checkout@v3
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.3
@@ -59,11 +58,14 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v3
     - name: Upload Assets
       uses: actions/upload-artifact@v3
       with:
         name: assets
-        path: assets
+        path: |
+          assets
+          !assets/**/*.aseprite
         retention-days: 2
 
   create_release:
