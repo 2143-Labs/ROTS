@@ -1,7 +1,7 @@
 use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*};
 use bevy_fly_camera::FlyCameraPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use bevy_rapier3d::prelude::{NoUserData, RapierPhysicsPlugin};
+use bevy_rapier3d::{prelude::{NoUserData, RapierPhysicsPlugin}, render::RapierDebugRenderPlugin};
 use bevy_sprite3d::Sprite3dPlugin;
 use states::StatePlugin;
 
@@ -44,13 +44,14 @@ fn main() {
         .insert_resource(ClearColor(Color::hex("212121").unwrap()))
         // Load Assets
         .add_plugin(FlyCameraPlugin)
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         // .add_plugin(RapierDebugRenderPlugin::default())
         .add_plugins(
             DefaultPlugins
                 .set(window)
                 .set(ImagePlugin::default_nearest()),
         )
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
+        .add_plugin(RapierDebugRenderPlugin {always_on_top: true,..default() })
         .add_plugin(FrameTimeDiagnosticsPlugin)
         .add_plugin(WorldInspectorPlugin::new())
 

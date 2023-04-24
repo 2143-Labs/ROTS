@@ -13,6 +13,7 @@ impl Plugin for StatePlugin {
     fn build(&self, app: &mut App) {
         app.add_state::<GameState>()
             .add_state::<FreeCamState>()
+            .add_state::<PhysView>()
             .add_loading_state(
                 LoadingState::new(GameState::Loading).continue_to_state(GameState::Ready),
             )
@@ -24,9 +25,16 @@ impl Plugin for StatePlugin {
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, States, Default)]
 pub enum FreeCamState {
-    Free,
     #[default]
     Locked,
+    Free
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq, States, Default)]
+pub enum PhysView {
+    #[default]
+    Normal,
+    Debug
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, States, Default)]
@@ -71,3 +79,31 @@ pub fn toggle_freecam(
         });
     }
 }
+
+pub fn toggle_phyics_debug_view (
+    // mut vis_query: Query<&mut Visibility>,
+    phys_state: Res<State<PhysView>>,
+    mut next_state: ResMut<NextState<PhysView>>,
+    input: Res<Input<KeyCode>>,
+) {
+    if input.just_pressed(KeyCode::F1) {
+        next_state.set(match phys_state.0 {
+            PhysView::Normal => {
+                println!("::: PhysView::Debug :::");
+                // for pbr in &mut vis_query.iter_mut() {
+                    // pbr.is_visible = false;
+                // }
+                PhysView::Debug
+            }
+            PhysView::Debug=> {
+                println!("::: PhysView::Normal :::");
+                // for pbr in vis_query.iter_mut() {
+                    // pbr.is_visible = true;
+                // }
+                PhysView::Normal
+            }
+        });
+    }
+}
+
+

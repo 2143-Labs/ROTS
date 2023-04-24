@@ -21,6 +21,12 @@ pub fn init(app: &mut App) -> &mut App {
 }
 
 #[derive(Component)]
+pub struct Jumper {
+    pub cooldown: f32,
+    pub timer: Timer,
+}
+
+#[derive(Component)]
 pub struct PlayerCamera; // tag entity to make it always face the camera
 
 #[derive(AssetCollection, Resource)]
@@ -33,12 +39,13 @@ pub struct PlayerSpriteAssets {
 
 #[derive(Component)]
 pub struct FaceCamera; // tag entity to make it always face the camera
+#[derive(Reflect, Component)]
+pub struct PlayerMovable;
 
 #[derive(Reflect, Component)]
 pub struct Player {
     pub looking_at: Vec3,
     pub facing_vel: f32,
-    pub position: Vec3,
     pub velocity: Vec3,
 }
 impl Default for Player {
@@ -47,7 +54,6 @@ impl Default for Player {
             // Look at camera
             looking_at: Vec3::new(10., 10., 10.),
             facing_vel: 0.,
-            position: Vec3::ZERO,
             velocity: Vec3::ZERO,
         }
     }
@@ -74,34 +80,36 @@ pub fn spawn_player_sprite(
     .bundle(&mut sprite_params);
 
     commands
-        .spawn((sprite, RigidBody::KinematicVelocityBased))
+        .spawn((sprite, RigidBody::Dynamic)) 
         .insert(Name::new("PlayerSprite"))
         .insert(Player::default())
+        .insert(PlayerMovable)
         .insert(FaceCamera)
+        .insert(LockedAxes::ROTATION_LOCKED)
+        .insert(Jumper{
+            cooldown: 0.5,
+            timer: Timer::from_seconds(1., TimerMode::Once),
+        })
+        .insert(GravityScale(1.))
+        .insert(Collider::cuboid(0.3, 1., 1.))
+        .insert(ColliderMassProperties::Density(12.0))
+        .insert(Name::new("PlayerBody"))
         .insert(AnimationTimer(Timer::from_seconds(
             0.4,
             TimerMode::Repeating,
-        )))
-        .insert(LockedAxes::ROTATION_LOCKED)
-        .insert(GravityScale(1.))
-        .insert(Collider::cuboid(0.3, 1., 1.))
-        .insert(ColliderMassProperties::Density(12.0));
+        )));
 }
 
 pub const PLAYER_SPEED: f32 = 5.;
 pub fn player_movement(
     mut commands: Commands,
-    mut player_query: Query<(&mut Transform, Entity), With<Player>>,
-    _camera_query: Query<&Transform, (With<CameraFollow>, Without<Player>)>,
+    mut player_query: Query<(&mut Transform, Entity, &mut Jumper), With<PlayerMovable>>,
+    _camera_query: Query<&Transform, (With<CameraFollow>, Without<PlayerMovable>)>,
     keyboard_input: Res<Input<KeyCode>>,
     time: Res<Time>,
 ) {
     let rotation = Vec3::ONE;
-    // if let Ok(transform) = camera_query.get_single(){
-    //     rotation = transform.rotation * Vec3::ONE;
-    // }
-    if let Ok((mut transform, player_ent)) = player_query.get_single_mut() {
-        //Get cameras facing vector
+    for(mut transform, player_ent, mut jumper) in player_query.iter_mut() {
         let mut direction = Vec3::ZERO;
         if keyboard_input.pressed(KeyCode::W) {
             direction += rotation * Vec3::new(-1., 0., -1.);
@@ -116,10 +124,14 @@ pub fn player_movement(
             direction += rotation * Vec3::new(1., 0., -1.);
         }
         if keyboard_input.pressed(KeyCode::Space) {
-            commands.entity(player_ent).insert(ExternalImpulse {
-                impulse: Vec3::new(0., 10., 0.),
-                torque_impulse: Vec3::new(0., 0., 0.),
-            });
+            jumper.timer.tick(time.delta());
+            if jumper.timer.just_finished() {
+                commands.entity(player_ent).insert(ExternalImpulse {
+                    impulse: Vec3::new(0., 400., 0.),
+                    torque_impulse: Vec3::new(0., 0., 0.),
+                });
+                jumper.timer.reset();
+            }
         }
         if direction.length() > 0. {
             direction = direction.normalize();
@@ -134,6 +146,7 @@ pub fn camera_follow_system(
     player_query: Query<&Transform, (With<Player>, Without<CameraFollow>)>,
 ) {
     for event in mouse_wheel_events.iter() {
+
         for (_, mut camera_follow) in camera_query.iter_mut() {
             camera_follow.distance = match event.y {
                 y if y < 0. => (camera_follow.distance + 1.).abs(),
