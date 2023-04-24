@@ -73,7 +73,7 @@ pub fn spawn_scene(
         .with_children(|parent| {
             parent
                 .spawn(Collider::cuboid(size, 1., size))
-                .insert(TransformBundle::from(Transform::from_xyz(0., -2., 0.)));
+                .insert(TransformBundle::from(Transform::from_xyz(0., -1., 0.)));
         })
         .insert(Name::new("Plane"));
 
