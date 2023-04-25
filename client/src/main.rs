@@ -54,7 +54,6 @@ fn main() {
         .add_plugin(RapierDebugRenderPlugin {always_on_top: true,..default() })
         .add_plugin(FrameTimeDiagnosticsPlugin)
         .add_plugin(WorldInspectorPlugin::new())
-
         .add_plugin(StatePlugin)
 
         .run()

@@ -243,7 +243,7 @@ fn spawn_tower(
             ..default()
         })
         .insert(Tower {
-            shooting_timer: Timer::from_seconds(0.25, TimerMode::Repeating),
+            shooting_timer: Timer::from_seconds(2., TimerMode::Repeating),
         })
         .insert(Name::new("Tower"));
 

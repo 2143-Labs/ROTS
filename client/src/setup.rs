@@ -24,6 +24,8 @@ pub struct CameraFollow {
     pub distance: f32,
     pub min_distance: f32,
     pub max_distance: f32,
+    pub dragging: bool,
+    pub degrees: f32,
 }
 impl Default for CameraFollow {
     fn default() -> Self {
@@ -31,6 +33,8 @@ impl Default for CameraFollow {
             distance: 10.,
             min_distance: 2.,
             max_distance: 200.,
+            dragging: false,
+            degrees: 0.,
         }
     }
 }
