@@ -56,5 +56,5 @@ fn main() {
         .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(StatePlugin)
 
-        .run()
+        .run();
 }

@@ -72,30 +72,22 @@ pub fn spawn_player_sprite(
 
         index: 1,
 
-        transform: Transform::from_translation(starting_location).looking_at(Vec3::new(10., 10., 10.), Vec3::Y),
+        transform: Transform::from_translation(starting_location),
         // pivot: Some(Vec2::new(0.5, 0.5)),
         ..default()
     }
     .bundle(&mut sprite_params);
 
     commands
-        .spawn(sprite) 
-        .with_children(|parent| {
-            parent.spawn(RigidBody::Dynamic)
-            .insert(Collider::cuboid(0.3, 1., 1.))
-            .insert(LockedAxes::ROTATION_LOCKED)
-            .insert(GravityScale(1.))
-            .insert(PlayerMovable)
-            .insert(Transform::from_translation(starting_location))
-            .insert(Jumper{
-                cooldown: 0.5,
-                timer: Timer::from_seconds(1., TimerMode::Once),
-            })
-            .insert(ColliderMassProperties::Density(12.0));
-        })
+        .spawn(sprite)
+        .insert(RigidBody::Dynamic)
+        .insert(Collider::cuboid(0.5,0.5,0.2))
+        .insert(LockedAxes::ROTATION_LOCKED)
+        .insert(GravityScale(1.))
+        .insert(PlayerMovable)
+        .insert(ColliderMassProperties::Density(120.0))
         .insert(Name::new("PlayerSprite"))
         .insert(Player::default())
-        .insert(PlayerMovable)
         .insert(FaceCamera)
         .insert(Jumper{
             cooldown: 0.5,

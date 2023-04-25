@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use bevy_sprite3d::AtlasSprite3dComponent;
 
 pub fn init(app: &mut App) -> &mut App {
-    app.add_system(animate_sprite.run_if(in_state(GameState::Ready)))
+    app.add_systems((animate_sprite,face_sprite_to_camera).distributive_run_if(in_state(GameState::Ready)))
 }
 
 #[derive(Component, Deref, DerefMut)]
@@ -18,7 +18,7 @@ pub fn face_sprite_to_camera(
         let mut delta = cam_transform.translation - transform.translation;
         delta.y = 0.0;
         delta += transform.translation;
-        transform.look_at(delta, Vec3::Y);
+        transform.look_at(delta * Vec3::new(1.,0.,1.), Vec3::Y);
     }
 }
 
