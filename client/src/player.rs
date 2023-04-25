@@ -13,14 +13,16 @@ use bevy_rapier3d::prelude::{
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 
 pub fn init(app: &mut App) -> &mut App {
-    app.add_system(spawn_player_sprite.run_if(in_state(GameState::Ready).and_then(run_once())))
+    app
+        .add_system(spawn_player_sprite.run_if(in_state(GameState::Ready).and_then(run_once())))
         .add_systems(
             (player_movement, camera_follow_system)
                 .distributive_run_if(in_state(FreeCamState::Locked)),
         )
+        .register_type::<Jumper>()
 }
 
-#[derive(Component)]
+#[derive(Reflect, Component)]
 pub struct Jumper {
     pub cooldown: f32,
     pub timer: Timer,
@@ -108,7 +110,7 @@ pub fn player_movement(
     keyboard_input: Res<Input<KeyCode>>,
     time: Res<Time>,
 ) {
-    let rotation = Vec3::ONE;
+    let rotation = Vec3::ONE.normalize();
     for(mut transform, player_ent, mut jumper) in player_query.iter_mut() {
         let mut direction = Vec3::ZERO;
         if keyboard_input.pressed(KeyCode::W) {
@@ -123,9 +125,10 @@ pub fn player_movement(
         if keyboard_input.pressed(KeyCode::D) {
             direction += rotation * Vec3::new(1., 0., -1.);
         }
+
+        jumper.timer.tick(time.delta());
         if keyboard_input.pressed(KeyCode::Space) {
-            jumper.timer.tick(time.delta());
-            if jumper.timer.just_finished() {
+            if jumper.timer.finished() {
                 commands.entity(player_ent).insert(ExternalImpulse {
                     impulse: Vec3::new(0., 400., 0.),
                     torque_impulse: Vec3::new(0., 0., 0.),
@@ -133,6 +136,7 @@ pub fn player_movement(
                 jumper.timer.reset();
             }
         }
+
         if direction.length() > 0. {
             direction = direction.normalize();
         }

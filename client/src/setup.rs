@@ -52,6 +52,9 @@ pub fn spawn_camera(mut commands: Commands) {
         .insert(PlayerCamera);
 }
 
+#[derive(Component)]
+pub struct Hideable;
+
 pub fn spawn_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -75,6 +78,7 @@ pub fn spawn_scene(
                 .spawn(Collider::cuboid(size, 1., size))
                 .insert(TransformBundle::from(Transform::from_xyz(0., -1., 0.)));
         })
+        .insert(Hideable)
         .insert(Name::new("Plane"));
 
     commands

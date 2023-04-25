@@ -4,7 +4,7 @@ use bevy_fly_camera::FlyCamera;
 
 use crate::{
     player::PlayerSpriteAssets,
-    setup::{CameraFollow, MuscleManAssets},
+    setup::{CameraFollow, MuscleManAssets, Hideable},
 };
 
 pub struct StatePlugin;
@@ -19,7 +19,8 @@ impl Plugin for StatePlugin {
             )
             .add_collection_to_loading_state::<_, PlayerSpriteAssets>(GameState::Loading)
             .add_collection_to_loading_state::<_, MuscleManAssets>(GameState::Loading)
-            .add_system(toggle_freecam);
+            .add_system(toggle_freecam)
+            .add_system(toggle_phyics_debug_view);
     }
 }
 
@@ -81,7 +82,7 @@ pub fn toggle_freecam(
 }
 
 pub fn toggle_phyics_debug_view (
-    // mut vis_query: Query<&mut Visibility>,
+    mut vis_query: Query<&mut Visibility, With<Hideable>>,
     phys_state: Res<State<PhysView>>,
     mut next_state: ResMut<NextState<PhysView>>,
     input: Res<Input<KeyCode>>,
@@ -90,16 +91,16 @@ pub fn toggle_phyics_debug_view (
         next_state.set(match phys_state.0 {
             PhysView::Normal => {
                 println!("::: PhysView::Debug :::");
-                // for pbr in &mut vis_query.iter_mut() {
-                    // pbr.is_visible = false;
-                // }
+                 for mut pbr in &mut vis_query.iter_mut() {
+                     *pbr = Visibility::Hidden;
+                 }
                 PhysView::Debug
             }
             PhysView::Debug=> {
                 println!("::: PhysView::Normal :::");
-                // for pbr in vis_query.iter_mut() {
-                    // pbr.is_visible = true;
-                // }
+                 for mut pbr in &mut vis_query.iter_mut() {
+                     *pbr = Visibility::Visible;
+                 }
                 PhysView::Normal
             }
         });
