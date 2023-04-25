@@ -195,7 +195,7 @@ fn tower_shooting(
 
         if let Some(player_transform) = player.iter().next() {
             let size = 0.5;
-            let spawn_transform = Transform::from_xyz(0.0, 0.5, 0.0);
+            let spawn_transform = Transform::from_xyz(tower_transform.translation.x, 0.5, tower_transform.translation.z);
             commands
                 .spawn((
                     PbrBundle {
