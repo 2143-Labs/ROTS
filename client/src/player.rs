@@ -116,23 +116,27 @@ pub fn player_movement(
     time: Res<Time>,
 ) {
     let rotation= Vec2::new(
-        f32::to_radians(camera_query.single().degrees).cos(),
-        f32::to_radians(camera_query.single().degrees).sin()
+        f32::to_radians(camera_query.single().degrees).sin(),
+        f32::to_radians(camera_query.single().degrees).cos()
     );
     dbg!(rotation);
 for(mut transform, player_ent, mut jumper) in player_query.iter_mut() {
     let mut direction = Vec3::ZERO;
     if keyboard_input.pressed(KeyCode::W) {
-        direction += rotation.xyy() * Vec3::new(1., 0., 1.);
+        // direction += rotation.xyy() * Vec3::new(1., 0., 1.);
+        direction += Vec3::new(-rotation.x, 0., -rotation.y )
     }
     if keyboard_input.pressed(KeyCode::S) {
-        direction += rotation.xyy() * Vec3::new(-1., 0., -1.);
+        // direction += rotation.xyy() * Vec3::new(-1., 0., -1.);
+        direction += Vec3::new(rotation.x, 0., rotation.y )
     }
     if keyboard_input.pressed(KeyCode::A) {
-        direction = direction.mul_add(rotation.perp().xyy() * Vec3::new(1., 0., 1.), direction);
+        // direction = direction.mul_add(rotation.perp().xyy() * Vec3::new(1., 0., 1.), direction);
+        direction += Vec3::new(rotation.perp().x, 0., rotation.perp().y )
     }
     if keyboard_input.pressed(KeyCode::D) {
-        direction = direction.mul_add(rotation.perp().xyy() * Vec3::new(-1., 0., -1.), direction);
+        // direction = direction.mul_add(rotation.perp().xyy() * Vec3::new(-1., 0., -1.), direction);
+        direction += Vec3::new(-rotation.perp().x, 0., -rotation.perp().y)
     }
     if keyboard_input.pressed(KeyCode::Space) {
         jumper.timer.tick(time.delta());
