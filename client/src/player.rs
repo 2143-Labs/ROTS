@@ -9,7 +9,7 @@ use bevy::{
 };
 use bevy_asset_loader::prelude::AssetCollection;
 use bevy_rapier3d::prelude::{
-    Collider, ColliderMassProperties, ExternalImpulse, GravityScale, LockedAxes, RigidBody,
+    Collider, ColliderMassProperties, ExternalImpulse, GravityScale, LockedAxes, RigidBody
 };
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 
@@ -37,8 +37,6 @@ pub struct PlayerSpriteAssets {
 
 #[derive(Component)]
 pub struct FaceCamera; // tag entity to make it always face the camera
-#[derive(Reflect, Component)]
-pub struct PlayerMovable;
 
 #[derive(Reflect, Component)]
 pub struct Player {
@@ -84,8 +82,7 @@ pub fn spawn_player_sprite(
         .insert(Collider::cuboid(0.5,0.5,0.2))
         .insert(LockedAxes::ROTATION_LOCKED)
         .insert(GravityScale(1.))
-        .insert(PlayerMovable)
-        .insert(ColliderMassProperties::Density(120.0))
+        .insert(ColliderMassProperties::Mass(1.0))
         .insert(Name::new("PlayerSprite"))
         .insert(Player::default())
         .insert(FaceCamera)
@@ -103,7 +100,7 @@ pub fn spawn_player_sprite(
 pub const PLAYER_SPEED: f32 = 5.;
 pub fn player_movement(
     mut commands: Commands,
-    mut player_query: Query<(&mut Transform, Entity, &mut Jumper), With<PlayerMovable>>,
+    mut player_query: Query<(&mut Transform, Entity, &mut Jumper, &Player)>,
     camera_query: Query<&CameraFollow>,
     keyboard_input: Res<Input<KeyCode>>,
     time: Res<Time>,
@@ -112,7 +109,7 @@ pub fn player_movement(
         f32::to_radians(camera_query.single().old_degrees).sin(),
         f32::to_radians(camera_query.single().old_degrees).cos()
     );
-for(mut transform, player_ent, mut jumper) in player_query.iter_mut() {
+for(mut transform, player_ent, mut jumper, player) in player_query.iter_mut() {
     let mut direction = Vec3::ZERO;
     if keyboard_input.pressed(KeyCode::W) {
         direction += rotation.xyy() * Vec3::new(-1., 0., -1.);
@@ -129,11 +126,11 @@ for(mut transform, player_ent, mut jumper) in player_query.iter_mut() {
         direction += rotation.perp().xyy() * Vec3::new(-1., 0., -1.);
         // direction += Vec3::new(-rotation.perp().x, 0., -rotation.perp().y)
     }
+    jumper.timer.tick(time.delta());
     if keyboard_input.pressed(KeyCode::Space) {
-        jumper.timer.tick(time.delta());
-        if jumper.timer.just_finished() {
+        if jumper.timer.finished() {
             commands.entity(player_ent).insert(ExternalImpulse {
-                    impulse: Vec3::new(0., 400., 0.),
+                    impulse: Vec3::new(0., 4., 0.),
                     torque_impulse: Vec3::new(0., 0., 0.),
                 });
                 jumper.timer.reset();
