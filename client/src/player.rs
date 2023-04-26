@@ -14,14 +14,16 @@ use bevy_rapier3d::prelude::{
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 
 pub fn init(app: &mut App) -> &mut App {
-    app.add_system(spawn_player_sprite.run_if(in_state(GameState::Ready).and_then(run_once())))
+    app
+        .add_system(spawn_player_sprite.run_if(in_state(GameState::Ready).and_then(run_once())))
         .add_systems(
             (player_movement, camera_follow_system)
                 .distributive_run_if(in_state(FreeCamState::Locked)),
         )
+        .register_type::<Jumper>()
 }
 
-#[derive(Component)]
+#[derive(Reflect, Component)]
 pub struct Jumper {
     pub cooldown: f32,
     pub timer: Timer,
@@ -171,6 +173,7 @@ pub fn player_movement(
                 jumper.timer.reset();
             }
         }
+
         if direction.length() > 0. {
             direction = direction.normalize();
         }
