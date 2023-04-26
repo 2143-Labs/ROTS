@@ -11,7 +11,7 @@ pub fn init(app: &mut App) -> &mut App {
     app.add_system(lifetime_despawn)
         .add_system(update_all_bullets)
         .add_system(spawn_bullet)
-        .add_system(tower_shooting)
+        // .add_system(tower_shooting)
         .add_system(camera_aim)
         .register_type::<Tower>()
         .add_startup_system(spawn_tower)
@@ -145,7 +145,7 @@ fn spawn_bullet(
 
     let player_transform: &Transform = player.single();
     let _tower_transform: &Transform = towers.single();
-    let spawn_transform = Transform::from_xyz(0.0, 0.5, 0.0);
+    let spawn_transform = Transform::from_xyz(0.0, -100., 0.0);
     commands
         .spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube::new(0.4))),
@@ -243,7 +243,7 @@ fn spawn_tower(
             ..default()
         })
         .insert(Tower {
-            shooting_timer: Timer::from_seconds(0.25, TimerMode::Repeating),
+            shooting_timer: Timer::from_seconds(2., TimerMode::Repeating),
         })
         .insert(Name::new("Tower"));
 
