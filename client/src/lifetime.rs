@@ -131,7 +131,7 @@ fn spawn_bullet(
         }
     };
 
-    info!(?target);
+    debug!(?target);
 
     let isect = match target.position() {
         Some(s) => s,
@@ -141,7 +141,7 @@ fn spawn_bullet(
         }
     };
 
-    info!(?isect);
+    debug!(?isect);
 
     let player_transform: &Transform = player.single();
     let _tower_transform: &Transform = towers.single();
@@ -177,7 +177,7 @@ pub struct Tower {
     shooting_timer: Timer,
 }
 
-fn tower_shooting(
+fn _tower_shooting(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,

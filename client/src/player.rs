@@ -191,7 +191,7 @@ pub fn camera_follow_system(
 ) {
     if let Ok((player_transform, mut player)) = player_query.get_single_mut() {
         for (_, mut camera_follow) in camera_query.iter_mut() {
-            dbg!{player.lock_movement};
+            //dbg!{player.lock_movement};
             for event in mouse_wheel_events.iter() {
                 camera_follow.distance = match event.y {
                     y if y < 0. => (camera_follow.distance + 1.).abs(),
