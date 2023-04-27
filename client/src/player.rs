@@ -42,7 +42,9 @@ pub struct FaceCamera; // tag entity to make it always face the camera
 
 #[derive(Reflect, Component)]
 pub struct Player {
+    pub view_distance: i32,
     pub looking_at: Vec3,
+    pub block_id: [i32; 2],
     pub facing_vel: f32,
     pub velocity: Vec3,
     pub lock_movement: [Option<Vec2>; 4],
@@ -51,6 +53,8 @@ impl Default for Player {
     fn default() -> Self {
         Self {
             // Look at camera
+            block_id: [0, 0],
+            view_distance: 2,
             looking_at: Vec3::new(10., 10., 10.),
             facing_vel: 0.,
             velocity: Vec3::ZERO,
@@ -64,7 +68,7 @@ pub fn spawn_player_sprite(
     images: Res<PlayerSpriteAssets>,
     mut sprite_params: Sprite3dParams,
 ) {
-    let starting_location = Vec3::new(-3., 0.5, 2.);
+    let starting_location = Vec3::new(-1.5, 0.5, 1.5);
     let sprite = AtlasSprite3d {
         atlas: images.run.clone(),
 
@@ -191,7 +195,6 @@ pub fn camera_follow_system(
 ) {
     if let Ok((player_transform, mut player)) = player_query.get_single_mut() {
         for (_, mut camera_follow) in camera_query.iter_mut() {
-            dbg!{player.lock_movement};
             for event in mouse_wheel_events.iter() {
                 camera_follow.distance = match event.y {
                     y if y < 0. => (camera_follow.distance + 1.).abs(),
@@ -233,7 +236,7 @@ pub fn camera_follow_system(
         let new_transform= Transform::from_translation(
                 Vec3::new(
                     f32::to_radians(camera_follow.degrees).sin(),
-                    1.,
+                    0.5,
                     f32::to_radians(camera_follow.degrees).cos()
                     )
                  * camera_follow.distance + player_transform.translation

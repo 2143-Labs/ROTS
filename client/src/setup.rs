@@ -66,26 +66,20 @@ pub fn spawn_scene(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let size = 10.;
+    let size = 25.;
     commands
         .spawn((
             PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Plane {
-                    size: size * 2.0,
-                    subdivisions: 10,
-                })),
-                material: materials.add(Color::hex("#1f7840").unwrap().into()),
+                mesh: meshes.add(Mesh::from(shape::Box::new(size, 2., size))),
+                material: materials.add(Color::hex("#00ff00").unwrap().into()),
                 ..default()
             },
             RaycastMesh::<MyRaycastSet>::default(),
-        ))
-        .with_children(|parent| {
-            parent
-                .spawn(Collider::cuboid(size, 1., size))
-                .insert(TransformBundle::from(Transform::from_xyz(0., -1., 0.)));
-        })
+            Collider::cuboid(size/2., 1., size/2.))
+        )
+        .insert(TransformBundle::from(Transform::from_xyz(0., -1., 0.)))
         .insert(Hideable)
-        .insert(Name::new("Plane"));
+        .insert(Name::new("GroundZero"));
 
     commands
         .spawn(DirectionalLightBundle {
