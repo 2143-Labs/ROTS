@@ -4,10 +4,10 @@ version = "0.1.0"
 authors = []
 edition = "2021"
 
-#[dependencies.bevy]
-#version = "0.10.1"
-#default-features = false
-#features = ["serialize"]
+[dependencies.bevy]
+version = "0.10.1"
+default-features = false
+features = ["serialize"]
 
 [dependencies]
 serde_yaml = "0.9.21"
@@ -19,14 +19,14 @@ message-io = "0.15.1"
 #bevy_egui = "0.2.0"
 shared = { path = "../shared" }
 
-bevy_ecs = "0.10.1"
-bevy_app = "0.10.1"
-bevy_log = "0.10.1"
-bevy_core = "0.10.1"
-bevy_time = "0.10.1"
-bevy_transform = "0.10.1"
-bevy_hierarchy = "0.10.1"
-bevy_diagnostic = "0.10.1"
+#bevy_ecs = "0.10.1"
+#bevy_app = "0.10.1"
+#bevy_log = "0.10.1"
+#bevy_core = "0.10.1"
+#bevy_time = "0.10.1"
+#bevy_transform = "0.10.1"
+#bevy_hierarchy = "0.10.1"
+#bevy_diagnostic = "0.10.1"
 
 # + [`LogPlugin`](https://docs.rs/bevy_log/0.10.1/bevy_log/struct.LogPlugin.html)
 # + [`TaskPoolPlugin`](https://docs.rs/bevy_core/0.10.1/bevy_core/struct.TaskPoolPlugin.html)

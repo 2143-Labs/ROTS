@@ -1,1 +1,1 @@
-mod client_bullet_receiver;
+pub mod client_bullet_receiver;
