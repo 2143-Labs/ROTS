@@ -1,8 +1,8 @@
-use std::{sync::{Mutex, Arc}, ops::DerefMut};
+use std::{sync::{Mutex, Arc}, ops::DerefMut, str::from_utf8};
 
 use bevy::{app::ScheduleRunnerSettings, prelude::*, utils::Duration, log::LogPlugin};
 use message_io::{node, network::{Transport, NetEvent, Endpoint}};
-use serde::{Serialize, Deserialize};
+use shared::{GameNetEvent, event::PlayerConnect};
 
 fn main() {
     info!("Main Start");
@@ -11,7 +11,7 @@ fn main() {
     app
         .insert_resource(ScheduleRunnerSettings::run_loop(Duration::from_secs_f64(1.0 / 120.0)))
         .insert_resource(ServerResources::default())
-        .add_event::<PlayerConnect>()
+        .add_event::<shared::event::PlayerConnect>()
         .add_plugins(MinimalPlugins)
         .add_plugin(LogPlugin::default())
         .add_startup_system(start_server)
@@ -21,18 +21,9 @@ fn main() {
     app.run();
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct PlayerConnect;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-enum Event {
-    Noop,
-    PlayerConnect(PlayerConnect),
-}
-
 #[derive(Resource, Default, Debug, Clone)]
 struct ServerResources {
-    event_list: Arc<Mutex<Vec<(Endpoint, Event)>>>,
+    event_list: Arc<Mutex<Vec<(Endpoint, GameNetEvent)>>>,
 }
 
 fn start_server(
@@ -44,12 +35,14 @@ fn start_server(
     let res_copy = event_list_res.clone();
 
     std::thread::spawn(move || {
-        handler.network().listen(Transport::FramedTcp, "0.0.0.0:3042").unwrap();
+        handler.network().listen(Transport::Udp, "0.0.0.0:3042").unwrap();
 
         listener.for_each(move |event| match event.network() {
             NetEvent::Connected(_, _) => unreachable!(),
             NetEvent::Accepted(_endpoint, _listener) => println!("Client connected"),
             NetEvent::Message(endpoint, data) => {
+                //let s = from_utf8(data);
+                //info!(?s);
                 let event = serde_json::from_slice(data).unwrap();
                 res_copy.event_list.lock().unwrap().push((endpoint, event));
             },
@@ -67,8 +60,8 @@ fn tick_server(
     for event in events_to_process {
         let (_endpoint, e) = event;
         match e {
-            Event::Noop => warn!("Got noop event"),
-            Event::PlayerConnect(p) => ev_player_connect.send(p),
+            GameNetEvent::Noop => warn!("Got noop event"),
+            GameNetEvent::PlayerConnect(p) => ev_player_connect.send(p),
         }
     }
 }

@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use message_io::network::Transport;
+use shared::GameNetEvent;
 
 pub struct NetworkingPlugin;
 
@@ -15,15 +16,18 @@ fn setup_networking_server() {
     info!("trying_to_start_server");
     let (handler, listener) = message_io::node::split::<()>();
 
-    let (server, _) = match handler.network().connect(Transport::Tcp, "127.0.0.1:7777") {
+    let (server, _) = match handler.network().connect(Transport::Udp, "127.0.0.1:3042") {
         Ok(d) => d,
-        Err(_) => return info!("failed to connect to active server",),
+        Err(_) => return error!("failed to connect to active server",),
     };
 
     info!("probably connected");
 
-    handler.network().send(server, "hello".as_bytes());
-    let h2 = handler.clone();
+    let connect_event = GameNetEvent::PlayerConnect(shared::event::PlayerConnect);
+    let event_json = serde_json::to_string(&connect_event).unwrap();
+    dbg!(&event_json);
+    handler.network().send(server, event_json.as_bytes());
+    info!("sent json");
 
     //let mut i = 0;
     //std::thread::spawn(move || {
