@@ -2,7 +2,7 @@ use std::{sync::{Mutex, Arc}, ops::DerefMut, str::from_utf8};
 
 use bevy::{app::ScheduleRunnerSettings, prelude::*, utils::Duration, log::LogPlugin};
 use message_io::{node, network::{Transport, NetEvent, Endpoint}};
-use shared::{GameNetEvent, event::PlayerConnect};
+use shared::{GameNetEvent, event::PlayerConnect, ServerResources};
 
 fn main() {
     info!("Main Start");
@@ -19,11 +19,6 @@ fn main() {
         .add_system(tick_server);
 
     app.run();
-}
-
-#[derive(Resource, Default, Debug, Clone)]
-struct ServerResources {
-    event_list: Arc<Mutex<Vec<(Endpoint, GameNetEvent)>>>,
 }
 
 fn start_server(
@@ -62,6 +57,8 @@ fn tick_server(
         match e {
             GameNetEvent::Noop => warn!("Got noop event"),
             GameNetEvent::PlayerConnect(p) => ev_player_connect.send(p),
+            GameNetEvent::PlayerList(p_list) => ev_player_connect.send_batch(p_list),
+            _ => {}
         }
     }
 }
