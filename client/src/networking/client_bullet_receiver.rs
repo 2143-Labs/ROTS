@@ -1,7 +1,7 @@
 use std::ops::DerefMut;
 
 use bevy::prelude::*;
-use message_io::network::{NetEvent, Transport};
+use message_io::network::{NetEvent, Transport, Endpoint};
 use rand::{thread_rng, Rng};
 use shared::{event::PlayerInfo, ServerResources, EventFromEndpoint, EventToClient, EventToServer, NetEntId};
 
@@ -9,17 +9,23 @@ pub struct NetworkingPlugin;
 
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
-        let server = setup_networking_server();
+        let (server, endpoint) = setup_networking_server();
         app
             .insert_resource(server)
+            .insert_resource(endpoint)
             .add_event::<EventFromEndpoint<PlayerInfo>>()
             .add_event::<EventFromEndpoint<(NetEntId, Transform)>>()
             .add_system(on_player_connect)
-            .add_system(tick_net_client);
+            .add_system(tick_net_client)
+            .add_system(send_movement_updates)
+            .add_system(get_movement_updates);
     }
 }
 
-fn setup_networking_server() -> ServerResources<EventToClient> {
+#[derive(Resource)]
+struct MainServerEndpoint(Endpoint);
+
+fn setup_networking_server() -> (ServerResources<EventToClient>, MainServerEndpoint) {
     info!("trying_to_start_server");
     let (handler, listener) = message_io::node::split::<()>();
 
@@ -42,6 +48,8 @@ fn setup_networking_server() -> ServerResources<EventToClient> {
 
     let res_copy = res.clone();
 
+    let mse = MainServerEndpoint(server.clone());
+
     std::thread::spawn(move || {
         listener.for_each(move |event| match event.network() {
             NetEvent::Connected(_, _) => {},
@@ -56,9 +64,35 @@ fn setup_networking_server() -> ServerResources<EventToClient> {
         });
     });
 
-    res
+    (res, mse)
 }
 
+fn send_movement_updates(
+    player_query: Query<&Transform, With<crate::player::Player>>,
+    event_list_res: Res<ServerResources<EventToClient>>,
+    mse: Res<MainServerEndpoint>,
+){
+    if let Ok(transform) = player_query.get_single() {
+        let ev = EventToServer::UpdatePos(*transform);
+        let data = serde_json::to_string(&ev).unwrap();
+        event_list_res.handler.network().send(mse.0, data.as_bytes());
+    }
+}
+
+fn get_movement_updates(
+    mut movement_events: EventReader<EventFromEndpoint<(NetEntId, Transform)>>,
+    mut players: Query<(&mut Transform, &NetEntId)>,
+){
+    let events: Vec<_> = movement_events.iter().collect();
+    //info!(?events);
+    for (mut player_transform, &net_id) in &mut players {
+        for event in &events {
+            if event.event.0 == net_id {
+                *player_transform = event.event.1;
+            }
+        }
+    }
+}
 
 pub fn tick_net_client(
     event_list_res: Res<ServerResources<EventToClient>>,
@@ -88,11 +122,12 @@ fn on_player_connect(
 
         commands
             .spawn(PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Cube::new(0.6))),
+                mesh: meshes.add(Mesh::from(shape::Cube::new(1.0))),
                 material: materials.add(Color::OLIVE.into()),
                 transform: Default::default(),
                 ..default()
             })
+            .insert(e.event.id)
         ;
 
         //commands

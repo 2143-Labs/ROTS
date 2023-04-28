@@ -21,7 +21,8 @@ fn main() {
         .add_plugins(MinimalPlugins)
         .add_plugin(LogPlugin::default())
         .add_system(on_player_connect)
-        .add_system(tick_net_server);
+        .add_system(tick_net_server)
+        .add_system(send_movement_to_all_players);
 
     app.run();
 }
@@ -62,7 +63,7 @@ struct EndpointToNetId {
 
 fn tick_net_server(
     event_list_res: Res<ServerResources<EventToServer>>,
-    entity_mapping: Res<EndpointToNetId>,
+    mut entity_mapping: ResMut<EndpointToNetId>,
     mut ev_player_connect: EventWriter<EventFromEndpoint<PlayerInfo>>,
     mut ev_player_movement: EventWriter<(NetEntId, Transform)>,
 ) {
@@ -79,16 +80,41 @@ fn tick_net_server(
                 };
 
                 ev_player_connect.send(EventFromEndpoint::new(_endpoint, ev));
+
+                entity_mapping.map.insert(_endpoint, id);
             },
             EventToServer::UpdatePos(new_pos) => {
                 match entity_mapping.map.get(&_endpoint) {
-                    Some(id) => ev_player_movement.send((*id, new_pos)),
+                    Some(id) => {
+                        ev_player_movement.send((*id, new_pos));
+                    }
                     None => error!("Failed to match endpoint {_endpoint:?}to id"),
                 }
             },
             _ => todo!(),
         }
     }
+}
+
+fn send_movement_to_all_players(
+    mut ev_player_movement: EventReader<(NetEntId, Transform)>,
+    event_list_res: Res<ServerResources<EventToServer>>,
+    players: Query<&GameNetClient>,
+) {
+    let events: Vec<_> = ev_player_movement
+        .iter()
+        .map(|x| EventToClient::UpdatePos(x.0, x.1))
+        .collect();
+
+    for client in &players {
+        for event in &events {
+            let events_as_str = serde_json::to_string(&event).unwrap();
+            event_list_res.handler
+                .network()
+                .send(client.endpoint, events_as_str.as_bytes());
+        }
+    }
+
 }
 
 #[derive(Component)]
