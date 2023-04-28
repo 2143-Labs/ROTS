@@ -1,8 +1,7 @@
-use std::ops::DerefMut;
-
 use bevy::prelude::*;
 use message_io::network::{NetEvent, Transport};
-use shared::{event::PlayerConnect, GameNetEvent, ServerResources};
+use rand::{thread_rng, Rng};
+use shared::{event::PlayerConnect, GameNetEvent, ServerResources, EventFromEndpoint};
 
 pub struct NetworkingPlugin;
 
@@ -10,8 +9,9 @@ impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup_networking_server)
             .insert_resource(ServerResources::default())
-            .add_event::<shared::event::PlayerConnect>()
-            .add_system(tick_server);
+            .add_event::<EventFromEndpoint<PlayerConnect>>()
+            .add_system(on_player_connect)
+            .add_system(shared::tick_server);
     }
 }
 
@@ -26,8 +26,10 @@ fn setup_networking_server(event_list_res: Res<ServerResources>) {
 
     info!("probably connected");
 
+    let name = thread_rng().gen_range(1..10000);
+
     let connect_event = GameNetEvent::PlayerConnect(shared::event::PlayerConnect {
-        name: "2143".into(),
+        name: format!("Player #{name}"),
     });
     let event_json = serde_json::to_string(&connect_event).unwrap();
     dbg!(&event_json);
@@ -38,7 +40,7 @@ fn setup_networking_server(event_list_res: Res<ServerResources>) {
 
     std::thread::spawn(move || {
         listener.for_each(move |event| match event.network() {
-            NetEvent::Connected(_, _) => unreachable!(),
+            NetEvent::Connected(_, _) => {},
             NetEvent::Accepted(_endpoint, _listener) => println!("Client connected"),
             NetEvent::Message(endpoint, data) => {
                 //let s = from_utf8(data);
@@ -51,24 +53,8 @@ fn setup_networking_server(event_list_res: Res<ServerResources>) {
     });
 }
 
-fn tick_server(
-    event_list_res: Res<ServerResources>,
-    mut ev_player_connect: EventWriter<PlayerConnect>,
-) {
-    let events_to_process = std::mem::take(event_list_res.event_list.lock().unwrap().deref_mut());
-    for event in events_to_process {
-        let (_endpoint, e) = event;
-        match e {
-            GameNetEvent::Noop => warn!("Got noop event"),
-            GameNetEvent::PlayerConnect(p) => ev_player_connect.send(p),
-            GameNetEvent::PlayerList(p_list) => ev_player_connect.send_batch(p_list),
-            _ => {}
-        }
-    }
-}
-
-fn on_player_connect(mut ev_player_connect: EventReader<PlayerConnect>) {
+fn on_player_connect(mut ev_player_connect: EventReader<EventFromEndpoint<PlayerConnect>>) {
     for e in &mut ev_player_connect {
-        info!("Got a player connection event {e:?}");
+        info!("TODO spawn player in world... {e:?}");
     }
 }

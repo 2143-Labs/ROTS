@@ -1,8 +1,6 @@
-use std::{ops::DerefMut};
-
 use bevy::{app::ScheduleRunnerSettings, prelude::*, utils::Duration, log::LogPlugin};
 use message_io::{node, network::{Transport, NetEvent}};
-use shared::{GameNetEvent, event::PlayerConnect, ServerResources};
+use shared::{event::PlayerConnect, ServerResources, EventFromEndpoint};
 
 fn main() {
     info!("Main Start");
@@ -11,12 +9,12 @@ fn main() {
     app
         .insert_resource(ScheduleRunnerSettings::run_loop(Duration::from_secs_f64(1.0 / 120.0)))
         .insert_resource(ServerResources::default())
-        .add_event::<shared::event::PlayerConnect>()
+        .add_event::<EventFromEndpoint<PlayerConnect>>()
         .add_plugins(MinimalPlugins)
         .add_plugin(LogPlugin::default())
         .add_startup_system(start_server)
         .add_system(on_player_connect)
-        .add_system(tick_server);
+        .add_system(shared::tick_server);
 
     app.run();
 }
@@ -47,26 +45,11 @@ fn start_server(
 
 }
 
-fn tick_server(
-    event_list_res: Res<ServerResources>,
-    mut ev_player_connect: EventWriter<PlayerConnect>,
-) {
-    let events_to_process = std::mem::take(event_list_res.event_list.lock().unwrap().deref_mut());
-    for event in events_to_process {
-        let (_endpoint, e) = event;
-        match e {
-            GameNetEvent::Noop => warn!("Got noop event"),
-            GameNetEvent::PlayerConnect(p) => ev_player_connect.send(p),
-            GameNetEvent::PlayerList(p_list) => ev_player_connect.send_batch(p_list),
-            _ => {}
-        }
-    }
-}
-
 fn on_player_connect(
-    mut ev_player_connect: EventReader<PlayerConnect>,
+    mut ev_player_connect: EventReader<EventFromEndpoint<PlayerConnect>>,
 ) {
     for e in &mut ev_player_connect {
         info!("Got a player connection event {e:?}");
+        info!("TODO: Make this send an event to all connected clients");
     }
 }
