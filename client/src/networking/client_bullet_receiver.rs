@@ -3,7 +3,7 @@ use std::ops::DerefMut;
 use bevy::prelude::*;
 use message_io::network::{NetEvent, Transport, Endpoint};
 use rand::{thread_rng, Rng};
-use shared::{event::{PlayerInfo, UpdatePos, ShootBullet}, ServerResources, EventFromEndpoint, EventToClient, EventToServer, NetEntId, BulletPhysics, Config};
+use shared::{event::{PlayerInfo, UpdatePos, ShootBullet}, ServerResources, EventFromEndpoint, EventToClient, EventToServer, NetEntId, Config};
 
 use crate::lifetime::{Lifetime};
 
