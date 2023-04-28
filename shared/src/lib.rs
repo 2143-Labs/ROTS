@@ -15,6 +15,18 @@ pub mod event {
         pub name: String,
         pub id: NetEntId,
     }
+
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    pub struct UpdatePos {
+        pub id: NetEntId,
+        pub transform: Transform,
+    }
+
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    pub struct ShootBullet {
+        pub id: NetEntId,
+        pub phys: BulletPhysics,
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -41,8 +53,8 @@ pub enum EventToClient {
     Noop,
     PlayerConnect(event::PlayerInfo),
     PlayerList(Vec<event::PlayerInfo>),
-    UpdatePos(NetEntId, Transform),
-    ShootBullet(NetEntId, BulletPhysics),
+    UpdatePos(event::UpdatePos),
+    ShootBullet(event::ShootBullet),
 
 }
 

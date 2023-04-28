@@ -3,7 +3,7 @@ use std::ops::DerefMut;
 use bevy::prelude::*;
 use message_io::network::{NetEvent, Transport, Endpoint};
 use rand::{thread_rng, Rng};
-use shared::{event::PlayerInfo, ServerResources, EventFromEndpoint, EventToClient, EventToServer, NetEntId, BulletPhysics, Config};
+use shared::{event::{PlayerInfo, UpdatePos, ShootBullet}, ServerResources, EventFromEndpoint, EventToClient, EventToServer, NetEntId, BulletPhysics, Config};
 
 use crate::lifetime::{Lifetime};
 
@@ -18,8 +18,8 @@ impl Plugin for NetworkingPlugin {
             .insert_resource(server)
             .insert_resource(endpoint)
             .add_event::<EventFromEndpoint<PlayerInfo>>()
-            .add_event::<EventFromEndpoint<(NetEntId, Transform)>>()
-            .add_event::<EventFromEndpoint<(NetEntId, BulletPhysics)>>()
+            .add_event::<EventFromEndpoint<UpdatePos>>()
+            .add_event::<EventFromEndpoint<ShootBullet>>()
             .add_system(on_player_connect)
             .add_system(on_player_shoot)
             .add_system(tick_net_client)
@@ -94,15 +94,15 @@ fn send_movement_updates(
 }
 
 fn get_movement_updates(
-    mut movement_events: EventReader<EventFromEndpoint<(NetEntId, Transform)>>,
+    mut movement_events: EventReader<EventFromEndpoint<UpdatePos>>,
     mut players: Query<(&mut Transform, &NetEntId)>,
 ){
     let events: Vec<_> = movement_events.iter().collect();
     //info!(?events);
     for (mut player_transform, &net_id) in &mut players {
         for event in &events {
-            if event.event.0 == net_id {
-                *player_transform = event.event.1;
+            if event.event.id == net_id {
+                *player_transform = event.event.transform;
             }
         }
     }
@@ -111,8 +111,8 @@ fn get_movement_updates(
 pub fn tick_net_client(
     event_list_res: Res<ServerResources<EventToClient>>,
     mut ev_player_connect: EventWriter<EventFromEndpoint<PlayerInfo>>,
-    mut ev_player_movement: EventWriter<EventFromEndpoint<(NetEntId, Transform)>>,
-    mut ev_player_shoot: EventWriter<EventFromEndpoint<(NetEntId, BulletPhysics)>>,
+    mut ev_player_movement: EventWriter<EventFromEndpoint<UpdatePos>>,
+    mut ev_player_shoot: EventWriter<EventFromEndpoint<ShootBullet>>,
 ) {
     let events_to_process: Vec<_> = std::mem::take(event_list_res.event_list.lock().unwrap().deref_mut());
     for (_endpoint, e) in events_to_process {
@@ -120,8 +120,8 @@ pub fn tick_net_client(
             EventToClient::Noop => warn!("Got noop event"),
             EventToClient::PlayerConnect(p) => ev_player_connect.send(EventFromEndpoint::new(_endpoint, p)),
             EventToClient::PlayerList(p_list) => ev_player_connect.send_batch(p_list.into_iter().map(|x| EventFromEndpoint::new(_endpoint, x))),
-            EventToClient::UpdatePos(player_id, transform) => ev_player_movement.send(EventFromEndpoint::new(_endpoint, (player_id, transform))),
-            EventToClient::ShootBullet(bullet_id, transform) => ev_player_shoot.send(EventFromEndpoint::new(_endpoint, (bullet_id, transform))),
+            EventToClient::UpdatePos(e) => ev_player_movement.send(EventFromEndpoint::new(_endpoint, e)),
+            EventToClient::ShootBullet(e) => ev_player_shoot.send(EventFromEndpoint::new(_endpoint, e)),
             _ => {},
         }
     }
@@ -147,9 +147,8 @@ fn on_player_connect(
     }
 }
 
-
 fn on_player_shoot(
-    mut ev_player_shoot: EventReader<EventFromEndpoint<(NetEntId, BulletPhysics)>>,
+    mut ev_player_shoot: EventReader<EventFromEndpoint<ShootBullet>>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -167,8 +166,8 @@ fn on_player_shoot(
             .insert(Lifetime {
                 timer: Timer::from_seconds(5.0, TimerMode::Once),
             })
-            .insert(e.event.1.clone())
-            .insert(Name::new("Bullet"))
-            .insert(e.event.0);
+            .insert(e.event.phys.clone())
+            .insert(e.event.id)
+            .insert(Name::new("Bullet"));
     }
 }

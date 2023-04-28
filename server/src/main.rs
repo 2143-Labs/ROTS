@@ -1,7 +1,7 @@
 use std::ops::DerefMut;
 
 use rand::{thread_rng, Rng};
-use shared::{EventToServer, EventToClient, NetEntId, BulletPhysics};
+use shared::{EventToServer, EventToClient, NetEntId, BulletPhysics, event::{UpdatePos, ShootBullet}};
 use bevy::{app::ScheduleRunnerSettings, prelude::*, utils::{Duration, HashMap}, log::LogPlugin};
 use message_io::{node, network::{Transport, NetEvent, Endpoint}};
 use shared::{event::PlayerInfo, ServerResources, EventFromEndpoint};
@@ -18,8 +18,8 @@ fn main() {
         .insert_resource(res)
         .insert_resource(EndpointToNetId::default())
         .add_event::<EventFromEndpoint<PlayerInfo>>()
-        .add_event::<(NetEntId, Transform)>()
-        .add_event::<(NetEntId, BulletPhysics)>()
+        .add_event::<UpdatePos>()
+        .add_event::<ShootBullet>()
         .add_plugins(MinimalPlugins)
         .add_system(on_player_connect)
         .add_system(tick_net_server)
@@ -65,8 +65,8 @@ fn tick_net_server(
     event_list_res: Res<ServerResources<EventToServer>>,
     mut entity_mapping: ResMut<EndpointToNetId>,
     mut ev_player_connect: EventWriter<EventFromEndpoint<PlayerInfo>>,
-    mut ev_player_movement: EventWriter<(NetEntId, Transform)>,
-    mut ev_player_shooting: EventWriter<(NetEntId, BulletPhysics)>,
+    mut ev_player_movement: EventWriter<UpdatePos>,
+    mut ev_player_shooting: EventWriter<ShootBullet>,
 ) {
     let events_to_process: Vec<_> = std::mem::take(event_list_res.event_list.lock().unwrap().deref_mut());
 
@@ -88,7 +88,10 @@ fn tick_net_server(
             EventToServer::UpdatePos(new_pos) => {
                 match entity_mapping.map.get(&_endpoint) {
                     Some(id) => {
-                        ev_player_movement.send((*id, new_pos));
+                        ev_player_movement.send(UpdatePos {
+                            id: *id,
+                            transform: new_pos,
+                        });
                     }
                     None => error!("Failed to match endpoint {_endpoint:?}to id"),
                 }
@@ -97,7 +100,10 @@ fn tick_net_server(
                 match entity_mapping.map.get(&_endpoint) {
                     Some(id) => {
                         info!("Player {id:?} is shooting");
-                        ev_player_shooting.send((*id, phys));
+                        ev_player_shooting.send(ShootBullet {
+                            id: *id,
+                            phys,
+                        });
                     }
                     None => error!("Failed to match endpoint {_endpoint:?}to id"),
                 }
@@ -108,13 +114,13 @@ fn tick_net_server(
 }
 
 fn send_movement_to_all_players(
-    mut ev_player_movement: EventReader<(NetEntId, Transform)>,
+    mut ev_player_movement: EventReader<UpdatePos>,
     event_list_res: Res<ServerResources<EventToServer>>,
     players: Query<&GameNetClient>,
 ) {
     let events: Vec<_> = ev_player_movement
-        .iter()
-        .map(|x| EventToClient::UpdatePos(x.0, x.1))
+        .into_iter()
+        .map(|x| EventToClient::UpdatePos(x.clone()))
         .collect();
 
     for client in &players {
@@ -128,13 +134,13 @@ fn send_movement_to_all_players(
 }
 
 fn send_shooting_to_all_players(
-    mut ev_shoot: EventReader<(NetEntId, BulletPhysics)>,
+    mut ev_shoot: EventReader<ShootBullet>,
     event_list_res: Res<ServerResources<EventToServer>>,
     players: Query<&GameNetClient>,
 ) {
     let events: Vec<_> = ev_shoot
         .iter()
-        .map(|x| EventToClient::ShootBullet(x.0, x.1.clone()))
+        .map(|x| EventToClient::ShootBullet(x.clone()))
         .collect();
 
     for client in &players {
