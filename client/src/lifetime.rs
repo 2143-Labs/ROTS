@@ -3,8 +3,9 @@ use bevy::reflect::Reflect;
 use bevy_mod_raycast::Intersection;
 use bevy_rapier3d::prelude::{ActiveEvents, Collider, RigidBody};
 
-use crate::player::Player;
+use crate::{player::Player, networking::client_bullet_receiver::MainServerEndpoint};
 use crate::setup::MyRaycastSet;
+use shared::{BulletPhysics, BulletAI, EventToClient, ServerResources, EventToServer};
 
 pub fn init(app: &mut App) -> &mut App {
     app.add_system(lifetime_despawn)
@@ -33,23 +34,6 @@ pub fn lifetime_despawn(
             commands.entity(entity).despawn_recursive();
         }
     }
-}
-
-enum BulletAI {
-    /// Bullet directly travels from point to point
-    Direct,
-    Wavy,
-    Wavy2,
-}
-
-#[derive(Component)]
-struct BulletPhysics {
-    fired_from: Vec2,
-    fired_target: Vec2,
-    // Tiles per second
-    speed: f32,
-    ai: BulletAI,
-    //fired_time: time_since_start,
 }
 
 fn update_all_bullets(
@@ -102,14 +86,12 @@ fn camera_aim(
 struct AimVectorTarget;
 
 fn spawn_bullet(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
     _buttons: Res<Input<MouseButton>>,
     keyboard_input: Res<Input<KeyCode>>,
     player: Query<&Transform, With<Player>>,
-    towers: Query<&Transform, With<Tower>>,
     intersect: Query<&Intersection<MyRaycastSet>>,
+    event_list_res: Res<ServerResources<EventToClient>>,
+    mse: Res<MainServerEndpoint>,
 ) {
     // Right click, red wavy, left click, blue direct
     let (color, ai) = if keyboard_input.just_pressed(KeyCode::E) {
@@ -143,31 +125,25 @@ fn spawn_bullet(
     debug!(?isect);
 
     let player_transform: &Transform = player.single();
-    let _tower_transform: &Transform = towers.single();
-    let spawn_transform = Transform::from_xyz(0.0, -100., 0.0);
-    commands
-        .spawn(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube::new(0.4))),
-            material: materials.add(color.into()),
-            transform: spawn_transform,
-            ..default()
-        })
-        .insert(Lifetime {
-            timer: Timer::from_seconds(5.0, TimerMode::Once),
-        })
-        .insert(BulletPhysics {
-            fired_target: Vec2 {
-                x: isect.x,
-                y: isect.z,
-            },
-            fired_from: Vec2 {
-                x: player_transform.translation.x,
-                y: player_transform.translation.z,
-            },
-            speed: 10.0,
-            ai,
-        })
-        .insert(Name::new("Bullet"));
+    //let _tower_transform: &Transform = towers.single();
+    //let spawn_transform = Transform::from_xyz(0.0, -100., 0.0);
+
+    let phys = BulletPhysics {
+        fired_target: Vec2 {
+            x: isect.x,
+            y: isect.z,
+        },
+        fired_from: Vec2 {
+            x: player_transform.translation.x,
+            y: player_transform.translation.z,
+        },
+        speed: 10.0,
+        ai,
+    };
+
+    let ev = EventToServer::ShootBullet(phys);
+    let data = serde_json::to_string(&ev).unwrap();
+    event_list_res.handler.network().send(mse.0, data.as_bytes());
 }
 
 #[derive(Reflect, Component, Default)]

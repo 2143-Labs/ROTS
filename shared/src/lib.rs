@@ -1,4 +1,4 @@
-use std::{sync::{Arc, Mutex}, ops::DerefMut};
+use std::sync::{Arc, Mutex};
 
 use bevy::prelude::*;
 use message_io::{network::Endpoint, node::NodeHandler};
@@ -17,6 +17,24 @@ pub mod event {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum BulletAI {
+    /// Bullet directly travels from point to point
+    Direct,
+    Wavy,
+    Wavy2,
+}
+
+#[derive(Component, Clone, Serialize, Deserialize, Debug)]
+pub struct BulletPhysics {
+    pub fired_from: Vec2,
+    pub fired_target: Vec2,
+    // Tiles per second
+    pub speed: f32,
+    pub ai: BulletAI,
+    //fired_time: time_since_start,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum EventToClient {
@@ -24,6 +42,8 @@ pub enum EventToClient {
     PlayerConnect(event::PlayerInfo),
     PlayerList(Vec<event::PlayerInfo>),
     UpdatePos(NetEntId, Transform),
+    ShootBullet(NetEntId, BulletPhysics),
+
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -32,6 +52,7 @@ pub enum EventToServer {
     Noop,
     Connect{name: String},
     UpdatePos(Transform),
+    ShootBullet(BulletPhysics),
 }
 
 #[derive(Debug, Clone)]

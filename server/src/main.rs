@@ -1,7 +1,7 @@
 use std::ops::DerefMut;
 
 use rand::{thread_rng, Rng};
-use shared::{EventToServer, EventToClient, NetEntId};
+use shared::{EventToServer, EventToClient, NetEntId, BulletPhysics};
 use bevy::{app::ScheduleRunnerSettings, prelude::*, utils::{Duration, HashMap}, log::LogPlugin};
 use message_io::{node, network::{Transport, NetEvent, Endpoint}};
 use shared::{event::PlayerInfo, ServerResources, EventFromEndpoint};
@@ -13,23 +13,23 @@ fn main() {
     let res = start_server();
 
     app
+        .add_plugin(LogPlugin::default())
         .insert_resource(ScheduleRunnerSettings::run_loop(Duration::from_secs_f64(1.0 / 120.0)))
         .insert_resource(res)
         .insert_resource(EndpointToNetId::default())
         .add_event::<EventFromEndpoint<PlayerInfo>>()
         .add_event::<(NetEntId, Transform)>()
+        .add_event::<(NetEntId, BulletPhysics)>()
         .add_plugins(MinimalPlugins)
-        .add_plugin(LogPlugin::default())
         .add_system(on_player_connect)
         .add_system(tick_net_server)
+        .add_system(send_shooting_to_all_players)
         .add_system(send_movement_to_all_players);
 
     app.run();
 }
 
 fn start_server() -> ServerResources<EventToServer> {
-    warn!("Start Server");
-
     let (handler, listener) = node::split::<()>();
 
     let res = ServerResources {
@@ -40,7 +40,7 @@ fn start_server() -> ServerResources<EventToServer> {
     let res_copy = res.clone();
 
     std::thread::spawn(move || {
-        handler.network().listen(Transport::Udp, "0.0.0.0:3042").unwrap();
+        handler.network().listen(Transport::Udp, "0.0.0.0:3000").unwrap();
 
         listener.for_each(move |event| match event.network() {
             NetEvent::Connected(_, _) => unreachable!(),
@@ -66,6 +66,7 @@ fn tick_net_server(
     mut entity_mapping: ResMut<EndpointToNetId>,
     mut ev_player_connect: EventWriter<EventFromEndpoint<PlayerInfo>>,
     mut ev_player_movement: EventWriter<(NetEntId, Transform)>,
+    mut ev_player_shooting: EventWriter<(NetEntId, BulletPhysics)>,
 ) {
     let events_to_process: Vec<_> = std::mem::take(event_list_res.event_list.lock().unwrap().deref_mut());
 
@@ -73,6 +74,7 @@ fn tick_net_server(
         match e {
             EventToServer::Noop => todo!(),
             EventToServer::Connect { name } => {
+                info!("A player has connected with name '{name}'");
                 let id = NetEntId(thread_rng().gen());
                 let ev = PlayerInfo {
                     name,
@@ -91,6 +93,15 @@ fn tick_net_server(
                     None => error!("Failed to match endpoint {_endpoint:?}to id"),
                 }
             },
+            EventToServer::ShootBullet(phys) => {
+                match entity_mapping.map.get(&_endpoint) {
+                    Some(id) => {
+                        info!("Player {id:?} is shooting");
+                        ev_player_shooting.send((*id, phys));
+                    }
+                    None => error!("Failed to match endpoint {_endpoint:?}to id"),
+                }
+            }
             _ => todo!(),
         }
     }
@@ -114,7 +125,26 @@ fn send_movement_to_all_players(
                 .send(client.endpoint, events_as_str.as_bytes());
         }
     }
+}
 
+fn send_shooting_to_all_players(
+    mut ev_shoot: EventReader<(NetEntId, BulletPhysics)>,
+    event_list_res: Res<ServerResources<EventToServer>>,
+    players: Query<&GameNetClient>,
+) {
+    let events: Vec<_> = ev_shoot
+        .iter()
+        .map(|x| EventToClient::ShootBullet(x.0, x.1.clone()))
+        .collect();
+
+    for client in &players {
+        for event in &events {
+            let events_as_str = serde_json::to_string(&event).unwrap();
+            event_list_res.handler
+                .network()
+                .send(client.endpoint, events_as_str.as_bytes());
+        }
+    }
 }
 
 #[derive(Component)]
@@ -164,7 +194,6 @@ fn on_player_connect(
         commands
             .spawn_empty()
             .insert(new_client)
-            .insert(e.event.id)
-            ;
+            .insert(e.event.id);
     }
 }

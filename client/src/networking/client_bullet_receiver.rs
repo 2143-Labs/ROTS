@@ -3,7 +3,9 @@ use std::ops::DerefMut;
 use bevy::prelude::*;
 use message_io::network::{NetEvent, Transport, Endpoint};
 use rand::{thread_rng, Rng};
-use shared::{event::PlayerInfo, ServerResources, EventFromEndpoint, EventToClient, EventToServer, NetEntId};
+use shared::{event::PlayerInfo, ServerResources, EventFromEndpoint, EventToClient, EventToServer, NetEntId, BulletPhysics};
+
+use crate::lifetime::{Lifetime};
 
 pub struct NetworkingPlugin;
 
@@ -15,7 +17,9 @@ impl Plugin for NetworkingPlugin {
             .insert_resource(endpoint)
             .add_event::<EventFromEndpoint<PlayerInfo>>()
             .add_event::<EventFromEndpoint<(NetEntId, Transform)>>()
+            .add_event::<EventFromEndpoint<(NetEntId, BulletPhysics)>>()
             .add_system(on_player_connect)
+            .add_system(on_player_shoot)
             .add_system(tick_net_client)
             .add_system(send_movement_updates)
             .add_system(get_movement_updates);
@@ -23,13 +27,13 @@ impl Plugin for NetworkingPlugin {
 }
 
 #[derive(Resource)]
-struct MainServerEndpoint(Endpoint);
+pub(crate) struct MainServerEndpoint(pub Endpoint);
 
 fn setup_networking_server() -> (ServerResources<EventToClient>, MainServerEndpoint) {
     info!("trying_to_start_server");
     let (handler, listener) = message_io::node::split::<()>();
 
-    let (server, _) = handler.network().connect(Transport::Udp, "173.66.223.121:3042").expect("Failed to connect ot server");
+    let (server, _) = handler.network().connect(Transport::Udp, ("192.168.1.3".to_string(), 3000)).expect("Failed to connect ot server");
 
     info!("probably connected");
 
@@ -98,6 +102,7 @@ pub fn tick_net_client(
     event_list_res: Res<ServerResources<EventToClient>>,
     mut ev_player_connect: EventWriter<EventFromEndpoint<PlayerInfo>>,
     mut ev_player_movement: EventWriter<EventFromEndpoint<(NetEntId, Transform)>>,
+    mut ev_player_shoot: EventWriter<EventFromEndpoint<(NetEntId, BulletPhysics)>>,
 ) {
     let events_to_process: Vec<_> = std::mem::take(event_list_res.event_list.lock().unwrap().deref_mut());
     for (_endpoint, e) in events_to_process {
@@ -106,6 +111,7 @@ pub fn tick_net_client(
             EventToClient::PlayerConnect(p) => ev_player_connect.send(EventFromEndpoint::new(_endpoint, p)),
             EventToClient::PlayerList(p_list) => ev_player_connect.send_batch(p_list.into_iter().map(|x| EventFromEndpoint::new(_endpoint, x))),
             EventToClient::UpdatePos(player_id, transform) => ev_player_movement.send(EventFromEndpoint::new(_endpoint, (player_id, transform))),
+            EventToClient::ShootBullet(bullet_id, transform) => ev_player_shoot.send(EventFromEndpoint::new(_endpoint, (bullet_id, transform))),
             _ => {},
         }
     }
@@ -127,28 +133,32 @@ fn on_player_connect(
                 transform: Default::default(),
                 ..default()
             })
-            .insert(e.event.id)
-        ;
+            .insert(e.event.id);
+    }
+}
 
-        //commands
-            //.spawn(sprite)
-            //.insert(RigidBody::Dynamic)
-            //.insert(Collider::cuboid(0.5, 0.5, 0.2))
-            //.insert(LockedAxes::ROTATION_LOCKED)
-            //.insert(GravityScale(1.))
-            //.insert(ColliderMassProperties::Mass(1.0))
-            //.insert(Name::new("PlayerSprite"))
-            //.insert(Player::default())
-            //.insert(FaceCamera)
-            //.insert(Jumper {
-                //cooldown: 0.5,
-                //timer: Timer::from_seconds(1., TimerMode::Once),
-            //})
-            //.insert(Name::new("PlayerBody"))
-            //.insert(AnimationTimer(Timer::from_seconds(
-                //0.4,
-                //TimerMode::Repeating,
-            //)));
-        //}
+
+fn on_player_shoot(
+    mut ev_player_shoot: EventReader<EventFromEndpoint<(NetEntId, BulletPhysics)>>,
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    for e in &mut ev_player_shoot {
+        info!("spawning bullet");
+
+        commands
+            .spawn(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Cube::new(0.2))),
+                material: materials.add(Color::PINK.into()),
+                transform: Default::default(),
+                ..default()
+            })
+            .insert(Lifetime {
+                timer: Timer::from_seconds(5.0, TimerMode::Once),
+            })
+            .insert(e.event.1.clone())
+            .insert(Name::new("Bullet"))
+            .insert(e.event.0);
     }
 }
