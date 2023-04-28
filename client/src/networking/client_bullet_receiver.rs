@@ -156,10 +156,16 @@ fn on_player_shoot(
     for e in &mut ev_player_shoot {
         info!("spawning bullet");
 
+        let color = match e.event.phys.ai {
+            shared::BulletAI::Direct => Color::BLACK,
+            shared::BulletAI::Wavy => Color::BLUE,
+            shared::BulletAI::Wavy2 => Color::RED,
+        };
+
         commands
             .spawn(PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Cube::new(0.2))),
-                material: materials.add(Color::PINK.into()),
+                material: materials.add(color.into()),
                 transform: Default::default(),
                 ..default()
             })
