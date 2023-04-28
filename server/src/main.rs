@@ -1,7 +1,7 @@
 use std::ops::DerefMut;
 
 use rand::{thread_rng, Rng};
-use shared::{EventToServer, EventToClient, NetEntId, BulletPhysics, event::{UpdatePos, ShootBullet}};
+use shared::{EventToServer, EventToClient, NetEntId, event::{UpdatePos, ShootBullet}};
 use bevy::{app::ScheduleRunnerSettings, prelude::*, utils::{Duration, HashMap}, log::LogPlugin};
 use message_io::{node, network::{Transport, NetEvent, Endpoint}};
 use shared::{event::PlayerInfo, ServerResources, EventFromEndpoint};
