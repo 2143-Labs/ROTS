@@ -1,24 +1,21 @@
 use std::ops::DerefMut;
 
 use bevy::prelude::*;
-use message_io::network::{Transport, NetEvent};
-use shared::{GameNetEvent, ServerResources, event::PlayerConnect};
+use message_io::network::{NetEvent, Transport};
+use shared::{event::PlayerConnect, GameNetEvent, ServerResources};
 
 pub struct NetworkingPlugin;
 
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_startup_system(setup_networking_server)
+        app.add_startup_system(setup_networking_server)
             .insert_resource(ServerResources::default())
             .add_event::<shared::event::PlayerConnect>()
             .add_system(tick_server);
     }
 }
 
-fn setup_networking_server(
-    event_list_res: Res<ServerResources>,
-) {
+fn setup_networking_server(event_list_res: Res<ServerResources>) {
     info!("trying_to_start_server");
     let (handler, listener) = message_io::node::split::<()>();
 
@@ -48,7 +45,7 @@ fn setup_networking_server(
                 //info!(?s);
                 let event = serde_json::from_slice(data).unwrap();
                 res_copy.event_list.lock().unwrap().push((endpoint, event));
-            },
+            }
             NetEvent::Disconnected(_endpoint) => println!("Client disconnected"),
         });
     });
@@ -70,11 +67,8 @@ fn tick_server(
     }
 }
 
-fn on_player_connect(
-    mut ev_player_connect: EventReader<PlayerConnect>,
-) {
+fn on_player_connect(mut ev_player_connect: EventReader<PlayerConnect>) {
     for e in &mut ev_player_connect {
         info!("Got a player connection event {e:?}");
     }
 }
-

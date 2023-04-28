@@ -1,18 +1,21 @@
 use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*};
 use bevy_fly_camera::FlyCameraPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use bevy_rapier3d::{prelude::{NoUserData, RapierPhysicsPlugin}, render::RapierDebugRenderPlugin};
+use bevy_rapier3d::{
+    prelude::{NoUserData, RapierPhysicsPlugin},
+    render::RapierDebugRenderPlugin,
+};
 use bevy_sprite3d::Sprite3dPlugin;
 use networking::client_bullet_receiver::NetworkingPlugin;
 use states::StatePlugin;
 
 pub mod lifetime;
+pub mod networking;
 pub mod physics;
 pub mod player;
 pub mod setup;
 pub mod sprites;
 pub mod states;
-pub mod networking;
 
 pub const HEIGHT: f32 = 720.0;
 pub const WIDTH: f32 = 1280.0;
@@ -53,11 +56,13 @@ fn main() {
                 .set(ImagePlugin::default_nearest()),
         )
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierDebugRenderPlugin {always_on_top: true,..default() })
+        .add_plugin(RapierDebugRenderPlugin {
+            always_on_top: true,
+            ..default()
+        })
         .add_plugin(FrameTimeDiagnosticsPlugin)
         .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(StatePlugin)
         .add_plugin(NetworkingPlugin)
-
         .run();
 }

@@ -1,7 +1,7 @@
-use std::{sync::{Mutex, Arc}, ops::DerefMut, str::from_utf8};
+use std::{ops::DerefMut};
 
 use bevy::{app::ScheduleRunnerSettings, prelude::*, utils::Duration, log::LogPlugin};
-use message_io::{node, network::{Transport, NetEvent, Endpoint}};
+use message_io::{node, network::{Transport, NetEvent}};
 use shared::{GameNetEvent, event::PlayerConnect, ServerResources};
 
 fn main() {

@@ -3,7 +3,6 @@ use bevy::reflect::Reflect;
 use bevy_mod_raycast::Intersection;
 use bevy_rapier3d::prelude::{ActiveEvents, Collider, RigidBody};
 
-
 use crate::player::Player;
 use crate::setup::MyRaycastSet;
 
@@ -195,7 +194,11 @@ fn _tower_shooting(
 
         if let Some(player_transform) = player.iter().next() {
             let size = 0.5;
-            let spawn_transform = Transform::from_xyz(tower_transform.translation.x, 0.5, tower_transform.translation.z);
+            let spawn_transform = Transform::from_xyz(
+                tower_transform.translation.x,
+                0.5,
+                tower_transform.translation.z,
+            );
             commands
                 .spawn((
                     PbrBundle {
