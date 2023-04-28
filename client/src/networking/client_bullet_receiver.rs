@@ -29,7 +29,7 @@ fn setup_networking_server() -> (ServerResources<EventToClient>, MainServerEndpo
     info!("trying_to_start_server");
     let (handler, listener) = message_io::node::split::<()>();
 
-    let (server, _) = handler.network().connect(Transport::Udp, "127.0.0.1:3042").expect("Failed to connect ot server");
+    let (server, _) = handler.network().connect(Transport::Udp, "173.66.223.121:3042").expect("Failed to connect ot server");
 
     info!("probably connected");
 
