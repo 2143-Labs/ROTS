@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::{sync::{Arc, Mutex}, fs::OpenOptions, env::current_dir};
 
 use bevy::prelude::*;
 use message_io::{network::Endpoint, node::NodeHandler};
@@ -71,4 +71,22 @@ impl<E> EventFromEndpoint<E> {
 pub struct ServerResources<T> {
     pub event_list: Arc<Mutex<Vec<(Endpoint, T)>>>,
     pub handler: NodeHandler<()>,
+}
+
+#[derive(Resource, Deserialize)]
+pub struct Config {
+    pub ip: String,
+    pub port: u16,
+    pub name: Option<String>,
+}
+
+impl Config {
+    pub fn load_from_main_dir() -> Self {
+        let mut path = current_dir().unwrap();
+        path.pop();
+        path.push("config.yaml");
+
+        let file = OpenOptions::new().read(true).open(path).unwrap();
+        serde_yaml::from_reader(file).unwrap()
+    }
 }

@@ -94,7 +94,7 @@ fn spawn_bullet(
     mse: Res<MainServerEndpoint>,
 ) {
     // Right click, red wavy, left click, blue direct
-    let (color, ai) = if keyboard_input.just_pressed(KeyCode::E) {
+    let (_color, ai) = if keyboard_input.just_pressed(KeyCode::E) {
         (Color::PINK, BulletAI::Wavy2)
     } else if keyboard_input.just_pressed(KeyCode::R) {
         (Color::RED, BulletAI::Wavy)

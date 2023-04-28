@@ -3,7 +3,7 @@ use std::ops::DerefMut;
 use bevy::prelude::*;
 use message_io::network::{NetEvent, Transport, Endpoint};
 use rand::{thread_rng, Rng};
-use shared::{event::PlayerInfo, ServerResources, EventFromEndpoint, EventToClient, EventToServer, NetEntId, BulletPhysics};
+use shared::{event::PlayerInfo, ServerResources, EventFromEndpoint, EventToClient, EventToServer, NetEntId, BulletPhysics, Config};
 
 use crate::lifetime::{Lifetime};
 
@@ -11,8 +11,10 @@ pub struct NetworkingPlugin;
 
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
-        let (server, endpoint) = setup_networking_server();
+        let config = Config::load_from_main_dir();
+        let (server, endpoint) = setup_networking_server(&config);
         app
+            .insert_resource(config)
             .insert_resource(server)
             .insert_resource(endpoint)
             .add_event::<EventFromEndpoint<PlayerInfo>>()
@@ -29,17 +31,25 @@ impl Plugin for NetworkingPlugin {
 #[derive(Resource)]
 pub(crate) struct MainServerEndpoint(pub Endpoint);
 
-fn setup_networking_server() -> (ServerResources<EventToClient>, MainServerEndpoint) {
+fn setup_networking_server(config: &Config) -> (ServerResources<EventToClient>, MainServerEndpoint) {
     info!("trying_to_start_server");
     let (handler, listener) = message_io::node::split::<()>();
 
-    let (server, _) = handler.network().connect(Transport::Udp, ("192.168.1.3".to_string(), 3000)).expect("Failed to connect ot server");
+    let con_str = (&*config.ip, config.port);
+
+    let (server, _) = handler.network().connect(Transport::Udp, con_str).expect("Failed to connect ot server");
 
     info!("probably connected");
 
-    let name = thread_rng().gen_range(1..10000);
+    let name = match &config.name {
+        Some(name) => name.clone(),
+        None => {
+            let random_id = thread_rng().gen_range(1..10000);
+            format!("Player #{random_id}")
+        }
+    };
 
-    let connect_event = EventToServer::Connect { name: format!("Player #{name}") };
+    let connect_event = EventToServer::Connect { name };
     let event_json = serde_json::to_string(&connect_event).unwrap();
     handler.network().send(server, event_json.as_bytes());
 
