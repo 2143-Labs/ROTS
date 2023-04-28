@@ -7,22 +7,20 @@ pub struct NetworkingPlugin;
 
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup_networking_server)
-            .insert_resource(ServerResources::default())
+        let server = setup_networking_server();
+        app
+            .insert_resource(server)
             .add_event::<EventFromEndpoint<PlayerConnect>>()
             .add_system(on_player_connect)
             .add_system(shared::tick_server);
     }
 }
 
-fn setup_networking_server(event_list_res: Res<ServerResources>) {
+fn setup_networking_server() -> ServerResources {
     info!("trying_to_start_server");
     let (handler, listener) = message_io::node::split::<()>();
 
-    let (server, _) = match handler.network().connect(Transport::Udp, "127.0.0.1:3042") {
-        Ok(d) => d,
-        Err(_) => return error!("failed to connect to active server",),
-    };
+    let (server, _) = handler.network().connect(Transport::Udp, "127.0.0.1:3042").expect("Failed to connect ot server");
 
     info!("probably connected");
 
@@ -32,11 +30,16 @@ fn setup_networking_server(event_list_res: Res<ServerResources>) {
         name: format!("Player #{name}"),
     });
     let event_json = serde_json::to_string(&connect_event).unwrap();
-    dbg!(&event_json);
     handler.network().send(server, event_json.as_bytes());
     info!("sent json");
 
-    let res_copy = event_list_res.clone();
+    let res = ServerResources {
+        handler: handler.clone(),
+        event_list: Default::default(),
+    };
+
+    let res_copy = res.clone();
+
 
     std::thread::spawn(move || {
         listener.for_each(move |event| match event.network() {
@@ -51,6 +54,8 @@ fn setup_networking_server(event_list_res: Res<ServerResources>) {
             NetEvent::Disconnected(_endpoint) => println!("Client disconnected"),
         });
     });
+
+    res
 }
 
 fn on_player_connect(mut ev_player_connect: EventReader<EventFromEndpoint<PlayerConnect>>) {

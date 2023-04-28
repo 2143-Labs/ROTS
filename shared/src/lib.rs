@@ -1,7 +1,7 @@
 use std::{sync::{Arc, Mutex}, ops::DerefMut};
 
 use bevy::prelude::*;
-use message_io::network::Endpoint;
+use message_io::{network::Endpoint, node::NodeHandler};
 use serde::{Serialize, Deserialize};
 pub mod event {
     use super::*;
@@ -32,9 +32,10 @@ impl<E> EventFromEndpoint<E> {
     }
 }
 
-#[derive(Resource, Default, Debug, Clone)]
+#[derive(Resource, Clone)]
 pub struct ServerResources {
     pub event_list: Arc<Mutex<Vec<(Endpoint, GameNetEvent)>>>,
+    pub handler: NodeHandler<()>,
 }
 
 pub fn tick_server(
