@@ -15,7 +15,7 @@ pub fn init(app: &mut App) -> &mut App {
         .add_system(spawn_bullet)
         // .add_system(tower_shooting)
         .add_system(camera_aim)
-        .add_system(update_collisions)
+        //.add_system(update_collisions)
         .register_type::<Tower>()
         .add_startup_system(spawn_tower)
 }
