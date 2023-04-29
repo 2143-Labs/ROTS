@@ -4,6 +4,7 @@ use bevy_mod_raycast::Intersection;
 use bevy_rapier3d::prelude::{ActiveEvents, Collider, RigidBody};
 use rand::{thread_rng, Rng};
 
+use crate::networking::client_bullet_receiver::NetworkPlayer;
 use crate::{player::Player, networking::client_bullet_receiver::MainServerEndpoint};
 use crate::setup::MyRaycastSet;
 use shared::{BulletPhysics, BulletAI, EventToClient, ServerResources, EventToServer};
@@ -14,6 +15,7 @@ pub fn init(app: &mut App) -> &mut App {
         .add_system(spawn_bullet)
         // .add_system(tower_shooting)
         .add_system(camera_aim)
+        //.add_system(update_collisions)
         .register_type::<Tower>()
         .add_startup_system(spawn_tower)
 }
@@ -66,6 +68,28 @@ fn update_all_bullets(
         // Bullets float 0.5 above the ground
         let nl: Vec2 = phys.fired_from + offset;
         *transform = Transform::from_xyz(nl.x, 0.5, nl.y);
+    }
+}
+
+fn update_collisions(
+    bullets: Query<(Entity, &Transform), With<BulletPhysics>>,
+    players: Query<&Transform, (Without<Player>, With<NetworkPlayer>)>,
+    mut commands: Commands,
+) {
+    for (bullet_ent, bullet_transform) in bullets.iter() {
+        for player_transform in &players {
+            let dist = (
+                player_transform.translation - bullet_transform.translation
+            ).length_squared();
+
+            if dist < 1.0 {
+                commands
+                    .entity(bullet_ent)
+                    .despawn_recursive();
+
+                warn!("hit");
+            }
+        }
     }
 }
 

@@ -4,7 +4,7 @@ use bevy_fly_camera::FlyCamera;
 
 use crate::{
     player::PlayerSpriteAssets,
-    setup::{CameraFollow, Hideable, MuscleManAssets},
+    setup::{CameraFollow, Hideable, MuscleManAssets}, networking::client_bullet_receiver::{NetPlayerSprite, ProjectileSheet},
 };
 
 pub struct StatePlugin;
@@ -18,6 +18,8 @@ impl Plugin for StatePlugin {
                 LoadingState::new(GameState::Loading).continue_to_state(GameState::Ready),
             )
             .add_collection_to_loading_state::<_, PlayerSpriteAssets>(GameState::Loading)
+            .add_collection_to_loading_state::<_, NetPlayerSprite>(GameState::Loading)
+            .add_collection_to_loading_state::<_, ProjectileSheet>(GameState::Loading)
             .add_collection_to_loading_state::<_, MuscleManAssets>(GameState::Loading)
             .add_system(toggle_freecam)
             .add_system(toggle_phyics_debug_view);
