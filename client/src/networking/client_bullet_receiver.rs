@@ -98,7 +98,7 @@ fn send_movement_updates(
 
 fn get_movement_updates(
     mut movement_events: EventReader<EventFromEndpoint<UpdatePos>>,
-    mut players: Query<(&mut Transform, &NetEntId)>,
+    mut players: Query<(&mut Transform, &NetEntId), With<NetworkPlayer>>,
 ){
     let events: Vec<_> = movement_events.iter().collect();
     //info!(?events);
@@ -138,6 +138,12 @@ pub struct NetPlayerSprite {
     pub run: Handle<TextureAtlas>,
 }
 
+
+#[derive(Component)]
+pub struct NetworkPlayer {
+    name: String,
+}
+
 fn on_player_connect(
     mut ev_player_connect: EventReader<EventFromEndpoint<PlayerInfo>>,
     mut commands: Commands,
@@ -147,24 +153,27 @@ fn on_player_connect(
     for e in &mut ev_player_connect {
         info!("TODO spawn player in world... {e:?}");
 
-    let sprite = AtlasSprite3d {
-        atlas: sprite_res.run.clone(),
+        let sprite = AtlasSprite3d {
+            atlas: sprite_res.run.clone(),
 
-        pixels_per_metre: 44.,
-        partial_alpha: true,
-        unlit: true,
+            pixels_per_metre: 44.,
+            partial_alpha: true,
+            unlit: true,
 
-        index: 1,
+            index: 1,
 
-        transform: Default::default(),
-        // pivot: Some(Vec2::new(0.5, 0.5)),
-        ..default()
-    }
-    .bundle(&mut sprite_params);
+            transform: Default::default(),
+            // pivot: Some(Vec2::new(0.5, 0.5)),
+            ..default()
+        }
+        .bundle(&mut sprite_params);
 
         commands
             .spawn(sprite)
             .insert(e.event.id)
+            .insert(NetworkPlayer {
+                name: e.event.name.clone(),
+            })
             .insert(AnimationTimer(Timer::from_seconds(
                 0.4,
                 TimerMode::Repeating,
@@ -195,8 +204,8 @@ fn on_player_shoot(
 ) {
     for e in &mut ev_player_shoot {
         info!("spawning bullet");
-        
-       let sprite = AtlasSprite3d {
+
+        let sprite = AtlasSprite3d {
             atlas: proj_res.banana.clone(),
             pixels_per_metre: 64.,
             partial_alpha: true,
@@ -205,7 +214,7 @@ fn on_player_shoot(
             ..default()
         }
         .bundle(&mut sprite_params);
- 
+
         commands
             .spawn(sprite)
             .insert(Lifetime {
@@ -215,8 +224,9 @@ fn on_player_shoot(
             .insert(e.event.id)
             .insert(FaceCamera)
             .insert(AnimationTimer(Timer::from_seconds(
-                0.1,
-                TimerMode::Repeating,
+                        0.1,
+                        TimerMode::Repeating,
             )));
+
     }
 }
