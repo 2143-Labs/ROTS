@@ -65,6 +65,7 @@ pub fn spawn_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: ResMut<AssetServer>,
 ) {
     let size = 10.;
     commands
@@ -104,6 +105,16 @@ pub fn spawn_scene(
             ..Default::default()
         })
         .insert(Name::new("Sun"));
+    commands.spawn(SceneBundle {
+        scene: asset_server.load("sprytilebrickhouse.gltf#Scene0"),
+        transform: Transform::from_xyz(-5.2,-1.0,-20.0).with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
+        ..default()
+    })
+    .with_children(|x| {
+        x.spawn(Collider::cuboid(5., 1.0, 6.))
+        .insert(TransformBundle::from(Transform::from_xyz(-5., 0., -5.)));
+    })
+    .insert(Name::new("House"));
 }
 
 #[derive(AssetCollection, Resource)]

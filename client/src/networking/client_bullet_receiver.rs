@@ -215,7 +215,7 @@ fn on_player_shoot(
             pixels_per_metre: 32.,
             partial_alpha: true,
             unlit: false,
-            index: 4,
+            index: 20,
             ..default()
         }
         .bundle(&mut sprite_params);
