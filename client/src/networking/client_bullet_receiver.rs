@@ -158,7 +158,7 @@ fn on_player_connect(
 
             pixels_per_metre: 44.,
             partial_alpha: true,
-            unlit: true,
+            unlit: false,
 
             index: 1,
 
@@ -167,7 +167,6 @@ fn on_player_connect(
             ..default()
         }
         .bundle(&mut sprite_params);
-
         commands
             .spawn(sprite)
             .insert(e.event.id)
@@ -193,6 +192,11 @@ pub struct ProjectileSheet{
     #[asset(texture_atlas(columns = 25, rows = 1))]
     #[asset(path = "orb-Sheet.png")]
     pub fireball: Handle<TextureAtlas>,
+
+    #[asset(texture_atlas(tile_size_x = 128., tile_size_y = 128.))]
+    #[asset(texture_atlas(columns = 32, rows = 1))]
+    #[asset(path = "waterboll-Sheet.png")]
+    pub waterboll: Handle<TextureAtlas>,
 }
 
 fn on_player_shoot(
@@ -207,11 +211,11 @@ fn on_player_shoot(
         info!("spawning bullet");
 
         let sprite = AtlasSprite3d {
-            atlas: proj_res.banana.clone(),
-            pixels_per_metre: 64.,
+            atlas: proj_res.waterboll.clone(),
+            pixels_per_metre: 32.,
             partial_alpha: true,
-            unlit: true,
-            index: 0,
+            unlit: false,
+            index: 4,
             ..default()
         }
         .bundle(&mut sprite_params);
