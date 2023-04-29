@@ -1,11 +1,13 @@
 use std::ops::DerefMut;
 
 use bevy::prelude::*;
+use bevy_asset_loader::prelude::AssetCollection;
+use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 use message_io::network::{NetEvent, Transport, Endpoint};
 use rand::{thread_rng, Rng};
 use shared::{event::{PlayerInfo, UpdatePos, ShootBullet}, ServerResources, EventFromEndpoint, EventToClient, EventToServer, NetEntId, Config};
 
-use crate::lifetime::{Lifetime};
+use crate::{lifetime::{Lifetime}, states::GameState, sprites::AnimationTimer, player::{FaceCamera, PlayerSpriteAssets}};
 
 pub struct NetworkingPlugin;
 
@@ -20,11 +22,12 @@ impl Plugin for NetworkingPlugin {
             .add_event::<EventFromEndpoint<PlayerInfo>>()
             .add_event::<EventFromEndpoint<UpdatePos>>()
             .add_event::<EventFromEndpoint<ShootBullet>>()
-            .add_system(on_player_connect)
-            .add_system(on_player_shoot)
-            .add_system(tick_net_client)
-            .add_system(send_movement_updates)
-            .add_system(get_movement_updates);
+            .add_systems((
+                    send_movement_updates,
+                    tick_net_client,
+                    get_movement_updates,
+                    on_player_connect,
+                    on_player_shoot).distributive_run_if(in_state(GameState::Ready)));
     }
 }
 
@@ -127,53 +130,93 @@ pub fn tick_net_client(
     }
 }
 
+#[derive(AssetCollection, Resource)]
+pub struct NetPlayerSprite {
+    #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 44.))]
+    #[asset(texture_atlas(columns = 2, rows = 1))]
+    #[asset(path = "MrMan.png")]
+    pub run: Handle<TextureAtlas>,
+}
+
 fn on_player_connect(
     mut ev_player_connect: EventReader<EventFromEndpoint<PlayerInfo>>,
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    sprite_res: Res<NetPlayerSprite>,
+    mut sprite_params: Sprite3dParams,
 ) {
     for e in &mut ev_player_connect {
         info!("TODO spawn player in world... {e:?}");
 
-        commands
-            .spawn(PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Cube::new(1.0))),
-                material: materials.add(Color::OLIVE.into()),
-                transform: Default::default(),
-                ..default()
-            })
-            .insert(e.event.id);
+    let sprite = AtlasSprite3d {
+        atlas: sprite_res.run.clone(),
+
+        pixels_per_metre: 44.,
+        partial_alpha: true,
+        unlit: true,
+
+        index: 1,
+
+        transform: Default::default(),
+        // pivot: Some(Vec2::new(0.5, 0.5)),
+        ..default()
     }
+    .bundle(&mut sprite_params);
+
+        commands
+            .spawn(sprite)
+            .insert(e.event.id)
+            .insert(AnimationTimer(Timer::from_seconds(
+                0.4,
+                TimerMode::Repeating,
+            )));
+    }
+}
+
+#[derive(AssetCollection, Resource)]
+pub struct ProjectileSheet{
+    #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 32.))]
+    #[asset(texture_atlas(columns = 1, rows = 1))]
+    #[asset(path = "Banana.png")]
+    pub banana: Handle<TextureAtlas>,
+
+    #[asset(texture_atlas(tile_size_x = 128., tile_size_y = 128.))]
+    #[asset(texture_atlas(columns = 25, rows = 1))]
+    #[asset(path = "orb-Sheet.png")]
+    pub fireball: Handle<TextureAtlas>,
 }
 
 fn on_player_shoot(
     mut ev_player_shoot: EventReader<EventFromEndpoint<ShootBullet>>,
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    // mut meshes: ResMut<Assets<Mesh>>,
+    // mut materials: ResMut<Assets<StandardMaterial>>,
+    proj_res: Res<ProjectileSheet>,
+    mut sprite_params: Sprite3dParams,
 ) {
     for e in &mut ev_player_shoot {
         info!("spawning bullet");
-
-        let color = match e.event.phys.ai {
-            shared::BulletAI::Direct => Color::BLACK,
-            shared::BulletAI::Wavy => Color::BLUE,
-            shared::BulletAI::Wavy2 => Color::RED,
-        };
-
+        
+       let sprite = AtlasSprite3d {
+            atlas: proj_res.banana.clone(),
+            pixels_per_metre: 64.,
+            partial_alpha: true,
+            unlit: true,
+            index: 0,
+            ..default()
+        }
+        .bundle(&mut sprite_params);
+ 
         commands
-            .spawn(PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Cube::new(0.2))),
-                material: materials.add(color.into()),
-                transform: Default::default(),
-                ..default()
-            })
+            .spawn(sprite)
             .insert(Lifetime {
                 timer: Timer::from_seconds(5.0, TimerMode::Once),
             })
             .insert(e.event.phys.clone())
             .insert(e.event.id)
-            .insert(Name::new("Bullet"));
+            .insert(FaceCamera)
+            .insert(AnimationTimer(Timer::from_seconds(
+                0.1,
+                TimerMode::Repeating,
+            )));
     }
 }
