@@ -7,9 +7,9 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GKE_PROJECT }}
   GAR_LOCATION: us-east4
-  DEPLOYMENT_NAME: gke-test # TODO: update to deployment name
-  REPOSITORY: samples # TODO: update to Artifact Registry docker repository
-  IMAGE: static-site
+  DEPLOYMENT_NAME: rots-stage
+  REPOSITORY: rots
+  IMAGE: rots
 
 jobs:
   setup-build-publish-deploy:
