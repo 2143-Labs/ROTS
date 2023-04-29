@@ -1,6 +1,7 @@
 use std::{sync::{Arc, Mutex}, fs::OpenOptions, env::current_dir};
 
 use bevy::prelude::*;
+use event::AnimationThing;
 use message_io::{network::Endpoint, node::NodeHandler};
 use serde::{Serialize, Deserialize};
 
@@ -27,6 +28,17 @@ pub mod event {
         pub id: NetEntId,
         pub phys: BulletPhysics,
     }
+
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    pub struct Animation {
+        pub id: NetEntId,
+        pub animation: AnimationThing,
+    }
+
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    pub enum AnimationThing {
+        Waterball,
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -51,11 +63,12 @@ pub struct BulletPhysics {
 #[non_exhaustive]
 pub enum EventToClient {
     Noop,
+    YouAre(event::PlayerInfo),
     PlayerConnect(event::PlayerInfo),
     PlayerList(Vec<event::PlayerInfo>),
     UpdatePos(event::UpdatePos),
     ShootBullet(event::ShootBullet),
-
+    Animation(event::Animation),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,6 +78,7 @@ pub enum EventToServer {
     Connect{name: String},
     UpdatePos(Transform),
     ShootBullet(BulletPhysics),
+    BeginAnimation(AnimationThing),
 }
 
 #[derive(Debug, Clone)]
