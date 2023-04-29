@@ -86,7 +86,7 @@ fn lifetime_event(
             //let _tower_transform: &Transform = towers.single();
             //let spawn_transform = Transform::from_xyz(0.0, -100., 0.0);
 
-            for _ in 0..100 {
+            let v: Vec<EventToServer> = (0..100).map(|_i| {
                 let mut rng = thread_rng();
                 let x = rng.gen_range(-1.0..1.0);
                 let y = rng.gen_range(-1.0..1.0);
@@ -105,9 +105,11 @@ fn lifetime_event(
                 };
 
                 let ev = EventToServer::ShootBullet(phys);
-                let data = serde_json::to_string(&ev).unwrap();
-                event_list_res.handler.network().send(mse.0, data.as_bytes());
-            }
+                ev
+            }).collect();
+
+            let data = serde_json::to_string(&v).unwrap();
+            event_list_res.handler.network().send(mse.0, data.as_bytes());
         }
     }
 }

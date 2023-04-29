@@ -213,7 +213,7 @@ pub struct ProjectileSheet{
 
     #[asset(texture_atlas(tile_size_x = 128., tile_size_y = 128.))]
     #[asset(texture_atlas(columns = 32, rows = 1))]
-    #[asset(path = "waterboll-Sheet.png")]
+    #[asset(path = "waterboll2-Sheet.png")]
     pub waterboll: Handle<TextureAtlas>,
 }
 
@@ -226,7 +226,7 @@ fn on_player_shoot(
     //mut sprite_params: Sprite3dParams,
 ) {
     for e in &mut ev_player_shoot {
-        info!("spawning bullet");
+        //info!("spawning bullet");
 
         //let sprite = AtlasSprite3d {
             //atlas: proj_res.waterboll.clone(),
@@ -241,7 +241,7 @@ fn on_player_shoot(
         commands
             .spawn(PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Cube::new(0.3))),
-                material: materials.add(Color::PINK.into()),
+                material: materials.add(Color::BLUE.into()),
                 transform: Transform::from_xyz(0.0, -100.0, 0.0),
                 ..default()
             })
@@ -272,7 +272,7 @@ fn on_player_animate(
     for e in &mut ev_player_animate {
         info!("starting animation {:?}", e.event.animation);
 
-        let frames = 32;
+        let frames = 36;
 
         let sprite = match e.event.animation {
             shared::event::AnimationThing::Waterball => {

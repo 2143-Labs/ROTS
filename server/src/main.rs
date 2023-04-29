@@ -48,8 +48,24 @@ fn start_server() -> ServerResources<EventToServer> {
             NetEvent::Connected(_, _) => unreachable!(),
             NetEvent::Accepted(_endpoint, _listener) => println!("Client connected"),
             NetEvent::Message(endpoint, data) => {
-                let event = serde_json::from_slice(data).unwrap();
-                res_copy.event_list.lock().unwrap().push((endpoint, event));
+                match data[0] {
+                    b'[' => {
+                        dbg!("duplex connection");
+                        let event: Vec<EventToServer> = serde_json::from_slice(data).unwrap();
+
+                        let mut elist = res_copy.event_list.lock().unwrap();
+                        for e in event {
+                            elist.push((endpoint, e));
+                        }
+                    },
+                    b'{' => {
+                        let event = serde_json::from_slice(data).unwrap();
+                        res_copy.event_list.lock().unwrap().push((endpoint, event));
+                    },
+                    _ => {
+                        error!("invalid net req");
+                    }
+                }
             },
             NetEvent::Disconnected(_endpoint) => println!("Client disconnected"),
         });
@@ -102,7 +118,7 @@ fn tick_net_server(
             EventToServer::ShootBullet(phys) => {
                 match entity_mapping.map.get(&_endpoint) {
                     Some(id) => {
-                        info!("Player {id:?} is shooting");
+                        debug!("Player {id:?} is shooting");
                         ev_player_shooting.send(ShootBullet {
                             id: *id,
                             phys,
