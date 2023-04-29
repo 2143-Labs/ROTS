@@ -5,9 +5,9 @@ use bevy_asset_loader::prelude::AssetCollection;
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 use message_io::network::{NetEvent, Transport, Endpoint};
 use rand::{thread_rng, Rng};
-use shared::{event::{PlayerInfo, UpdatePos, ShootBullet}, ServerResources, EventFromEndpoint, EventToClient, EventToServer, NetEntId, Config};
+use shared::{event::{PlayerInfo, UpdatePos, ShootBullet, Animation}, ServerResources, EventFromEndpoint, EventToClient, EventToServer, NetEntId, Config};
 
-use crate::{lifetime::{Lifetime}, states::GameState, sprites::AnimationTimer, player::{FaceCamera, PlayerSpriteAssets}};
+use crate::{lifetime::{Lifetime}, states::GameState, sprites::AnimationTimer, player::{FaceCamera, PlayerSpriteAssets, Player}};
 
 pub struct NetworkingPlugin;
 
@@ -22,11 +22,14 @@ impl Plugin for NetworkingPlugin {
             .add_event::<EventFromEndpoint<PlayerInfo>>()
             .add_event::<EventFromEndpoint<UpdatePos>>()
             .add_event::<EventFromEndpoint<ShootBullet>>()
+            .add_event::<EventFromEndpoint<Animation>>()
             .add_systems((
-                    send_movement_updates,
                     tick_net_client,
+                    send_movement_updates,
                     get_movement_updates,
                     on_player_connect,
+                    on_player_animate,
+                    keep_animation_on_player,
                     on_player_shoot).distributive_run_if(in_state(GameState::Ready)));
     }
 }
@@ -98,7 +101,7 @@ fn send_movement_updates(
 
 fn get_movement_updates(
     mut movement_events: EventReader<EventFromEndpoint<UpdatePos>>,
-    mut players: Query<(&mut Transform, &NetEntId), With<NetworkPlayer>>,
+    mut players: Query<(&mut Transform, &NetEntId), (With<NetworkPlayer>, Without<Player>)>,
 ){
     let events: Vec<_> = movement_events.iter().collect();
     //info!(?events);
@@ -116,6 +119,10 @@ pub fn tick_net_client(
     mut ev_player_connect: EventWriter<EventFromEndpoint<PlayerInfo>>,
     mut ev_player_movement: EventWriter<EventFromEndpoint<UpdatePos>>,
     mut ev_player_shoot: EventWriter<EventFromEndpoint<ShootBullet>>,
+    mut ev_player_animation: EventWriter<EventFromEndpoint<Animation>>,
+
+    player: Query<Entity, With<Player>>,
+    mut commands: Commands,
 ) {
     let events_to_process: Vec<_> = std::mem::take(event_list_res.event_list.lock().unwrap().deref_mut());
     for (_endpoint, e) in events_to_process {
@@ -125,6 +132,17 @@ pub fn tick_net_client(
             EventToClient::PlayerList(p_list) => ev_player_connect.send_batch(p_list.into_iter().map(|x| EventFromEndpoint::new(_endpoint, x))),
             EventToClient::UpdatePos(e) => ev_player_movement.send(EventFromEndpoint::new(_endpoint, e)),
             EventToClient::ShootBullet(e) => ev_player_shoot.send(EventFromEndpoint::new(_endpoint, e)),
+            EventToClient::Animation(a) => ev_player_animation.send(EventFromEndpoint::new(_endpoint, a)),
+            EventToClient::YouAre(info) => {
+                info!("The server has returned our networking info {info:?}");
+                commands
+                    .entity(player.single())
+                    .insert(NetworkPlayer{
+                        name: info.name,
+                    })
+                    .insert(info.id);
+
+            },
             _ => {},
         }
     }
@@ -202,36 +220,93 @@ pub struct ProjectileSheet{
 fn on_player_shoot(
     mut ev_player_shoot: EventReader<EventFromEndpoint<ShootBullet>>,
     mut commands: Commands,
-    // mut meshes: ResMut<Assets<Mesh>>,
-    // mut materials: ResMut<Assets<StandardMaterial>>,
-    proj_res: Res<ProjectileSheet>,
-    mut sprite_params: Sprite3dParams,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    //proj_res: Res<ProjectileSheet>,
+    //mut sprite_params: Sprite3dParams,
 ) {
     for e in &mut ev_player_shoot {
         info!("spawning bullet");
 
-        let sprite = AtlasSprite3d {
-            atlas: proj_res.waterboll.clone(),
-            pixels_per_metre: 32.,
-            partial_alpha: true,
-            unlit: false,
-            index: 20,
-            ..default()
-        }
-        .bundle(&mut sprite_params);
+        //let sprite = AtlasSprite3d {
+            //atlas: proj_res.waterboll.clone(),
+            //pixels_per_metre: 32.,
+            //partial_alpha: true,
+            //unlit: false,
+            //index: 20,
+            //..default()
+        //}
+        //.bundle(&mut sprite_params);
 
         commands
-            .spawn(sprite)
+            .spawn(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Cube::new(0.3))),
+                material: materials.add(Color::PINK.into()),
+                transform: Transform::from_xyz(0.0, -100.0, 0.0),
+                ..default()
+            })
             .insert(Lifetime {
                 timer: Timer::from_seconds(5.0, TimerMode::Once),
             })
             .insert(e.event.phys.clone())
-            .insert(e.event.id)
+            .insert(e.event.id);
+
+    }
+}
+
+
+#[derive(Component)]
+struct AttachedAnimation(NetEntId);
+
+fn on_player_animate(
+    mut ev_player_animate: EventReader<EventFromEndpoint<Animation>>,
+    mut commands: Commands,
+    proj_res: Res<ProjectileSheet>,
+    mut sprite_params: Sprite3dParams,
+) {
+    for e in &mut ev_player_animate {
+        info!("starting animation {:?}", e.event.animation);
+
+        let sprite = match e.event.animation {
+            shared::event::AnimationThing::Waterball => {
+                AtlasSprite3d {
+                    atlas: proj_res.waterboll.clone(),
+                    pixels_per_metre: 32.,
+                    partial_alpha: true,
+                    unlit: false,
+                    index: 4,
+                    ..default()
+                }
+                .bundle(&mut sprite_params)
+            }
+        };
+
+        commands
+            .spawn(sprite)
+            .insert(crate::lifetime::LifetimeWithEvent {
+                timer: Timer::from_seconds(1.0, TimerMode::Once),
+            })
             .insert(FaceCamera)
+            .insert(AttachedAnimation(e.event.id))
             .insert(AnimationTimer(Timer::from_seconds(
-                        0.1,
-                        TimerMode::Repeating,
+                1.0,
+                TimerMode::Once,
             )));
 
+    }
+}
+
+fn keep_animation_on_player(
+    players: Query<(&Transform, &NetEntId), (With<NetworkPlayer>, Without<AttachedAnimation>)>,
+    mut animations: Query<(&mut Transform, &AttachedAnimation), Without<NetworkPlayer>>,
+) {
+    'anim: for (mut anim_transform, animation) in &mut animations {
+        for (&p_trans, &net_id) in &players {
+            if net_id == animation.0 {
+                anim_transform.translation = p_trans.translation + Transform::from_xyz(0.0, 1.0, 0.0).translation;
+                anim_transform.rotation = Quat::from_rotation_x(0.0);
+                continue 'anim;
+            }
+        }
     }
 }

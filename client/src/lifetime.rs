@@ -10,9 +10,12 @@ use crate::setup::MyRaycastSet;
 use shared::{BulletPhysics, BulletAI, EventToClient, ServerResources, EventToServer};
 
 pub fn init(app: &mut App) -> &mut App {
-    app.add_system(lifetime_despawn)
+    app
+        .add_system(lifetime_despawn)
+        .add_system(lifetime_event)
         .add_system(update_all_bullets)
         .add_system(spawn_bullet)
+        .add_system(spawn_animations)
         // .add_system(tower_shooting)
         .add_system(camera_aim)
         //.add_system(update_collisions)
@@ -26,7 +29,12 @@ pub struct Lifetime {
     pub timer: Timer,
 }
 
-pub fn lifetime_despawn(
+#[derive(Component)]
+pub struct LifetimeWithEvent {
+    pub timer: Timer,
+}
+
+fn lifetime_despawn(
     mut commands: Commands,
     mut bullets: Query<(Entity, &mut Lifetime)>,
     time: Res<Time>,
@@ -35,6 +43,65 @@ pub fn lifetime_despawn(
         lifetime.timer.tick(time.delta());
         if lifetime.timer.just_finished() {
             commands.entity(entity).despawn_recursive();
+        }
+    }
+}
+
+fn lifetime_event(
+    mut commands: Commands,
+    mut bullets: Query<(Entity, &mut LifetimeWithEvent)>,
+    time: Res<Time>,
+
+    player: Query<&Transform, With<Player>>,
+    intersect: Query<&Intersection<MyRaycastSet>>,
+    event_list_res: Res<ServerResources<EventToClient>>,
+    mse: Res<MainServerEndpoint>,
+) {
+    for (entity, mut lifetime) in &mut bullets {
+        lifetime.timer.tick(time.delta());
+        if lifetime.timer.just_finished() {
+            commands.entity(entity).despawn_recursive();
+
+            let target: &Intersection<_> = match intersect.iter().next() {
+                Some(s) => s,
+                None => {
+                    info!("No intersection with ground");
+                    return;
+                }
+            };
+
+            debug!(?target);
+
+            let isect = match target.position() {
+                Some(s) => s,
+                None => {
+                    error!("No intersect position?");
+                    return;
+                }
+            };
+
+            debug!(?isect);
+
+            let player_transform: &Transform = player.single();
+            //let _tower_transform: &Transform = towers.single();
+            //let spawn_transform = Transform::from_xyz(0.0, -100., 0.0);
+
+            let phys = BulletPhysics {
+                fired_target: Vec2 {
+                    x: isect.x,
+                    y: isect.z,
+                },
+                fired_from: Vec2 {
+                    x: player_transform.translation.x,
+                    y: player_transform.translation.z,
+                },
+                speed: 10.0,
+                ai: BulletAI::Direct,
+            };
+
+            let ev = EventToServer::ShootBullet(phys);
+            let data = serde_json::to_string(&ev).unwrap();
+            event_list_res.handler.network().send(mse.0, data.as_bytes());
         }
     }
 }
@@ -109,6 +176,22 @@ fn camera_aim(
 
 #[derive(Component, Reflect)]
 struct AimVectorTarget;
+
+
+fn spawn_animations(
+    _buttons: Res<Input<MouseButton>>,
+    keyboard_input: Res<Input<KeyCode>>,
+    //player: Query<&Transform, With<Player>>,
+    //intersect: Query<&Intersection<MyRaycastSet>>,
+    event_list_res: Res<ServerResources<EventToClient>>,
+    mse: Res<MainServerEndpoint>,
+) {
+    if keyboard_input.just_pressed(KeyCode::B) {
+        let ev = EventToServer::BeginAnimation(shared::event::AnimationThing::Waterball);
+        let data = serde_json::to_string(&ev).unwrap();
+        event_list_res.handler.network().send(mse.0, data.as_bytes());
+    }
+}
 
 fn spawn_bullet(
     _buttons: Res<Input<MouseButton>>,

@@ -44,6 +44,7 @@ pub enum PhysView {
 pub enum GameState {
     #[default]
     Loading,
+    NetworkConnecting,
     Ready,
 }
 
