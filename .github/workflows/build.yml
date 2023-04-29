@@ -22,7 +22,7 @@ jobs:
       matrix:
         os:
         - ubuntu-latest
-        #- windows-latest
+        - windows-latest
         rust: [nightly]
     steps:
     - uses: actions/checkout@v3
@@ -42,11 +42,11 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: ${{ matrix.os }}
-          #target/release/client.exe
-          #target/release/server.exe
         path: |
           target/release/client
           target/release/server
+          target/release/client.exe
+          target/release/server.exe
         retention-days: 2
 
   upload_assets_as_artifact:
@@ -83,6 +83,8 @@ jobs:
         #mv windows-latest/* .
         #rm windows-latest
       run: |
+        bash -c "mv windows-latest/* ."
+        bash -c "rm -rf windows-latest"
         bash -c "mv ubuntu-latest/* ."
         bash -c "rm -rf ubuntu-latest"
         bash -c "chmod +x client server"
