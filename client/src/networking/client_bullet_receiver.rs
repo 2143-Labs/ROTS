@@ -220,37 +220,41 @@ pub struct ProjectileSheet{
 fn on_player_shoot(
     mut ev_player_shoot: EventReader<EventFromEndpoint<ShootBullet>>,
     mut commands: Commands,
-    //mut meshes: ResMut<Assets<Mesh>>,
-    //mut materials: ResMut<Assets<StandardMaterial>>,
-    proj_res: Res<ProjectileSheet>,
-    mut sprite_params: Sprite3dParams,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    //proj_res: Res<ProjectileSheet>,
+    //mut sprite_params: Sprite3dParams,
 ) {
     for e in &mut ev_player_shoot {
         info!("spawning bullet");
 
-        let sprite = AtlasSprite3d {
-            atlas: proj_res.waterboll.clone(),
-            pixels_per_metre: 32.,
-            partial_alpha: true,
-            unlit: false,
-            index: 20,
-            ..default()
-        }
-        .bundle(&mut sprite_params);
+        //let sprite = AtlasSprite3d {
+            //atlas: proj_res.waterboll.clone(),
+            //pixels_per_metre: 32.,
+            //partial_alpha: true,
+            //unlit: false,
+            //index: 0,
+            //..default()
+        //}
+        //.bundle(&mut sprite_params);
 
         commands
-            //.spawn(PbrBundle {
-                //mesh: meshes.add(Mesh::from(shape::Cube::new(0.3))),
-                //material: materials.add(Color::PINK.into()),
-                //transform: Transform::from_xyz(0.0, -100.0, 0.0),
-                //..default()
-            //})
-            .spawn(sprite)
+            .spawn(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Cube::new(0.3))),
+                material: materials.add(Color::PINK.into()),
+                transform: Transform::from_xyz(0.0, -100.0, 0.0),
+                ..default()
+            })
+            //.spawn(sprite)
             .insert(Lifetime {
                 timer: Timer::from_seconds(5.0, TimerMode::Once),
             })
             .insert(e.event.phys.clone())
             .insert(e.event.id);
+            //.insert(AnimationTimer(Timer::from_seconds(
+                //0.1,
+                //TimerMode::Repeating,
+            //)));
 
     }
 }
@@ -268,14 +272,16 @@ fn on_player_animate(
     for e in &mut ev_player_animate {
         info!("starting animation {:?}", e.event.animation);
 
+        let frames = 32;
+
         let sprite = match e.event.animation {
             shared::event::AnimationThing::Waterball => {
                 AtlasSprite3d {
                     atlas: proj_res.waterboll.clone(),
-                    pixels_per_metre: 32.,
+                    pixels_per_metre: 16.,
                     partial_alpha: true,
                     unlit: false,
-                    index: 20,
+                    index: 0,
                     ..default()
                 }
                 .bundle(&mut sprite_params)
@@ -285,13 +291,13 @@ fn on_player_animate(
         commands
             .spawn(sprite)
             .insert(crate::lifetime::LifetimeWithEvent {
-                timer: Timer::from_seconds(1.0, TimerMode::Once),
+                timer: Timer::from_seconds(0.9, TimerMode::Once),
             })
             .insert(FaceCamera)
             .insert(AttachedAnimation(e.event.id))
             .insert(AnimationTimer(Timer::from_seconds(
-                1.0,
-                TimerMode::Once,
+                1.0 / frames as f32,
+                TimerMode::Repeating,
             )));
 
     }

@@ -86,22 +86,28 @@ fn lifetime_event(
             //let _tower_transform: &Transform = towers.single();
             //let spawn_transform = Transform::from_xyz(0.0, -100., 0.0);
 
-            let phys = BulletPhysics {
-                fired_target: Vec2 {
-                    x: isect.x,
-                    y: isect.z,
-                },
-                fired_from: Vec2 {
+            for _ in 0..100 {
+                let mut rng = thread_rng();
+                let x = rng.gen_range(-1.0..1.0);
+                let y = rng.gen_range(-1.0..1.0);
+                let spd = rng.gen_range(1.0..20.0);
+                let rand_offset = Vec2::new(x, y);
+                let from = Vec2 {
                     x: player_transform.translation.x,
                     y: player_transform.translation.z,
-                },
-                speed: 10.0,
-                ai: BulletAI::Direct,
-            };
+                };
 
-            let ev = EventToServer::ShootBullet(phys);
-            let data = serde_json::to_string(&ev).unwrap();
-            event_list_res.handler.network().send(mse.0, data.as_bytes());
+                let phys = BulletPhysics {
+                    fired_target: from + rand_offset,
+                    fired_from: from,
+                    speed: spd,
+                    ai: BulletAI::Wavy,
+                };
+
+                let ev = EventToServer::ShootBullet(phys);
+                let data = serde_json::to_string(&ev).unwrap();
+                event_list_res.handler.network().send(mse.0, data.as_bytes());
+            }
         }
     }
 }
@@ -201,16 +207,12 @@ fn spawn_bullet(
     event_list_res: Res<ServerResources<EventToClient>>,
     mse: Res<MainServerEndpoint>,
 ) {
-    let mut xd = false;
     // Right click, red wavy, left click, blue direct
     let (_color, ai) = if keyboard_input.just_pressed(KeyCode::E) {
         (Color::PINK, BulletAI::Wavy2)
     } else if keyboard_input.just_pressed(KeyCode::R) {
         (Color::RED, BulletAI::Wavy)
     } else if keyboard_input.just_pressed(KeyCode::T) {
-        (Color::OLIVE, BulletAI::Direct)
-    } else if keyboard_input.just_pressed(KeyCode::P) {
-        xd = true;
         (Color::OLIVE, BulletAI::Direct)
     } else {
         return;
@@ -256,30 +258,6 @@ fn spawn_bullet(
     let ev = EventToServer::ShootBullet(phys);
     let data = serde_json::to_string(&ev).unwrap();
     event_list_res.handler.network().send(mse.0, data.as_bytes());
-    if xd {
-        for _ in 0..100 {
-            let mut rng = thread_rng();
-            let x = rng.gen_range(-1.0..1.0);
-            let y = rng.gen_range(-1.0..1.0);
-            let spd = rng.gen_range(1.0..20.0);
-            let rand_offset = Vec2::new(x, y);
-            let from = Vec2 {
-                x: player_transform.translation.x,
-                y: player_transform.translation.z,
-            };
-
-            let phys = BulletPhysics {
-                fired_target: from + rand_offset,
-                fired_from: from,
-                speed: spd,
-                ai: BulletAI::Wavy,
-            };
-
-            let ev = EventToServer::ShootBullet(phys);
-            let data = serde_json::to_string(&ev).unwrap();
-            event_list_res.handler.network().send(mse.0, data.as_bytes());
-        }
-    }
 
 }
 
