@@ -220,31 +220,32 @@ pub struct ProjectileSheet{
 fn on_player_shoot(
     mut ev_player_shoot: EventReader<EventFromEndpoint<ShootBullet>>,
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    //proj_res: Res<ProjectileSheet>,
-    //mut sprite_params: Sprite3dParams,
+    //mut meshes: ResMut<Assets<Mesh>>,
+    //mut materials: ResMut<Assets<StandardMaterial>>,
+    proj_res: Res<ProjectileSheet>,
+    mut sprite_params: Sprite3dParams,
 ) {
     for e in &mut ev_player_shoot {
         info!("spawning bullet");
 
-        //let sprite = AtlasSprite3d {
-            //atlas: proj_res.waterboll.clone(),
-            //pixels_per_metre: 32.,
-            //partial_alpha: true,
-            //unlit: false,
-            //index: 20,
-            //..default()
-        //}
-        //.bundle(&mut sprite_params);
+        let sprite = AtlasSprite3d {
+            atlas: proj_res.waterboll.clone(),
+            pixels_per_metre: 32.,
+            partial_alpha: true,
+            unlit: false,
+            index: 20,
+            ..default()
+        }
+        .bundle(&mut sprite_params);
 
         commands
-            .spawn(PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Cube::new(0.3))),
-                material: materials.add(Color::PINK.into()),
-                transform: Transform::from_xyz(0.0, -100.0, 0.0),
-                ..default()
-            })
+            //.spawn(PbrBundle {
+                //mesh: meshes.add(Mesh::from(shape::Cube::new(0.3))),
+                //material: materials.add(Color::PINK.into()),
+                //transform: Transform::from_xyz(0.0, -100.0, 0.0),
+                //..default()
+            //})
+            .spawn(sprite)
             .insert(Lifetime {
                 timer: Timer::from_seconds(5.0, TimerMode::Once),
             })
@@ -274,7 +275,7 @@ fn on_player_animate(
                     pixels_per_metre: 32.,
                     partial_alpha: true,
                     unlit: false,
-                    index: 4,
+                    index: 20,
                     ..default()
                 }
                 .bundle(&mut sprite_params)
