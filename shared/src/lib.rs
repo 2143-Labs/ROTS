@@ -85,7 +85,7 @@ pub struct ServerResources<T> {
     pub handler: NodeHandler<()>,
 }
 
-#[derive(Resource, Deserialize)]
+#[derive(Resource, Deserialize, Serialize)]
 pub struct Config {
     pub ip: String,
     pub port: u16,
@@ -98,12 +98,28 @@ impl Config {
         path.pop();
         path.push("config.yaml");
 
-        let file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .open(path)
-            .unwrap();
+        // Try to open config file
+        match OpenOptions::new().read(true).open(&path) {
+            Ok(file) => {
+                serde_yaml::from_reader(file).unwrap()
+            },
+            Err(kind) => match kind.kind() {
+                //if it doesn't exist, try to create it.
+                std::io::ErrorKind::NotFound => {
+                    let config = Self {
+                        ip: "john2143.com".into(),
+                        port: 25565,
+                        name: None,
+                    };
 
-        serde_yaml::from_reader(file).unwrap()
+                    let file_handler = OpenOptions::new().create(true).write(true).open(&path).unwrap();
+
+                    serde_yaml::to_writer(file_handler, &config).unwrap();
+                    // should mabye just crash here and ask them to review their config
+                    config
+                },
+                e => panic!("Failed to open config file {e:?}"),
+            },
+        }
     }
 }
