@@ -98,7 +98,12 @@ impl Config {
         path.pop();
         path.push("config.yaml");
 
-        let file = OpenOptions::new().read(true).open(path).unwrap();
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(path)
+            .unwrap();
+
         serde_yaml::from_reader(file).unwrap()
     }
 }
