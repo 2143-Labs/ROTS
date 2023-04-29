@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy::reflect::Reflect;
 use bevy_mod_raycast::Intersection;
 use bevy_rapier3d::prelude::{ActiveEvents, Collider, RigidBody};
+use rand::{thread_rng, Rng};
 
 use crate::{player::Player, networking::client_bullet_receiver::MainServerEndpoint};
 use crate::setup::MyRaycastSet;
@@ -93,12 +94,16 @@ fn spawn_bullet(
     event_list_res: Res<ServerResources<EventToClient>>,
     mse: Res<MainServerEndpoint>,
 ) {
+    let mut xd = false;
     // Right click, red wavy, left click, blue direct
     let (_color, ai) = if keyboard_input.just_pressed(KeyCode::E) {
         (Color::PINK, BulletAI::Wavy2)
     } else if keyboard_input.just_pressed(KeyCode::R) {
         (Color::RED, BulletAI::Wavy)
     } else if keyboard_input.just_pressed(KeyCode::T) {
+        (Color::OLIVE, BulletAI::Direct)
+    } else if keyboard_input.just_pressed(KeyCode::P) {
+        xd = true;
         (Color::OLIVE, BulletAI::Direct)
     } else {
         return;
@@ -144,6 +149,31 @@ fn spawn_bullet(
     let ev = EventToServer::ShootBullet(phys);
     let data = serde_json::to_string(&ev).unwrap();
     event_list_res.handler.network().send(mse.0, data.as_bytes());
+    if xd {
+        for _ in 0..100 {
+            let mut rng = thread_rng();
+            let x = rng.gen_range(-1.0..1.0);
+            let y = rng.gen_range(-1.0..1.0);
+            let spd = rng.gen_range(1.0..20.0);
+            let rand_offset = Vec2::new(x, y);
+            let from = Vec2 {
+                x: player_transform.translation.x,
+                y: player_transform.translation.z,
+            };
+
+            let phys = BulletPhysics {
+                fired_target: from + rand_offset,
+                fired_from: from,
+                speed: spd,
+                ai: BulletAI::Wavy,
+            };
+
+            let ev = EventToServer::ShootBullet(phys);
+            let data = serde_json::to_string(&ev).unwrap();
+            event_list_res.handler.network().send(mse.0, data.as_bytes());
+        }
+    }
+
 }
 
 #[derive(Reflect, Component, Default)]
