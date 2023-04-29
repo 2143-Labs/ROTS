@@ -174,6 +174,7 @@ fn on_player_connect(
             .insert(NetworkPlayer {
                 name: e.event.name.clone(),
             })
+            .insert(FaceCamera)
             .insert(AnimationTimer(Timer::from_seconds(
                 0.4,
                 TimerMode::Repeating,
