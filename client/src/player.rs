@@ -18,10 +18,15 @@ use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 use shared::Config;
 
 pub fn init(app: &mut App) -> &mut App {
-    app.add_system(spawn_player_sprite.run_if(in_state(GameState::Ready).and_then(run_once())))
+    app
+        .add_system(spawn_player_sprite.run_if(in_state(GameState::Ready).and_then(run_once())))
         .add_systems(
             (player_movement, wow_camera_system)
-                .distributive_run_if(in_state(FreeCamState::Locked)),
+                .distributive_run_if(in_state(FreeCamState::ThirdPersonLocked)),
+        )
+        .add_systems(
+            (player_movement, camera_follow_system_free_mouse, q_e_rotate_cam)
+                .distributive_run_if(in_state(FreeCamState::ThirdPersonFreeMouse))
         )
         .register_type::<Jumper>()
 }
@@ -147,69 +152,65 @@ pub fn player_movement(
     }
 }
 
-pub fn camera_follow_system_old(
+pub fn q_e_rotate_cam(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut camera_query: Query<&mut CameraFollow>,
+    time: Res<Time>,
+    config: Res<Config>,
+) {
+    let mut rotation = 0.0;
+    if keyboard_input.pressed(KeyCode::Q) {
+        rotation += 1.0;
+    }
+    if keyboard_input.pressed(KeyCode::E) {
+        rotation -= 1.0;
+    }
+    if rotation != 0.0 {
+        camera_query.single_mut().yaw_radians += config.qe_sens * rotation * time.delta_seconds();
+    }
+}
+
+pub fn camera_follow_system_free_mouse(
     mut mouse_wheel_events: EventReader<MouseWheel>,
     mut mouse_events: EventReader<MouseMotion>,
     mouse_input: Res<Input<MouseButton>>,
     mut camera_query: Query<(&mut Transform, &mut CameraFollow), With<Camera3d>>,
-    mut player_query: Query<(&Transform, &mut Player), Without<CameraFollow>>,
+    player_query: Query<(&Transform), (With<Player>, Without<CameraFollow>)>,
     keyboard_input: Res<Input<KeyCode>>,
     config: Res<Config>,
 ) {
-    if let Ok((player_transform, mut player)) = player_query.get_single_mut() {
-        for (_, mut camera_follow) in camera_query.iter_mut() {
-            //dbg!{player.lock_movement};
-            for event in mouse_wheel_events.iter() {
-                camera_follow.distance = match event.y {
-                    y if y < 0. => (camera_follow.distance + 1.).abs(),
-                    y if y > 0. => (camera_follow.distance - 1.).abs(),
-                    _ => camera_follow.distance,
-                };
-                if camera_follow.distance < camera_follow.min_distance {
-                    camera_follow.distance = camera_follow.min_distance;
-                } else if camera_follow.distance > camera_follow.max_distance {
-                    camera_follow.distance = camera_follow.max_distance;
-                }
-            }
-            if mouse_input.pressed(MouseButton::Right) {
-                camera_follow.dragging = true;
-                for event in mouse_events.iter() {
-                    let sens = config.sens;
-                    camera_follow.yaw_radians -= event.delta.x * sens;
-                }
-                // player.lock_movement = [None; 4];
-            }
-            if mouse_input.just_released(MouseButton::Right) {
-                camera_follow.dragging = false;
-                camera_follow.old_yaw = camera_follow.yaw_radians;
-                player.lock_movement = [None; 4];
-                if keyboard_input.pressed(KeyCode::W) {
-                    player.lock_movement[0] = Some(Vec2::new(
-                        camera_follow.yaw_radians.sin(),
-                        camera_follow.yaw_radians.cos(),
-                    ));
-                }
-                if keyboard_input.pressed(KeyCode::S) {
-                    player.lock_movement[2] = Some(Vec2::new(
-                        camera_follow.yaw_radians.sin(),
-                        camera_follow.yaw_radians.cos(),
-                    ));
-                }
+    let player_transform = match player_query.get_single() {
+        Ok(s) => s,
+        Err(_) => return,
+    };
+
+    for (mut camera_transform, mut camera_follow) in camera_query.iter_mut() {
+        for event in mouse_wheel_events.iter() {
+            camera_follow.distance -= event.y;
+            camera_follow.distance = camera_follow.distance.clamp(camera_follow.min_distance, camera_follow.max_distance);
+        }
+
+        if mouse_input.pressed(MouseButton::Right) {
+            for event in mouse_events.iter() {
+                let sens = config.sens;
+                camera_follow.yaw_radians -= event.delta.x * sens;
+                camera_follow.pitch_radians -= event.delta.y * sens;
+                camera_follow.pitch_radians = camera_follow.pitch_radians.clamp(0.05 * PI, 0.95 * PI);
             }
         }
-        for (mut transform, camera_follow) in camera_query.iter_mut() {
-            let new_transform = Transform::from_translation(
-                Vec3::new(
-                    camera_follow.yaw_radians.sin(),
-                    1.,
-                    camera_follow.yaw_radians.cos(),
-                ) * camera_follow.distance
-                    + player_transform.translation,
-            )
-            .looking_at(player_transform.translation, Vec3::Y);
-            transform.translation = new_transform.translation;
-            transform.rotation = new_transform.rotation;
-        }
+
+        let camera_location =
+            Quat::from_rotation_y(camera_follow.yaw_radians)
+            * Quat::from_rotation_z(camera_follow.pitch_radians)
+            * Vec3::Y
+            * camera_follow.distance
+            + player_transform.translation;
+
+        let new_transform = Transform::from_translation(camera_location)
+            .looking_at(player_transform.translation + 0.5 * Vec3::Y, Vec3::Y);
+
+        camera_transform.translation = new_transform.translation;
+        camera_transform.rotation = new_transform.rotation;
     }
 }
 

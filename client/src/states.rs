@@ -29,7 +29,8 @@ impl Plugin for StatePlugin {
 #[derive(Clone, Debug, Eq, Hash, PartialEq, States, Default)]
 pub enum FreeCamState {
     #[default]
-    Locked,
+    ThirdPersonLocked,
+    ThirdPersonFreeMouse,
     Free,
 }
 
@@ -64,17 +65,18 @@ pub fn toggle_freecam(
             };
             window.cursor.visible = !window.cursor.visible;
         };
-        println!("::: ESCAPE PRESSED! :::");
+        //info!(?cam_state.0);
         next_state.set(match cam_state.0 {
             FreeCamState::Free => {
-                println!("::: FreeCamState::Free :::");
                 for player in players.iter_mut() {
                     commands.entity(player).remove::<FlyCamera>();
                 }
-                FreeCamState::Locked
+                FreeCamState::ThirdPersonLocked
             }
-            FreeCamState::Locked => {
-                println!("::: FreeCamState::Locked :::");
+            FreeCamState::ThirdPersonLocked => {
+                FreeCamState::ThirdPersonFreeMouse
+            }
+            FreeCamState::ThirdPersonFreeMouse => {
                 for player in players.iter_mut() {
                     commands.entity(player).insert(FlyCamera::default());
                 }

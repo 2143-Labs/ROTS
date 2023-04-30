@@ -5,6 +5,7 @@ use bevy_rapier3d::prelude::{ActiveEvents, Collider, RigidBody};
 use rand::{thread_rng, Rng};
 
 use crate::networking::client_bullet_receiver::NetworkPlayer;
+use crate::states::FreeCamState;
 use crate::{player::Player, networking::client_bullet_receiver::MainServerEndpoint};
 use crate::setup::MyRaycastSet;
 use shared::{BulletPhysics, BulletAI, EventToClient, ServerResources, EventToServer};
@@ -174,13 +175,20 @@ fn camera_aim(
     mut raycast_source: Query<&mut RaycastSource<MyRaycastSet>>,
     mut aim_target_cube: Query<&mut Transform, With<AimVectorTarget>>,
     //camera_query: Query<(&bevy::render::camera::Camera, &Transform)>,
+    camera_type: Res<State<FreeCamState>>,
 ) {
+    raycast_source.single_mut();
     let cursor_pos = match cursor.iter().last() {
         Some(c) => c.position,
         None => return,
     };
 
-    raycast_source.single_mut().cast_method = RaycastMethod::Screenspace(cursor_pos);
+    match camera_type.0 {
+        FreeCamState::ThirdPersonLocked    => raycast_source.single_mut().cast_method = RaycastMethod::Transform,
+        FreeCamState::ThirdPersonFreeMouse => raycast_source.single_mut().cast_method = RaycastMethod::Screenspace(cursor_pos),
+        FreeCamState::Free                 => raycast_source.single_mut().cast_method = RaycastMethod::Transform,
+    };
+
 
     for i in &intersect {
         if let Ok(mut s) = aim_target_cube.get_single_mut() {
