@@ -71,7 +71,7 @@ pub fn spawn_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: ResMut<AssetServer>,
 ) {
-    let size = 10.;
+    let size = 1000.;
     commands
         .spawn((
             PbrBundle {
@@ -80,6 +80,7 @@ pub fn spawn_scene(
                     subdivisions: 10,
                 })),
                 material: materials.add(Color::hex("#1f7840").unwrap().into()),
+                transform: Transform::from_xyz(0.0, -0.01, 0.0),
                 ..default()
             },
             RaycastMesh::<MyRaycastSet>::default(),
