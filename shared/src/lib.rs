@@ -99,7 +99,7 @@ pub struct ServerResources<T> {
     pub handler: NodeHandler<()>,
 }
 
-#[derive(Resource, Deserialize, Serialize)]
+#[derive(Clone, Resource, Deserialize, Serialize)]
 pub struct Config {
     pub ip: String,
     pub port: u16,

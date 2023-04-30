@@ -1,7 +1,7 @@
 use std::ops::DerefMut;
 
 use rand::{thread_rng, Rng};
-use shared::{EventToServer, EventToClient, NetEntId, event::{UpdatePos, ShootBullet, Animation}};
+use shared::{EventToServer, EventToClient, NetEntId, event::{UpdatePos, ShootBullet, Animation}, Config};
 use bevy::{app::ScheduleRunnerSettings, prelude::*, utils::{Duration, HashMap}, log::LogPlugin};
 use message_io::{node, network::{Transport, NetEvent, Endpoint}};
 use shared::{event::PlayerInfo, ServerResources, EventFromEndpoint};
@@ -10,12 +10,14 @@ fn main() {
     info!("Main Start");
     let mut app = App::new();
 
-    let res = start_server();
+    let config = Config::load_from_main_dir();
+    let server = start_server(&config);
 
     app
         .add_plugin(LogPlugin::default())
         .insert_resource(ScheduleRunnerSettings::run_loop(Duration::from_secs_f64(1.0 / 120.0)))
-        .insert_resource(res)
+        .insert_resource(server)
+        .insert_resource(config)
         .insert_resource(EndpointToNetId::default())
         .add_event::<EventFromEndpoint<PlayerInfo>>()
         .add_event::<UpdatePos>()
@@ -31,7 +33,8 @@ fn main() {
     app.run();
 }
 
-fn start_server() -> ServerResources<EventToServer> {
+fn start_server(config: &Config) -> ServerResources<EventToServer> {
+    let config = config.clone();
     let (handler, listener) = node::split::<()>();
 
     let res = ServerResources {
@@ -42,7 +45,8 @@ fn start_server() -> ServerResources<EventToServer> {
     let res_copy = res.clone();
 
     std::thread::spawn(move || {
-        handler.network().listen(Transport::Udp, "0.0.0.0:3000").unwrap();
+        let con_str = (&*config.ip, config.port);
+        handler.network().listen(Transport::Udp, con_str).unwrap();
 
         listener.for_each(move |event| match event.network() {
             NetEvent::Connected(_, _) => unreachable!(),
@@ -50,17 +54,16 @@ fn start_server() -> ServerResources<EventToServer> {
             NetEvent::Message(endpoint, data) => {
                 match data[0] {
                     b'[' => {
-                        dbg!("duplex connection");
                         let event: Vec<EventToServer> = serde_json::from_slice(data).unwrap();
 
-                        let mut elist = res_copy.event_list.lock().unwrap();
+                        let mut elist = res.event_list.lock().unwrap();
                         for e in event {
                             elist.push((endpoint, e));
                         }
                     },
                     b'{' => {
                         let event = serde_json::from_slice(data).unwrap();
-                        res_copy.event_list.lock().unwrap().push((endpoint, event));
+                        res.event_list.lock().unwrap().push((endpoint, event));
                     },
                     _ => {
                         error!("invalid net req");
@@ -71,7 +74,7 @@ fn start_server() -> ServerResources<EventToServer> {
         });
     });
 
-    res
+    res_copy
 }
 
 #[derive(Resource, Default)]
