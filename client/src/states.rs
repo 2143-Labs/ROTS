@@ -12,7 +12,7 @@ pub struct StatePlugin;
 impl Plugin for StatePlugin {
     fn build(&self, app: &mut App) {
         app.add_state::<GameState>()
-            .add_state::<FreeCamState>()
+            .add_state::<CameraState>()
             .add_state::<PhysView>()
             .add_loading_state(
                 LoadingState::new(GameState::Loading).continue_to_state(GameState::Ready),
@@ -27,10 +27,11 @@ impl Plugin for StatePlugin {
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, States, Default)]
-pub enum FreeCamState {
+pub enum CameraState {
     #[default]
-    Locked,
+    Pan,
     Free,
+    TopDown,
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, States, Default)]
@@ -51,8 +52,8 @@ pub enum GameState {
 pub fn toggle_freecam(
     mut players: Query<Entity, With<CameraFollow>>,
     mut commands: Commands,
-    cam_state: Res<State<FreeCamState>>,
-    mut next_state: ResMut<NextState<FreeCamState>>,
+    cam_state: Res<State<CameraState>>,
+    mut next_state: ResMut<NextState<CameraState>>,
     input: Res<Input<KeyCode>>,
     mut windows_query: Query<&mut Window>,
 ) {
@@ -66,19 +67,19 @@ pub fn toggle_freecam(
         };
         println!("::: ESCAPE PRESSED! :::");
         next_state.set(match cam_state.0 {
-            FreeCamState::Free => {
+            CameraState::Free => {
                 println!("::: FreeCamState::Free :::");
                 for player in players.iter_mut() {
                     commands.entity(player).remove::<FlyCamera>();
                 }
-                FreeCamState::Locked
+                CameraState::Pan
             }
-            FreeCamState::Locked => {
+            CameraState::Pan => {
                 println!("::: FreeCamState::Locked :::");
                 for player in players.iter_mut() {
                     commands.entity(player).insert(FlyCamera::default());
                 }
-                FreeCamState::Free
+                CameraState::Free
             }
         });
     }

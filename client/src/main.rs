@@ -9,6 +9,7 @@ use bevy_sprite3d::Sprite3dPlugin;
 use networking::client_bullet_receiver::NetworkingPlugin;
 use states::StatePlugin;
 
+pub mod camera;
 pub mod lifetime;
 pub mod networking;
 pub mod physics;
@@ -24,6 +25,7 @@ fn main() {
     let mut app = App::new();
 
     setup::init(&mut app);
+    camera::init(&mut app);
     player::init(&mut app);
     sprites::init(&mut app);
     lifetime::init(&mut app);

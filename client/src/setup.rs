@@ -10,53 +10,17 @@ use crate::{
 };
 
 pub fn init(app: &mut App) -> &mut App {
-    app.add_startup_systems((spawn_camera, spawn_scene))
+    app.add_startup_systems(spawn_scene)
         .add_system(modify_collider_active_events)
         .add_system(spawn_muscle_man.run_if(in_state(GameState::Ready).and_then(run_once())))
         .add_plugin(DefaultRaycastingPlugin::<MyRaycastSet>::default())
 }
 
-#[derive(Component)]
-struct PlayerCamera; // tag entity to make it always face the camera
 
-#[derive(Reflect, Component)]
-pub struct CameraFollow {
-    pub distance: f32,
-    pub min_distance: f32,
-    pub max_distance: f32,
-    pub dragging: bool,
-    pub degrees: f32,
-    pub old_degrees: f32,
-}
-impl Default for CameraFollow {
-    fn default() -> Self {
-        Self {
-            distance: 10.,
-            min_distance: 2.,
-            max_distance: 200.,
-            dragging: false,
-            degrees: 0.,
-            old_degrees: 0.,
-        }
-    }
-}
 
 #[derive(Reflect, Clone)]
 pub struct MyRaycastSet;
 
-pub fn spawn_camera(mut commands: Commands) {
-    commands
-        .spawn((
-            Camera3dBundle {
-                transform: Transform::from_xyz(10., 10., 10.).looking_at(Vec3::ZERO, Vec3::Y),
-                ..default()
-            },
-            RaycastSource::<MyRaycastSet>::new_transform_empty(),
-        ))
-        .insert(CameraFollow::default())
-        .insert(Name::new("Camera"))
-        .insert(PlayerCamera);
-}
 
 #[derive(Component)]
 pub struct Hideable;
