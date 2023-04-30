@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy::reflect::Reflect;
-use bevy_mod_raycast::Intersection;
+use bevy_mod_raycast::{Intersection, RaycastSource, RaycastMethod};
 use bevy_rapier3d::prelude::{ActiveEvents, Collider, RigidBody};
 use rand::{thread_rng, Rng};
 
@@ -169,9 +169,19 @@ fn update_collisions(
 }
 
 fn camera_aim(
+    mut cursor: EventReader<CursorMoved>,
     intersect: Query<&Intersection<MyRaycastSet>>,
+    mut raycast_source: Query<&mut RaycastSource<MyRaycastSet>>,
     mut aim_target_cube: Query<&mut Transform, With<AimVectorTarget>>,
+    //camera_query: Query<(&bevy::render::camera::Camera, &Transform)>,
 ) {
+    let cursor_pos = match cursor.iter().last() {
+        Some(c) => c.position,
+        None => return,
+    };
+
+    raycast_source.single_mut().cast_method = RaycastMethod::Screenspace(cursor_pos);
+
     for i in &intersect {
         if let Ok(mut s) = aim_target_cube.get_single_mut() {
             match i.position() {
@@ -184,7 +194,6 @@ fn camera_aim(
 
 #[derive(Component, Reflect)]
 struct AimVectorTarget;
-
 
 fn spawn_animations(
     _buttons: Res<Input<MouseButton>>,
@@ -240,9 +249,10 @@ fn spawn_bullet(
 
     debug!(?isect);
 
+    //let ray = bevy_mod_raycast::RaycastSource::new_screenspace(Vec2::new(100.0, 100.0), camera, camera_transform);
+    // bevy::render::Camera
+
     let player_transform: &Transform = player.single();
-    //let _tower_transform: &Transform = towers.single();
-    //let spawn_transform = Transform::from_xyz(0.0, -100., 0.0);
 
     let phys = BulletPhysics {
         fired_target: Vec2 {
