@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::AssetCollection;
 use bevy_mod_raycast::{DefaultRaycastingPlugin, RaycastMesh, RaycastSource};
@@ -25,8 +27,9 @@ pub struct CameraFollow {
     pub min_distance: f32,
     pub max_distance: f32,
     pub dragging: bool,
-    pub degrees: f32,
-    pub old_degrees: f32,
+    pub yaw_radians: f32,
+    pub pitch_radians: f32,
+    pub old_yaw: f32,
 }
 impl Default for CameraFollow {
     fn default() -> Self {
@@ -35,8 +38,9 @@ impl Default for CameraFollow {
             min_distance: 2.,
             max_distance: 200.,
             dragging: false,
-            degrees: 0.,
-            old_degrees: 0.,
+            yaw_radians: 0.,
+            pitch_radians: PI * 1.0/4.0,
+            old_yaw: 0.,
         }
     }
 }

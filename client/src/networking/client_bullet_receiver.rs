@@ -7,7 +7,7 @@ use message_io::network::{NetEvent, Transport, Endpoint};
 use rand::{thread_rng, Rng};
 use shared::{event::{PlayerInfo, UpdatePos, ShootBullet, Animation}, ServerResources, EventFromEndpoint, EventToClient, EventToServer, NetEntId, Config};
 
-use crate::{lifetime::{Lifetime}, states::GameState, sprites::AnimationTimer, player::{FaceCamera, PlayerSpriteAssets, Player}};
+use crate::{lifetime::Lifetime, states::GameState, sprites::AnimationTimer, player::{FaceCamera, PlayerSpriteAssets, Player}};
 
 pub struct NetworkingPlugin;
 
@@ -17,6 +17,7 @@ impl Plugin for NetworkingPlugin {
         let (server, endpoint) = setup_networking_server(&config);
         app
             .insert_resource(config)
+            .register_type::<Config>()
             .insert_resource(server)
             .insert_resource(endpoint)
             .add_event::<EventFromEndpoint<PlayerInfo>>()

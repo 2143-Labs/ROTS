@@ -99,11 +99,12 @@ pub struct ServerResources<T> {
     pub handler: NodeHandler<()>,
 }
 
-#[derive(Clone, Resource, Deserialize, Serialize)]
+#[derive(Reflect, Clone, Resource, Deserialize, Serialize, Default)]
 pub struct Config {
     pub ip: String,
     pub port: u16,
     pub name: Option<String>,
+    pub sens: f32,
 }
 
 impl Config {
@@ -123,6 +124,7 @@ impl Config {
                     let config = Self {
                         ip: "john2143.com".into(),
                         port: 25565,
+                        sens: 0.001,
                         name: None,
                     };
 
