@@ -1,8 +1,8 @@
-use std::ops::DerefMut;
+use std::{ops::DerefMut, sync::{atomic::AtomicI8, Arc}};
 
 use rand::{thread_rng, Rng};
-use shared::{EventToServer, EventToClient, NetEntId, event::{UpdatePos, ShootBullet, Animation}, Config};
-use bevy::{app::ScheduleRunnerSettings, prelude::*, utils::{Duration, HashMap}, log::LogPlugin};
+use shared::{EventToServer, EventToClient, NetEntId, event::{UpdatePos, ShootBullet, Animation, Heartbeat, PlayerDisconnect}, Config};
+use bevy::{app::ScheduleRunnerSettings, prelude::*, utils::{Duration, HashMap}, log::LogPlugin, transform::commands};
 use message_io::{node, network::{Transport, NetEvent, Endpoint}};
 use shared::{event::PlayerInfo, ServerResources, EventFromEndpoint};
 
@@ -19,6 +19,7 @@ fn main() {
         .insert_resource(server)
         .insert_resource(config)
         .insert_resource(EndpointToNetId::default())
+        .insert_resource(HeartbeatList::default())
         .add_event::<EventFromEndpoint<PlayerInfo>>()
         .add_event::<UpdatePos>()
         .add_event::<ShootBullet>()
@@ -28,6 +29,7 @@ fn main() {
         .add_system(tick_net_server)
         .add_system(send_shooting_to_all_players)
         .add_system(send_animations_to_all_players)
+        .add_system(check_heartbeats)
         .add_system(send_movement_to_all_players);
 
     app.run();
@@ -61,11 +63,12 @@ fn start_server(config: &Config) -> ServerResources<EventToServer> {
                             elist.push((endpoint, e));
                         }
                     },
-                    b'{' => {
+                    b'{' | b'"' => {
                         let event = serde_json::from_slice(data).unwrap();
                         res.event_list.lock().unwrap().push((endpoint, event));
                     },
-                    _ => {
+                    d => {
+                        dbg!(d);
                         error!("invalid net req");
                     }
                 }
@@ -82,9 +85,17 @@ struct EndpointToNetId {
     map: HashMap<Endpoint, NetEntId>,
 }
 
+#[derive(Resource, Default)]
+struct HeartbeatList {
+    heartbeats: HashMap<NetEntId, Arc<AtomicI8>>,
+}
+
 fn tick_net_server(
     event_list_res: Res<ServerResources<EventToServer>>,
+
     mut entity_mapping: ResMut<EndpointToNetId>,
+    mut heartbeat_mapping: ResMut<HeartbeatList>,
+
     mut ev_player_connect: EventWriter<EventFromEndpoint<PlayerInfo>>,
     mut ev_player_movement: EventWriter<UpdatePos>,
     mut ev_player_shooting: EventWriter<ShootBullet>,
@@ -106,6 +117,7 @@ fn tick_net_server(
                 ev_player_connect.send(EventFromEndpoint::new(_endpoint, ev));
 
                 entity_mapping.map.insert(_endpoint, id);
+                heartbeat_mapping.heartbeats.insert(id, Arc::new(AtomicI8::new(0)));
             },
             EventToServer::UpdatePos(new_pos) => {
                 match entity_mapping.map.get(&_endpoint) {
@@ -115,7 +127,7 @@ fn tick_net_server(
                             transform: new_pos,
                         });
                     }
-                    None => error!("Failed to match endpoint {_endpoint:?}to id"),
+                    None => {} // error!("Failed to match endpoint {_endpoint:?}to id"),
                 }
             },
             EventToServer::ShootBullet(phys) => {
@@ -142,8 +154,58 @@ fn tick_net_server(
                     None => error!("Failed to match endpoint {_endpoint:?}to id"),
                 }
             }
+            EventToServer::Heartbeat => {
+                match entity_mapping.map.get(&_endpoint) {
+                    Some(id) => {
+                        info!("Player {id:?} is heartbeat");
+                        heartbeat_mapping.heartbeats
+                            .get(id)
+                            .unwrap()
+                            .store(0, std::sync::atomic::Ordering::Release);
+                    }
+                    None => error!("Failed to match endpoint {_endpoint:?}to id"),
+                }
+            }
+
             _ => todo!(),
         }
+    }
+}
+
+
+fn check_heartbeats(
+    heartbeat_mapping: Res<HeartbeatList>,
+    clients: Query<(Entity, &GameNetClient, &NetEntId)>,
+    event_list_res: Res<ServerResources<EventToServer>>,
+    mut commands: Commands,
+) {
+    for (ent_id, beats_missed) in &heartbeat_mapping.heartbeats {
+        let beats = beats_missed.fetch_add(1, std::sync::atomic::Ordering::Acquire);
+        if beats >= 3 {
+            info!("Missed {beats} beats {ent_id:?}");
+        }
+        if beats >= 10 {
+            warn!("Missed {beats} beats, disconnecting {ent_id:?}");
+            for (c_ent, c_net_client, _c_net_ent) in &clients {
+                let event = EventToClient::PlayerDisconnect(PlayerDisconnect {
+                    id: *ent_id,
+                });
+
+                let events_as_str = serde_json::to_string(&event).unwrap();
+                event_list_res.handler
+                    .network()
+                    .send(c_net_client.endpoint, events_as_str.as_bytes());
+
+                if _c_net_ent == ent_id {
+                    error!("GOT DESPAWN!!!");
+                    commands
+                        .entity(c_ent)
+                        .despawn_recursive();
+                }
+            }
+
+        }
+
     }
 }
 

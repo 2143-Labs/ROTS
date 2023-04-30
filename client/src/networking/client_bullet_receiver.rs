@@ -5,7 +5,7 @@ use bevy_asset_loader::prelude::AssetCollection;
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 use message_io::network::{NetEvent, Transport, Endpoint};
 use rand::{thread_rng, Rng};
-use shared::{event::{PlayerInfo, UpdatePos, ShootBullet, Animation}, ServerResources, EventFromEndpoint, EventToClient, EventToServer, NetEntId, Config};
+use shared::{event::{PlayerInfo, UpdatePos, ShootBullet, Animation, PlayerDisconnect}, ServerResources, EventFromEndpoint, EventToClient, EventToServer, NetEntId, Config};
 
 use crate::{lifetime::Lifetime, states::GameState, sprites::AnimationTimer, player::{FaceCamera, PlayerSpriteAssets, Player}};
 
@@ -24,13 +24,16 @@ impl Plugin for NetworkingPlugin {
             .add_event::<EventFromEndpoint<UpdatePos>>()
             .add_event::<EventFromEndpoint<ShootBullet>>()
             .add_event::<EventFromEndpoint<Animation>>()
+            .add_event::<EventFromEndpoint<PlayerDisconnect>>()
             .add_systems((
                     tick_net_client,
                     send_movement_updates,
                     get_movement_updates,
                     on_player_connect,
+                    on_player_disconnect,
                     on_player_animate,
                     keep_animation_on_player,
+                    send_heartbeat,
                     on_player_shoot).distributive_run_if(in_state(GameState::Ready)));
     }
 }
@@ -121,6 +124,7 @@ pub fn tick_net_client(
     mut ev_player_movement: EventWriter<EventFromEndpoint<UpdatePos>>,
     mut ev_player_shoot: EventWriter<EventFromEndpoint<ShootBullet>>,
     mut ev_player_animation: EventWriter<EventFromEndpoint<Animation>>,
+    mut ev_player_disconnect: EventWriter<EventFromEndpoint<PlayerDisconnect>>,
 
     player: Query<Entity, With<Player>>,
     mut commands: Commands,
@@ -134,6 +138,7 @@ pub fn tick_net_client(
             EventToClient::UpdatePos(e) => ev_player_movement.send(EventFromEndpoint::new(_endpoint, e)),
             EventToClient::ShootBullet(e) => ev_player_shoot.send(EventFromEndpoint::new(_endpoint, e)),
             EventToClient::Animation(a) => ev_player_animation.send(EventFromEndpoint::new(_endpoint, a)),
+            EventToClient::PlayerDisconnect(a) => ev_player_disconnect.send(EventFromEndpoint::new(_endpoint, a)),
             EventToClient::YouAre(info) => {
                 info!("The server has returned our networking info {info:?}");
                 commands
@@ -197,6 +202,23 @@ fn on_player_connect(
                 0.4,
                 TimerMode::Repeating,
             )));
+    }
+}
+
+fn on_player_disconnect(
+    mut ev_player_disconnect: EventReader<EventFromEndpoint<PlayerDisconnect>>,
+    mut commands: Commands,
+    sprite_res: Query<(Entity, &NetEntId, &NetworkPlayer)>,
+) {
+    for e in &mut ev_player_disconnect {
+        for (ent, net_ent, player_info) in &sprite_res {
+            if net_ent == &e.event.id {
+                warn!("A player has disconnected: {} ({e:?})", player_info.name);
+                commands
+                    .entity(ent)
+                    .despawn_recursive();
+            }
+        }
     }
 }
 
@@ -317,4 +339,13 @@ fn keep_animation_on_player(
             }
         }
     }
+}
+
+fn send_heartbeat(
+    event_list_res: Res<ServerResources<EventToClient>>,
+    mse: Res<MainServerEndpoint>,
+) {
+    let ev = EventToServer::Heartbeat;
+    let data = serde_json::to_string(&ev).unwrap();
+    event_list_res.handler.network().send(mse.0, data.as_bytes());
 }

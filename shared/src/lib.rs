@@ -5,7 +5,7 @@ use event::AnimationThing;
 use message_io::{network::Endpoint, node::NodeHandler};
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Clone, Copy, Component, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Component, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct NetEntId(pub u64);
 
 pub mod event {
@@ -36,8 +36,18 @@ pub mod event {
     }
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
+    pub struct PlayerDisconnect {
+        pub id: NetEntId,
+    }
+
+    #[derive(Debug, Clone, Serialize, Deserialize)]
     pub enum AnimationThing {
         Waterball,
+    }
+
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    pub struct Heartbeat {
+        pub id: NetEntId,
     }
 }
 
@@ -69,6 +79,7 @@ pub enum EventToClient {
     UpdatePos(event::UpdatePos),
     ShootBullet(event::ShootBullet),
     Animation(event::Animation),
+    PlayerDisconnect(event::PlayerDisconnect),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -79,6 +90,7 @@ pub enum EventToServer {
     UpdatePos(Transform),
     ShootBullet(BulletPhysics),
     BeginAnimation(AnimationThing),
+    Heartbeat,
 }
 
 #[derive(Debug, Clone)]
