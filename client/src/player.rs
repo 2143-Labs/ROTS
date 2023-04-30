@@ -25,7 +25,7 @@ pub fn init(app: &mut App) -> &mut App {
                 .distributive_run_if(in_state(FreeCamState::ThirdPersonLocked)),
         )
         .add_systems(
-            (player_movement, camera_follow_system_free_mouse, q_e_rotate_cam)
+            (player_movement, wow_camera_system, q_e_rotate_cam)
                 .distributive_run_if(in_state(FreeCamState::ThirdPersonFreeMouse))
         )
         .register_type::<Jumper>()
@@ -170,13 +170,14 @@ pub fn q_e_rotate_cam(
     }
 }
 
-pub fn camera_follow_system_free_mouse(
+pub fn wow_camera_system(
     mut mouse_wheel_events: EventReader<MouseWheel>,
     mut mouse_events: EventReader<MouseMotion>,
     mouse_input: Res<Input<MouseButton>>,
     mut camera_query: Query<(&mut Transform, &mut CameraFollow), With<Camera3d>>,
     player_query: Query<(&Transform), (With<Player>, Without<CameraFollow>)>,
     keyboard_input: Res<Input<KeyCode>>,
+    camera_type: Res<State<FreeCamState>>,
     config: Res<Config>,
 ) {
     let player_transform = match player_query.get_single() {
@@ -190,55 +191,13 @@ pub fn camera_follow_system_free_mouse(
             camera_follow.distance = camera_follow.distance.clamp(camera_follow.min_distance, camera_follow.max_distance);
         }
 
-        if mouse_input.pressed(MouseButton::Right) {
+        if mouse_input.pressed(MouseButton::Right) || camera_type.0 == FreeCamState::ThirdPersonLocked {
             for event in mouse_events.iter() {
                 let sens = config.sens;
                 camera_follow.yaw_radians -= event.delta.x * sens;
                 camera_follow.pitch_radians -= event.delta.y * sens;
                 camera_follow.pitch_radians = camera_follow.pitch_radians.clamp(0.05 * PI, 0.95 * PI);
             }
-        }
-
-        let camera_location =
-            Quat::from_rotation_y(camera_follow.yaw_radians)
-            * Quat::from_rotation_z(camera_follow.pitch_radians)
-            * Vec3::Y
-            * camera_follow.distance
-            + player_transform.translation;
-
-        let new_transform = Transform::from_translation(camera_location)
-            .looking_at(player_transform.translation + 0.5 * Vec3::Y, Vec3::Y);
-
-        camera_transform.translation = new_transform.translation;
-        camera_transform.rotation = new_transform.rotation;
-    }
-}
-
-pub fn wow_camera_system(
-    mut mouse_wheel_events: EventReader<MouseWheel>,
-    mut mouse_events: EventReader<MouseMotion>,
-    //mouse_input: Res<Input<MouseButton>>,
-    mut camera_query: Query<(&mut Transform, &mut CameraFollow), With<Camera3d>>,
-    player_query: Query<(&Transform), (With<Player>, Without<CameraFollow>)>,
-    keyboard_input: Res<Input<KeyCode>>,
-    config: Res<Config>,
-) {
-    let player_transform = match player_query.get_single() {
-        Ok(s) => s,
-        Err(_) => return,
-    };
-
-    for (mut camera_transform, mut camera_follow) in camera_query.iter_mut() {
-        for event in mouse_wheel_events.iter() {
-            camera_follow.distance -= event.y;
-            camera_follow.distance = camera_follow.distance.clamp(camera_follow.min_distance, camera_follow.max_distance);
-        }
-
-        for event in mouse_events.iter() {
-            let sens = config.sens;
-            camera_follow.yaw_radians -= event.delta.x * sens;
-            camera_follow.pitch_radians -= event.delta.y * sens;
-            camera_follow.pitch_radians = camera_follow.pitch_radians.clamp(0.05 * PI, 0.95 * PI);
         }
 
         let camera_location =

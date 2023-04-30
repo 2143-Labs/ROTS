@@ -219,7 +219,7 @@ fn spawn_animations(
 }
 
 fn spawn_bullet(
-    _buttons: Res<Input<MouseButton>>,
+    mouse_button_input: Res<Input<MouseButton>>,
     keyboard_input: Res<Input<KeyCode>>,
     player: Query<&Transform, With<Player>>,
     intersect: Query<&Intersection<MyRaycastSet>>,
@@ -227,7 +227,7 @@ fn spawn_bullet(
     mse: Res<MainServerEndpoint>,
 ) {
     // Right click, red wavy, left click, blue direct
-    let (_color, ai) = if keyboard_input.just_pressed(KeyCode::E) {
+    let (_color, ai) = if mouse_button_input.just_pressed(MouseButton::Left) {
         (Color::PINK, BulletAI::Wavy2)
     } else if keyboard_input.just_pressed(KeyCode::R) {
         (Color::RED, BulletAI::Wavy)
