@@ -99,14 +99,36 @@ pub struct ServerResources<T> {
     pub handler: NodeHandler<()>,
 }
 
-#[derive(Resource, Deserialize, Serialize)]
+//fn default_qe_sens() -> f32 {
+    //3.0
+//}
+
+//fn default_sens() -> f32 {
+    //0.003
+//}
+
+#[derive(Reflect, Clone, Resource, Deserialize, Serialize, Default, Debug)]
 pub struct Config {
     pub ip: String,
     pub port: u16,
     pub name: Option<String>,
+    //#[serde(default="default_sens")]
+    pub sens: f32,
+    //#[serde(default="default_qe_sens")]
+    pub qe_sens: f32,
 }
 
 impl Config {
+    fn default_config() -> Self {
+        Self {
+            ip: "john2143.com".into(),
+            port: 25565,
+            sens: 0.003,
+            qe_sens: 3.0,
+            name: None,
+        }
+    }
+
     pub fn load_from_main_dir() -> Self {
         let mut path = current_dir().unwrap();
         path.pop();
@@ -115,16 +137,24 @@ impl Config {
         // Try to open config file
         match OpenOptions::new().read(true).open(&path) {
             Ok(file) => {
-                serde_yaml::from_reader(file).unwrap()
+                match serde_yaml::from_reader(file) {
+                    Ok(v) => v,
+                    Err(e) => {
+                        error!("====================================");
+                        error!("===  Failed to load your config  ===");
+                        error!("====================================");
+                        error!(?e);
+                        error!("Here is the default config:");
+                        let default_config = serde_yaml::to_string(&Self::default_config()).unwrap();
+                        println!("{}", default_config);
+                        panic!("Please fix the above error and restart your program");
+                    }
+                }
             },
             Err(kind) => match kind.kind() {
                 //if it doesn't exist, try to create it.
                 std::io::ErrorKind::NotFound => {
-                    let config = Self {
-                        ip: "john2143.com".into(),
-                        port: 25565,
-                        name: None,
-                    };
+                    let config = Self::default_config();
 
                     let file_handler = OpenOptions::new().create(true).write(true).open(&path).unwrap();
 

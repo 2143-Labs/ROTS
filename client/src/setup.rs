@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::AssetCollection;
 use bevy_mod_raycast::{DefaultRaycastingPlugin, RaycastMesh, RaycastSource};
@@ -16,8 +18,6 @@ pub fn init(app: &mut App) -> &mut App {
         .add_plugin(DefaultRaycastingPlugin::<MyRaycastSet>::default())
 }
 
-
-
 #[derive(Reflect, Clone)]
 pub struct MyRaycastSet;
 
@@ -31,7 +31,7 @@ pub fn spawn_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: ResMut<AssetServer>,
 ) {
-    let size = 10.;
+    let size = 1000.;
     commands
         .spawn((
             PbrBundle {
@@ -40,6 +40,7 @@ pub fn spawn_scene(
                     subdivisions: 10,
                 })),
                 material: materials.add(Color::hex("#1f7840").unwrap().into()),
+                transform: Transform::from_xyz(0.0, -0.01, 0.0),
                 ..default()
             },
             RaycastMesh::<MyRaycastSet>::default(),

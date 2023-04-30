@@ -1,4 +1,4 @@
-use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*};
+use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*, window::{CursorGrabMode, Cursor}};
 use bevy_fly_camera::FlyCameraPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier3d::{
@@ -29,8 +29,11 @@ fn main() {
     player::init(&mut app);
     sprites::init(&mut app);
     lifetime::init(&mut app);
+    let mut cursor = Cursor::default();
+    cursor.visible = false;
+    cursor.grab_mode = CursorGrabMode::Locked;
 
-    let window = WindowPlugin {
+    let mut window = WindowPlugin {
         primary_window: Some(Window {
             title: "Realm of the OctoSurvivors!".into(),
             resolution: (WIDTH, HEIGHT).into(),
@@ -39,6 +42,7 @@ fn main() {
             // Tells wasm to resize the window according to the available canvas
             // Tells wasm not to override default event handling, like F5, Ctrl+R etc.
             prevent_default_event_handling: false,
+            cursor,
             ..default()
         }),
         ..default()
