@@ -23,20 +23,16 @@ pub fn init(app: &mut App) -> &mut App {
                 .run_if(in_state(CameraState::ThirdPersonLocked).or_else(in_state(CameraState::ThirdPersonFreeMouse))))
         .add_system(q_e_rotate_cam
                 .run_if(in_state(CameraState::ThirdPersonFreeMouse)))
-        .add_system(
+         .add_system(
             camera_pan_system.run_if(
                 in_state(CameraState::ThirdPersonFreeMouse)
                     .or_else(in_state(CameraState::ThirdPersonLocked)),
-            ),
-        )
+        ))
         .add_system(camera_topdown_system.run_if(in_state(CameraState::TopDown)))
 }
-
-#[derive(Component)]
-struct PlayerCamera; // tag entity to make it always face the camera
-
 #[derive(Reflect, Component)]
-pub struct CameraFollow {
+pub struct PlayerCamera {
+    // tag entity to make it always face the camera
     pub distance: f32,
     pub min_distance: f32,
     pub max_distance: f32,
@@ -46,7 +42,7 @@ pub struct CameraFollow {
     pub pitch_radians: f32,
     pub old_degrees: f32,
 }
-impl Default for CameraFollow {
+impl Default for PlayerCamera {
     fn default() -> Self {
         Self {
             distance: 10.,
@@ -88,8 +84,8 @@ fn swap_projection(_camera: &Mut<Camera3d>, orthographic: ProjectionType) {
 
 pub fn camera_topdown_system(
     mut mouse_wheel_events: EventReader<MouseWheel>,
-    mut camera_query: Query<(&mut Transform, &mut CameraFollow), With<Camera3d>>,
-    mut player_query: Query<&Transform, Without<CameraFollow>>,
+    mut camera_query: Query<(&mut Transform, &mut PlayerCamera), Without<Player>>,
+    mut player_query: Query<&Transform, With<Player>>,
 ) {
     if let Ok(player_transform) = player_query.get_single_mut() {
         for (mut cam_transform, mut camera_follow) in camera_query.iter_mut() {
@@ -107,7 +103,9 @@ pub fn camera_topdown_system(
                 }
             }
             // Stay above player
-            let new_transform = Transform::from_translation(player_transform.translation+ Vec3::new(0., camera_follow.distance, 0.))
+            let new_transform = Transform::from_translation(
+                player_transform.translation + Vec3::new(0., camera_follow.distance, 0.),
+            )
             .looking_at(player_transform.translation, Vec3::Z);
             cam_transform.translation = new_transform.translation;
             cam_transform.rotation = new_transform.rotation;
@@ -119,8 +117,8 @@ pub fn camera_pan_system(
     mut mouse_wheel_events: EventReader<MouseWheel>,
     mut mouse_events: EventReader<MouseMotion>,
     mouse_input: Res<Input<MouseButton>>,
-    mut camera_query: Query<(&mut Transform, &mut CameraFollow), With<Camera3d>>,
-    mut player_query: Query<(&Transform, &mut Player), Without<CameraFollow>>,
+    mut camera_query: Query<(&mut Transform, &mut PlayerCamera), Without<Player>>,
+    mut player_query: Query<(&Transform, &mut Player)>,
     keyboard_input: Res<Input<KeyCode>>,
 ) {
     if let Ok((player_transform, mut player)) = player_query.get_single_mut() {
@@ -181,20 +179,17 @@ pub fn camera_pan_system(
 
 pub fn setup_camera(mut commands: Commands) {
     commands
-        .spawn((
-            Camera3dBundle {
-                transform: Transform::from_xyz(10., 10., 10.).looking_at(Vec3::ZERO, Vec3::Y),
-                ..default()
-            },
-            RaycastSource::<MyRaycastSet>::new_transform_empty(),
-        ))
-        .insert(CameraFollow::default())
-        .insert(Name::new("Camera"))
-        .insert(PlayerCamera);
+        .spawn(Camera3dBundle {
+            transform: Transform::from_xyz(10., 10., 10.).looking_at(Vec3::ZERO, Vec3::Y),
+            ..default()
+        })
+        .insert(RaycastSource::<MyRaycastSet>::new_transform_empty())
+        .insert(PlayerCamera::default())
+        .insert(Name::new("Camera"));
 }
 
 pub fn switch_camera_state(
-    mut players: Query<Entity, With<CameraFollow>>,
+    mut players: Query<Entity, With<Player>>,
     mut commands: Commands,
     cam_state: Res<State<CameraState>>,
     mut next_state: ResMut<NextState<CameraState>>,
@@ -242,7 +237,7 @@ pub fn switch_camera_state(
 
 pub fn q_e_rotate_cam(
     keyboard_input: Res<Input<KeyCode>>,
-    mut camera_query: Query<&mut CameraFollow>,
+    mut camera_query: Query<&mut PlayerCamera>,
     time: Res<Time>,
     config: Res<Config>,
 ) {
@@ -262,8 +257,8 @@ pub fn wow_camera_system(
     mut mouse_wheel_events: EventReader<MouseWheel>,
     mut mouse_events: EventReader<MouseMotion>,
     mouse_input: Res<Input<MouseButton>>,
-    mut camera_query: Query<(&mut Transform, &mut CameraFollow), With<Camera3d>>,
-    player_query: Query<&Transform, (With<Player>, Without<CameraFollow>)>,
+    mut camera_query: Query<(&mut Transform, &mut PlayerCamera), Without<Player>>,
+    player_query: Query<&Transform, With<Player>>,
     camera_type: Res<State<CameraState>>,
     config: Res<Config>,
 ) {

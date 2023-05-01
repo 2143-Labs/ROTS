@@ -1,7 +1,6 @@
 use crate::{
-    camera::CameraFollow,
     sprites::AnimationTimer,
-    states::GameState,
+    states::GameState, camera::PlayerCamera,
 };
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::AssetCollection;
@@ -12,6 +11,7 @@ use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 
 pub fn init(app: &mut App) -> &mut App {
     app.add_system(spawn_player_sprite.run_if(in_state(GameState::Ready).and_then(run_once())))
+        .add_system(player_movement.run_if(in_state(GameState::Ready)))
         .register_type::<Jumper>()
 }
 
@@ -96,8 +96,8 @@ pub fn spawn_player_sprite(
 
 pub fn player_movement(
     mut commands: Commands,
-    mut player_query: Query<(&mut Transform, Entity, &mut Jumper, &Player)>,
-    camera_query: Query<&CameraFollow>,
+    camera_query: Query<&PlayerCamera>,
+    mut player_query: Query<(&mut Transform, Entity, &mut Jumper, &Player), Without<PlayerCamera>>,
     keyboard_input: Res<Input<KeyCode>>,
     time: Res<Time>,
 ) {
@@ -128,12 +128,13 @@ pub fn player_movement(
         }
 
         if move_vector.length_squared() > 0.0 {
-            let camera = camera_query.single();
-            let rotation = Vec2::from_angle(-camera.yaw_radians);
-            let movem = move_vector.normalize().rotate(rotation);
-
-            transform.translation +=
-                Vec3::new(movem.x, 0.0, movem.y) * player.speed * time.delta_seconds();
+            if let Ok(camera) = camera_query.get_single(){
+                let rotation = Vec2::from_angle(-camera.yaw_radians);
+                let movem = move_vector.normalize().rotate(rotation);
+        
+                transform.translation +=
+                    Vec3::new(movem.x, 0.0, movem.y) * player.speed * time.delta_seconds();
+            }
         }
     }
 }

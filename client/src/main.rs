@@ -29,10 +29,10 @@ fn main() {
     let mut app = App::new();
 
     setup::init(&mut app);
-    player::init(&mut app);
-    lifetime::init(&mut app);
-    sprites::init(&mut app);
     camera::init(&mut app);
+    // player::init(&mut app);
+    // lifetime::init(&mut app);
+    // sprites::init(&mut app);
     let mut cursor = Cursor::default();
     cursor.visible = false;
     cursor.grab_mode = CursorGrabMode::Locked;
