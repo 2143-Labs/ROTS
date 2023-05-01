@@ -1,4 +1,8 @@
-use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*, window::{CursorGrabMode, Cursor}};
+use bevy::{
+    diagnostic::FrameTimeDiagnosticsPlugin,
+    prelude::*,
+    window::{Cursor, CursorGrabMode},
+};
 use bevy_fly_camera::FlyCameraPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier3d::{
@@ -25,15 +29,15 @@ fn main() {
     let mut app = App::new();
 
     setup::init(&mut app);
-    camera::init(&mut app);
     player::init(&mut app);
-    sprites::init(&mut app);
     lifetime::init(&mut app);
+    sprites::init(&mut app);
+    camera::init(&mut app);
     let mut cursor = Cursor::default();
     cursor.visible = false;
     cursor.grab_mode = CursorGrabMode::Locked;
 
-    let mut window = WindowPlugin {
+    let window = WindowPlugin {
         primary_window: Some(Window {
             title: "Realm of the OctoSurvivors!".into(),
             resolution: (WIDTH, HEIGHT).into(),

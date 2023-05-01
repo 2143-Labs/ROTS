@@ -1,10 +1,10 @@
-use bevy::{prelude::*, window::CursorGrabMode};
+use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
-use bevy_fly_camera::FlyCamera;
 
 use crate::{
+    networking::client_bullet_receiver::{NetPlayerSprite, ProjectileSheet},
     player::PlayerSpriteAssets,
-    setup::{CameraFollow, Hideable, MuscleManAssets}, networking::client_bullet_receiver::{NetPlayerSprite, ProjectileSheet},
+    setup::{Hideable, MuscleManAssets},
 };
 
 pub struct StatePlugin;
@@ -21,7 +21,6 @@ impl Plugin for StatePlugin {
             .add_collection_to_loading_state::<_, NetPlayerSprite>(GameState::Loading)
             .add_collection_to_loading_state::<_, ProjectileSheet>(GameState::Loading)
             .add_collection_to_loading_state::<_, MuscleManAssets>(GameState::Loading)
-            .add_system(toggle_freecam)
             .add_system(toggle_phyics_debug_view);
     }
 }
@@ -48,50 +47,6 @@ pub enum GameState {
     Loading,
     NetworkConnecting,
     Ready,
-}
-
-pub fn toggle_freecam(
-    mut players: Query<Entity, With<CameraFollow>>,
-    mut commands: Commands,
-    cam_state: Res<State<CameraState>>,
-    mut next_state: ResMut<NextState<CameraState>>,
-    input: Res<Input<KeyCode>>,
-    mut windows_query: Query<&mut Window>,
-) {
-    if input.just_pressed(KeyCode::Escape) {
-        if let Ok(mut window) = windows_query.get_single_mut() {
-            window.cursor.grab_mode = match window.cursor.grab_mode {
-                CursorGrabMode::None => CursorGrabMode::Locked,
-                CursorGrabMode::Locked | CursorGrabMode::Confined => CursorGrabMode::None,
-            };
-            window.cursor.visible = !window.cursor.visible;
-        };
-        //info!(?cam_state.0);
-        next_state.set(match cam_state.0 {
-            CameraState::Free => {
-                println!("::: FreeCamState::Free :::");
-                for player in players.iter_mut() {
-                    commands.entity(player).remove::<FlyCamera>();
-                }
-                CameraState::Pan
-            }
-            FreeCamState::Free => {
-                for player in players.iter_mut() {
-                    commands.entity(player).remove::<FlyCamera>();
-                }
-                FreeCamState::ThirdPersonLocked
-            }
-            FreeCamState::ThirdPersonLocked => {
-                FreeCamState::ThirdPersonFreeMouse
-            }
-            FreeCamState::ThirdPersonFreeMouse => {
-                for player in players.iter_mut() {
-                    commands.entity(player).insert(FlyCamera::default());
-                }
-                CameraState::Free
-            }
-        });
-    }
 }
 
 pub fn toggle_phyics_debug_view(

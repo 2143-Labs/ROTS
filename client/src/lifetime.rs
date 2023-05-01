@@ -1,18 +1,17 @@
 use bevy::prelude::*;
 use bevy::reflect::Reflect;
-use bevy_mod_raycast::{Intersection, RaycastSource, RaycastMethod};
+use bevy_mod_raycast::{Intersection, RaycastMethod, RaycastSource};
 use bevy_rapier3d::prelude::{ActiveEvents, Collider, RigidBody};
 use rand::{thread_rng, Rng};
 
 use crate::networking::client_bullet_receiver::NetworkPlayer;
-use crate::states::FreeCamState;
-use crate::{player::Player, networking::client_bullet_receiver::MainServerEndpoint};
 use crate::setup::MyRaycastSet;
-use shared::{BulletPhysics, BulletAI, EventToClient, ServerResources, EventToServer};
+use crate::states::CameraState;
+use crate::{networking::client_bullet_receiver::MainServerEndpoint, player::Player};
+use shared::{BulletAI, BulletPhysics, EventToClient, EventToServer, ServerResources};
 
 pub fn init(app: &mut App) -> &mut App {
-    app
-        .add_system(lifetime_despawn)
+    app.add_system(lifetime_despawn)
         .add_system(lifetime_event)
         .add_system(update_all_bullets)
         .add_system(spawn_bullet)
@@ -87,30 +86,35 @@ fn lifetime_event(
             //let _tower_transform: &Transform = towers.single();
             //let spawn_transform = Transform::from_xyz(0.0, -100., 0.0);
 
-            let v: Vec<EventToServer> = (0..100).map(|_i| {
-                let mut rng = thread_rng();
-                let x = rng.gen_range(-1.0..1.0);
-                let y = rng.gen_range(-1.0..1.0);
-                let spd = rng.gen_range(1.0..20.0);
-                let rand_offset = Vec2::new(x, y);
-                let from = Vec2 {
-                    x: player_transform.translation.x,
-                    y: player_transform.translation.z,
-                };
+            let v: Vec<EventToServer> = (0..100)
+                .map(|_i| {
+                    let mut rng = thread_rng();
+                    let x = rng.gen_range(-1.0..1.0);
+                    let y = rng.gen_range(-1.0..1.0);
+                    let spd = rng.gen_range(1.0..20.0);
+                    let rand_offset = Vec2::new(x, y);
+                    let from = Vec2 {
+                        x: player_transform.translation.x,
+                        y: player_transform.translation.z,
+                    };
 
-                let phys = BulletPhysics {
-                    fired_target: from + rand_offset,
-                    fired_from: from,
-                    speed: spd,
-                    ai: BulletAI::Wavy,
-                };
+                    let phys = BulletPhysics {
+                        fired_target: from + rand_offset,
+                        fired_from: from,
+                        speed: spd,
+                        ai: BulletAI::Wavy,
+                    };
 
-                let ev = EventToServer::ShootBullet(phys);
-                ev
-            }).collect();
+                    let ev = EventToServer::ShootBullet(phys);
+                    ev
+                })
+                .collect();
 
             let data = serde_json::to_string(&v).unwrap();
-            event_list_res.handler.network().send(mse.0, data.as_bytes());
+            event_list_res
+                .handler
+                .network()
+                .send(mse.0, data.as_bytes());
         }
     }
 }
@@ -147,21 +151,18 @@ fn update_all_bullets(
     }
 }
 
-fn update_collisions(
+fn _update_collisions(
     bullets: Query<(Entity, &Transform), With<BulletPhysics>>,
     players: Query<&Transform, (Without<Player>, With<NetworkPlayer>)>,
     mut commands: Commands,
 ) {
     for (bullet_ent, bullet_transform) in bullets.iter() {
         for player_transform in &players {
-            let dist = (
-                player_transform.translation - bullet_transform.translation
-            ).length_squared();
+            let dist =
+                (player_transform.translation - bullet_transform.translation).length_squared();
 
             if dist < 1.0 {
-                commands
-                    .entity(bullet_ent)
-                    .despawn_recursive();
+                commands.entity(bullet_ent).despawn_recursive();
 
                 warn!("hit");
             }
@@ -175,26 +176,33 @@ fn camera_aim(
     mut raycast_source: Query<&mut RaycastSource<MyRaycastSet>>,
     mut aim_target_cube: Query<&mut Transform, With<AimVectorTarget>>,
     //camera_query: Query<(&bevy::render::camera::Camera, &Transform)>,
-    camera_type: Res<State<FreeCamState>>,
+    camera_type: Res<State<CameraState>>,
 ) {
-    raycast_source.single_mut();
-    let cursor_pos = match cursor.iter().last() {
-        Some(c) => c.position,
-        None => return,
-    };
+    if let Ok(mut source) = raycast_source.get_single_mut() {
+        let cursor_pos = match cursor.iter().last() {
+            Some(c) => c.position,
+            None => return,
+        };
 
-    match camera_type.0 {
-        FreeCamState::ThirdPersonLocked    => raycast_source.single_mut().cast_method = RaycastMethod::Transform,
-        FreeCamState::ThirdPersonFreeMouse => raycast_source.single_mut().cast_method = RaycastMethod::Screenspace(cursor_pos),
-        FreeCamState::Free                 => raycast_source.single_mut().cast_method = RaycastMethod::Transform,
-    };
+        match camera_type.0 {
+            CameraState::ThirdPersonLocked => {
+                source.cast_method = RaycastMethod::Transform
+            }
+            CameraState::TopDown => {
+                source.cast_method = RaycastMethod::Screenspace(cursor_pos)
+            }
+            CameraState::ThirdPersonFreeMouse => {
+                source.cast_method = RaycastMethod::Screenspace(cursor_pos)
+            }
+            CameraState::Free => source.cast_method = RaycastMethod::Transform,
+        };
 
-
-    for i in &intersect {
-        if let Ok(mut s) = aim_target_cube.get_single_mut() {
-            match i.position() {
-                Some(pos) => s.translation = *pos,
-                None => s.translation = Vec3::ZERO,
+        for i in &intersect {
+            if let Ok(mut s) = aim_target_cube.get_single_mut() {
+                match i.position() {
+                    Some(pos) => s.translation = *pos,
+                    None => s.translation = Vec3::ZERO,
+                }
             }
         }
     }
@@ -214,7 +222,10 @@ fn spawn_animations(
     if keyboard_input.just_pressed(KeyCode::B) {
         let ev = EventToServer::BeginAnimation(shared::event::AnimationThing::Waterball);
         let data = serde_json::to_string(&ev).unwrap();
-        event_list_res.handler.network().send(mse.0, data.as_bytes());
+        event_list_res
+            .handler
+            .network()
+            .send(mse.0, data.as_bytes());
     }
 }
 
@@ -277,8 +288,10 @@ fn spawn_bullet(
 
     let ev = EventToServer::ShootBullet(phys);
     let data = serde_json::to_string(&ev).unwrap();
-    event_list_res.handler.network().send(mse.0, data.as_bytes());
-
+    event_list_res
+        .handler
+        .network()
+        .send(mse.0, data.as_bytes());
 }
 
 #[derive(Reflect, Component, Default)]

@@ -1,8 +1,6 @@
-use std::f32::consts::PI;
-
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::AssetCollection;
-use bevy_mod_raycast::{DefaultRaycastingPlugin, RaycastMesh, RaycastSource};
+use bevy_mod_raycast::{DefaultRaycastingPlugin, RaycastMesh};
 use bevy_rapier3d::prelude::*;
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 
@@ -12,7 +10,7 @@ use crate::{
 };
 
 pub fn init(app: &mut App) -> &mut App {
-    app.add_startup_systems(spawn_scene)
+    app.add_startup_system(spawn_scene)
         .add_system(modify_collider_active_events)
         .add_system(spawn_muscle_man.run_if(in_state(GameState::Ready).and_then(run_once())))
         .add_plugin(DefaultRaycastingPlugin::<MyRaycastSet>::default())
@@ -20,7 +18,6 @@ pub fn init(app: &mut App) -> &mut App {
 
 #[derive(Reflect, Clone)]
 pub struct MyRaycastSet;
-
 
 #[derive(Component)]
 pub struct Hideable;
@@ -33,6 +30,7 @@ pub fn spawn_scene(
 ) {
     let size = 1000.;
     commands
+        // insert ground
         .spawn((
             PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane {
@@ -52,7 +50,7 @@ pub fn spawn_scene(
         })
         .insert(Hideable)
         .insert(Name::new("Plane"));
-
+    // insert sun
     commands
         .spawn(DirectionalLightBundle {
             transform: Transform::from_rotation(Quat::from_rotation_x(
@@ -70,16 +68,19 @@ pub fn spawn_scene(
             ..Default::default()
         })
         .insert(Name::new("Sun"));
-    commands.spawn(SceneBundle {
-        scene: asset_server.load("sprytilebrickhouse.gltf#Scene0"),
-        transform: Transform::from_xyz(-5.2,-1.0,-20.0).with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
-        ..default()
-    })
-    .with_children(|x| {
-        x.spawn(Collider::cuboid(5., 1.0, 6.))
-        .insert(TransformBundle::from(Transform::from_xyz(-5., 0., -5.)));
-    })
-    .insert(Name::new("House"));
+    // insert house
+    commands
+        .spawn(SceneBundle {
+            scene: asset_server.load("sprytilebrickhouse.gltf#Scene0"),
+            transform: Transform::from_xyz(-5.2, -1.0, -20.0)
+                .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
+            ..default()
+        })
+        .with_children(|x| {
+            x.spawn(Collider::cuboid(5., 1.0, 6.))
+                .insert(TransformBundle::from(Transform::from_xyz(-5., 0., -5.)));
+        })
+        .insert(Name::new("House"));
 }
 
 #[derive(AssetCollection, Resource)]

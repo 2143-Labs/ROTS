@@ -3,11 +3,19 @@ use std::ops::DerefMut;
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::AssetCollection;
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
-use message_io::network::{NetEvent, Transport, Endpoint};
+use message_io::network::{Endpoint, NetEvent, Transport};
 use rand::{thread_rng, Rng};
-use shared::{event::{PlayerInfo, UpdatePos, ShootBullet, Animation}, ServerResources, EventFromEndpoint, EventToClient, EventToServer, NetEntId, Config};
+use shared::{
+    event::{PlayerInfo, ShootBullet, UpdatePos, Animation},
+    Config, EventFromEndpoint, EventToClient, EventToServer, NetEntId, ServerResources,
+};
 
-use crate::{lifetime::Lifetime, states::GameState, sprites::AnimationTimer, player::{FaceCamera, PlayerSpriteAssets, Player}};
+use crate::{
+    lifetime::Lifetime,
+    player::{FaceCamera, Player},
+    sprites::AnimationTimer,
+    states::GameState,
+};
 
 pub struct NetworkingPlugin;
 
@@ -15,8 +23,7 @@ impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
         let config = Config::load_from_main_dir();
         let (server, endpoint) = setup_networking_server(&config);
-        app
-            .insert_resource(config)
+        app.insert_resource(config)
             .register_type::<Config>()
             .insert_resource(server)
             .insert_resource(endpoint)
@@ -24,27 +31,36 @@ impl Plugin for NetworkingPlugin {
             .add_event::<EventFromEndpoint<UpdatePos>>()
             .add_event::<EventFromEndpoint<ShootBullet>>()
             .add_event::<EventFromEndpoint<Animation>>()
-            .add_systems((
+            .add_systems(
+                (
                     tick_net_client,
                     send_movement_updates,
                     get_movement_updates,
                     on_player_connect,
                     on_player_animate,
                     keep_animation_on_player,
-                    on_player_shoot).distributive_run_if(in_state(GameState::Ready)));
+                    on_player_shoot,
+                )
+                    .distributive_run_if(in_state(GameState::Ready)),
+            );
     }
 }
 
 #[derive(Resource)]
 pub(crate) struct MainServerEndpoint(pub Endpoint);
 
-fn setup_networking_server(config: &Config) -> (ServerResources<EventToClient>, MainServerEndpoint) {
+fn setup_networking_server(
+    config: &Config,
+) -> (ServerResources<EventToClient>, MainServerEndpoint) {
     info!("trying_to_start_server");
     let (handler, listener) = message_io::node::split::<()>();
 
     let con_str = (&*config.ip, config.port);
 
-    let (server, _) = handler.network().connect(Transport::Udp, con_str).expect("Failed to connect ot server");
+    let (server, _) = handler
+        .network()
+        .connect(Transport::Udp, con_str)
+        .expect("Failed to connect ot server");
 
     info!("probably connected");
 
@@ -73,7 +89,7 @@ fn setup_networking_server(config: &Config) -> (ServerResources<EventToClient>, 
 
     std::thread::spawn(move || {
         listener.for_each(move |event| match event.network() {
-            NetEvent::Connected(_, _) => {},
+            NetEvent::Connected(_, _) => {}
             NetEvent::Accepted(_endpoint, _listener) => println!("Client connected"),
             NetEvent::Message(endpoint, data) => {
                 //let s = from_utf8(data);
@@ -92,18 +108,21 @@ fn send_movement_updates(
     player_query: Query<&Transform, With<crate::player::Player>>,
     event_list_res: Res<ServerResources<EventToClient>>,
     mse: Res<MainServerEndpoint>,
-){
+) {
     if let Ok(transform) = player_query.get_single() {
         let ev = EventToServer::UpdatePos(*transform);
         let data = serde_json::to_string(&ev).unwrap();
-        event_list_res.handler.network().send(mse.0, data.as_bytes());
+        event_list_res
+            .handler
+            .network()
+            .send(mse.0, data.as_bytes());
     }
 }
 
 fn get_movement_updates(
     mut movement_events: EventReader<EventFromEndpoint<UpdatePos>>,
     mut players: Query<(&mut Transform, &NetEntId), (With<NetworkPlayer>, Without<Player>)>,
-){
+) {
     let events: Vec<_> = movement_events.iter().collect();
     //info!(?events);
     for (mut player_transform, &net_id) in &mut players {
@@ -125,26 +144,36 @@ pub fn tick_net_client(
     player: Query<Entity, With<Player>>,
     mut commands: Commands,
 ) {
-    let events_to_process: Vec<_> = std::mem::take(event_list_res.event_list.lock().unwrap().deref_mut());
+    let events_to_process: Vec<_> =
+        std::mem::take(event_list_res.event_list.lock().unwrap().deref_mut());
     for (_endpoint, e) in events_to_process {
         match e {
             EventToClient::Noop => warn!("Got noop event"),
-            EventToClient::PlayerConnect(p) => ev_player_connect.send(EventFromEndpoint::new(_endpoint, p)),
-            EventToClient::PlayerList(p_list) => ev_player_connect.send_batch(p_list.into_iter().map(|x| EventFromEndpoint::new(_endpoint, x))),
-            EventToClient::UpdatePos(e) => ev_player_movement.send(EventFromEndpoint::new(_endpoint, e)),
-            EventToClient::ShootBullet(e) => ev_player_shoot.send(EventFromEndpoint::new(_endpoint, e)),
-            EventToClient::Animation(a) => ev_player_animation.send(EventFromEndpoint::new(_endpoint, a)),
+            EventToClient::PlayerConnect(p) => {
+                ev_player_connect.send(EventFromEndpoint::new(_endpoint, p))
+            }
+            EventToClient::PlayerList(p_list) => ev_player_connect.send_batch(
+                p_list
+                    .into_iter()
+                    .map(|x| EventFromEndpoint::new(_endpoint, x)),
+            ),
+            EventToClient::UpdatePos(e) => {
+                ev_player_movement.send(EventFromEndpoint::new(_endpoint, e))
+            }
+            EventToClient::ShootBullet(e) => {
+                ev_player_shoot.send(EventFromEndpoint::new(_endpoint, e))
+            }
+            EventToClient::Animation(a) => {
+                ev_player_animation.send(EventFromEndpoint::new(_endpoint, a))
+            }
             EventToClient::YouAre(info) => {
                 info!("The server has returned our networking info {info:?}");
                 commands
                     .entity(player.single())
-                    .insert(NetworkPlayer{
-                        name: info.name,
-                    })
+                    .insert(NetworkPlayer { name: info.name })
                     .insert(info.id);
-
-            },
-            _ => {},
+            }
+            _ => {}
         }
     }
 }
@@ -156,7 +185,6 @@ pub struct NetPlayerSprite {
     #[asset(path = "MrMan.png")]
     pub run: Handle<TextureAtlas>,
 }
-
 
 #[derive(Component)]
 pub struct NetworkPlayer {
@@ -201,7 +229,7 @@ fn on_player_connect(
 }
 
 #[derive(AssetCollection, Resource)]
-pub struct ProjectileSheet{
+pub struct ProjectileSheet {
     #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 32.))]
     #[asset(texture_atlas(columns = 1, rows = 1))]
     #[asset(path = "Banana.png")]
@@ -230,12 +258,12 @@ fn on_player_shoot(
         //info!("spawning bullet");
 
         //let sprite = AtlasSprite3d {
-            //atlas: proj_res.waterboll.clone(),
-            //pixels_per_metre: 32.,
-            //partial_alpha: true,
-            //unlit: false,
-            //index: 0,
-            //..default()
+        //atlas: proj_res.waterboll.clone(),
+        //pixels_per_metre: 32.,
+        //partial_alpha: true,
+        //unlit: false,
+        //index: 0,
+        //..default()
         //}
         //.bundle(&mut sprite_params);
 
@@ -252,14 +280,12 @@ fn on_player_shoot(
             })
             .insert(e.event.phys.clone())
             .insert(e.event.id);
-            //.insert(AnimationTimer(Timer::from_seconds(
-                //0.1,
-                //TimerMode::Repeating,
-            //)));
-
+        //.insert(AnimationTimer(Timer::from_seconds(
+        //0.1,
+        //TimerMode::Repeating,
+        //)));
     }
 }
-
 
 #[derive(Component)]
 struct AttachedAnimation(NetEntId);
@@ -276,17 +302,15 @@ fn on_player_animate(
         let frames = 36;
 
         let sprite = match e.event.animation {
-            shared::event::AnimationThing::Waterball => {
-                AtlasSprite3d {
-                    atlas: proj_res.waterboll.clone(),
-                    pixels_per_metre: 16.,
-                    partial_alpha: true,
-                    unlit: false,
-                    index: 0,
-                    ..default()
-                }
-                .bundle(&mut sprite_params)
+            shared::event::AnimationThing::Waterball => AtlasSprite3d {
+                atlas: proj_res.waterboll.clone(),
+                pixels_per_metre: 16.,
+                partial_alpha: true,
+                unlit: false,
+                index: 0,
+                ..default()
             }
+            .bundle(&mut sprite_params),
         };
 
         commands
@@ -300,7 +324,6 @@ fn on_player_animate(
                 1.0 / frames as f32,
                 TimerMode::Repeating,
             )));
-
     }
 }
 
@@ -311,7 +334,8 @@ fn keep_animation_on_player(
     'anim: for (mut anim_transform, animation) in &mut animations {
         for (&p_trans, &net_id) in &players {
             if net_id == animation.0 {
-                anim_transform.translation = p_trans.translation + Transform::from_xyz(0.0, 1.0, 0.0).translation;
+                anim_transform.translation =
+                    p_trans.translation + Transform::from_xyz(0.0, 1.0, 0.0).translation;
                 anim_transform.rotation = Quat::from_rotation_x(0.0);
                 continue 'anim;
             }
