@@ -17,7 +17,7 @@ use crate::{
 
 pub fn init(app: &mut App) -> &mut App {
     app
-        .add_startup_system(switch_camera_state)
+        // .add_startup_system(switch_camera_state)
         .add_system(setup_camera.run_if(in_state(GameState::Ready).and_then(run_once())))
         .add_system(wow_camera_system
                 .run_if(in_state(CameraState::ThirdPersonLocked).or_else(in_state(CameraState::ThirdPersonFreeMouse))))
@@ -31,8 +31,7 @@ pub fn init(app: &mut App) -> &mut App {
         .add_system(camera_topdown_system.run_if(in_state(CameraState::TopDown)))
 }
 #[derive(Reflect, Component)]
-pub struct PlayerCamera {
-    // tag entity to make it always face the camera
+pub struct PlayerCamera { // tag entity to make it always face the camera
     pub distance: f32,
     pub min_distance: f32,
     pub max_distance: f32,
@@ -42,12 +41,14 @@ pub struct PlayerCamera {
     pub pitch_radians: f32,
     pub old_degrees: f32,
 }
-impl Default for PlayerCamera {
+impl Default for PlayerCamera{
     fn default() -> Self {
         Self {
             distance: 10.,
             min_distance: 2.,
             max_distance: 200.,
+            yaw_radians: 1.,
+            pitch_radians: 1.,
             ..default()
         }
     }
@@ -179,11 +180,13 @@ pub fn camera_pan_system(
 
 pub fn setup_camera(mut commands: Commands) {
     commands
-        .spawn(Camera3dBundle {
-            transform: Transform::from_xyz(10., 10., 10.).looking_at(Vec3::ZERO, Vec3::Y),
-            ..default()
-        })
-        .insert(RaycastSource::<MyRaycastSet>::new_transform_empty())
+        .spawn((
+            Camera3dBundle {
+                transform: Transform::from_xyz(10., 10., 10.).looking_at(Vec3::ZERO, Vec3::Y),
+                ..default()
+            },
+            RaycastSource::<MyRaycastSet>::new_transform_empty(),
+        ))
         .insert(PlayerCamera::default())
         .insert(Name::new("Camera"));
 }
