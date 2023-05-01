@@ -1,4 +1,4 @@
-use crate::{player::FaceCamera, states::GameState};
+use crate::{player::FaceCamera, states::GameState, camera::PlayerCamera};
 use bevy::prelude::*;
 use bevy_sprite3d::AtlasSprite3dComponent;
 
@@ -12,8 +12,8 @@ pub fn init(app: &mut App) -> &mut App {
 pub struct AnimationTimer(pub Timer);
 
 pub fn face_sprite_to_camera(
-    cam_query: Query<&Transform, With<Camera>>,
-    mut query: Query<&mut Transform, (With<FaceCamera>, Without<Camera>)>,
+    cam_query: Query<&Transform, With<PlayerCamera>>,
+    mut query: Query<&mut Transform, (With<FaceCamera>, Without<PlayerCamera>)>,
 ) {
     if let Ok(cam_transform) = cam_query.get_single(){
         for mut transform in query.iter_mut() {
