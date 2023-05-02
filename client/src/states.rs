@@ -21,7 +21,7 @@ impl Plugin for StatePlugin {
             .add_collection_to_loading_state::<_, NetPlayerSprite>(GameState::Loading)
             .add_collection_to_loading_state::<_, ProjectileSheet>(GameState::Loading)
             .add_collection_to_loading_state::<_, MuscleManAssets>(GameState::Loading)
-            .add_system(toggle_freecam)
+            .add_system(toggle_cam)
             .add_system(toggle_phyics_debug_view);
     }
 }
@@ -31,6 +31,7 @@ pub enum FreeCamState {
     #[default]
     ThirdPersonLocked,
     ThirdPersonFreeMouse,
+    TopDown,
     Free,
 }
 
@@ -49,7 +50,7 @@ pub enum GameState {
     Ready,
 }
 
-pub fn toggle_freecam(
+pub fn toggle_cam(
     mut camera_query: Query<Entity, With<PlayerCamera>>,
     mut commands: Commands,
     cam_state: Res<State<FreeCamState>>,
@@ -74,6 +75,9 @@ pub fn toggle_freecam(
                 FreeCamState::ThirdPersonLocked
             }
             FreeCamState::ThirdPersonLocked => {
+                FreeCamState::TopDown
+            }
+            FreeCamState::TopDown=> {
                 FreeCamState::ThirdPersonFreeMouse
             }
             FreeCamState::ThirdPersonFreeMouse => {

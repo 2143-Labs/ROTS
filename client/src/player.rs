@@ -67,8 +67,6 @@ pub fn spawn_player_sprite(
         unlit: true,
 
         index: 1,
-
-        transform: Transform::from_translation(starting_location),
         // pivot: Some(Vec2::new(0.5, 0.5)),
         ..default()
     }
@@ -76,6 +74,7 @@ pub fn spawn_player_sprite(
 
     commands
         .spawn(sprite)
+        .insert(TransformBundle::from_transform(Transform::from_translation(starting_location)))
         .insert(RigidBody::Dynamic)
         .insert(Collider::cuboid(0.5, 0.5, 0.2))
         .insert(LockedAxes::ROTATION_LOCKED)
@@ -97,7 +96,7 @@ pub fn spawn_player_sprite(
 pub const PLAYER_SPEED: f32 = 5.;
 pub fn player_movement(
     mut commands: Commands,
-    mut player_query: Query<(&mut Transform, Entity, &mut Jumper)>,
+    mut player_query: Query<(&mut Transform, Entity, &mut Jumper), With<Player>>,
     camera_query: Query<&PlayerCamera>,
     keyboard_input: Res<Input<KeyCode>>,
     time: Res<Time>,

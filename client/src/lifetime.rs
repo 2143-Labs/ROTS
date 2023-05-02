@@ -186,6 +186,7 @@ fn camera_aim(
     match camera_type.0 {
         FreeCamState::ThirdPersonLocked    => raycast_source.single_mut().cast_method = RaycastMethod::Transform,
         FreeCamState::ThirdPersonFreeMouse => raycast_source.single_mut().cast_method = RaycastMethod::Screenspace(cursor_pos),
+        FreeCamState::TopDown              => raycast_source.single_mut().cast_method = RaycastMethod::Screenspace(cursor_pos),
         FreeCamState::Free                 => raycast_source.single_mut().cast_method = RaycastMethod::Transform,
     };
 
