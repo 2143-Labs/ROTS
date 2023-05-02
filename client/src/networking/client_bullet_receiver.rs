@@ -7,7 +7,7 @@ use message_io::network::{NetEvent, Transport, Endpoint};
 use rand::{thread_rng, Rng};
 use shared::{event::{PlayerInfo, UpdatePos, ShootBullet, Animation}, ServerResources, EventFromEndpoint, EventToClient, EventToServer, NetEntId, Config};
 
-use crate::{lifetime::Lifetime, states::GameState, sprites::AnimationTimer, player::{FaceCamera, PlayerSpriteAssets, Player}};
+use crate::{lifetime::Lifetime, states::GameState, sprites::AnimationTimer, player::{FaceCamera, Player}};
 
 pub struct NetworkingPlugin;
 

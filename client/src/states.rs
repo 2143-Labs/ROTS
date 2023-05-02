@@ -4,7 +4,7 @@ use bevy_fly_camera::FlyCamera;
 
 use crate::{
     player::PlayerSpriteAssets,
-    setup::{CameraFollow, Hideable, MuscleManAssets}, networking::client_bullet_receiver::{NetPlayerSprite, ProjectileSheet},
+    setup::{Hideable, MuscleManAssets}, networking::client_bullet_receiver::{NetPlayerSprite, ProjectileSheet}, camera::PlayerCamera,
 };
 
 pub struct StatePlugin;
@@ -50,7 +50,7 @@ pub enum GameState {
 }
 
 pub fn toggle_freecam(
-    mut players: Query<Entity, With<CameraFollow>>,
+    mut camera_query: Query<Entity, With<PlayerCamera>>,
     mut commands: Commands,
     cam_state: Res<State<FreeCamState>>,
     mut next_state: ResMut<NextState<FreeCamState>>,
@@ -68,7 +68,7 @@ pub fn toggle_freecam(
         //info!(?cam_state.0);
         next_state.set(match cam_state.0 {
             FreeCamState::Free => {
-                for player in players.iter_mut() {
+                for player in camera_query.iter_mut() {
                     commands.entity(player).remove::<FlyCamera>();
                 }
                 FreeCamState::ThirdPersonLocked
@@ -77,7 +77,7 @@ pub fn toggle_freecam(
                 FreeCamState::ThirdPersonFreeMouse
             }
             FreeCamState::ThirdPersonFreeMouse => {
-                for player in players.iter_mut() {
+                for player in camera_query.iter_mut() {
                     commands.entity(player).insert(FlyCamera::default());
                 }
                 FreeCamState::Free
