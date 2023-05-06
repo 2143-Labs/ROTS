@@ -14,17 +14,19 @@ pub struct NetworkingPlugin;
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
         let config = Config::load_from_main_dir();
-        let (server, endpoint) = setup_networking_server(&config);
+        //let (server, endpoint) = setup_networking_server(&config);
         app
+            .add_state::<NetworkingState>()
             .insert_resource(config)
             .register_type::<Config>()
-            .insert_resource(server)
-            .insert_resource(endpoint)
+            //.insert_resource(server)
+            //.insert_resource(endpoint)
             .add_event::<EventFromEndpoint<PlayerInfo>>()
             .add_event::<EventFromEndpoint<UpdatePos>>()
             .add_event::<EventFromEndpoint<ShootBullet>>()
             .add_event::<EventFromEndpoint<Animation>>()
             .add_event::<EventFromEndpoint<PlayerDisconnect>>()
+            .add_system(setup_networking_server.in_schedule(OnEnter(NetworkingState::StartConnection)))
             .add_systems((
                     tick_net_client,
                     send_movement_updates,
@@ -34,14 +36,27 @@ impl Plugin for NetworkingPlugin {
                     on_player_animate,
                     keep_animation_on_player,
                     send_heartbeat,
-                    on_player_shoot).distributive_run_if(in_state(GameState::Ready)));
+                    on_player_shoot).distributive_run_if(in_state(NetworkingState::Connected)));
     }
 }
 
 #[derive(Resource)]
 pub(crate) struct MainServerEndpoint(pub Endpoint);
 
-fn setup_networking_server(config: &Config) -> (ServerResources<EventToClient>, MainServerEndpoint) {
+#[derive(Clone, Debug, Eq, Hash, PartialEq, States, Default)]
+enum NetworkingState {
+    #[default]
+    NotSetup,
+    StartConnection,
+    Connected,
+    Disconnected,
+}
+
+fn setup_networking_server(
+    config: Res<Config>,
+    mut networking_state: ResMut<State<NetworkingState>>,
+    mut commands: Commands,
+) {
     info!("trying_to_start_server");
     let (handler, listener) = message_io::node::split::<()>();
 
@@ -65,7 +80,7 @@ fn setup_networking_server(config: &Config) -> (ServerResources<EventToClient>, 
 
     info!("sent json");
 
-    let res = ServerResources {
+    let res = ServerResources::<EventToClient> {
         handler: handler.clone(),
         event_list: Default::default(),
     };
@@ -88,7 +103,10 @@ fn setup_networking_server(config: &Config) -> (ServerResources<EventToClient>, 
         });
     });
 
-    (res, mse)
+    commands.insert_resource(res);
+    commands.insert_resource(mse);
+    networking_state = NetworkingState::Connected;
+
 }
 
 fn send_movement_updates(
