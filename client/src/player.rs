@@ -7,7 +7,6 @@ use crate::{
 };
 use bevy::{
     input::mouse::{MouseMotion, MouseWheel},
-    math::Vec2Swizzles,
     prelude::*,
 };
 use bevy_asset_loader::prelude::AssetCollection;
@@ -116,7 +115,7 @@ pub fn player_movement(
     keyboard_input: Res<Input<KeyCode>>,
     time: Res<Time>,
 ) {
-    for (mut transform, player_ent, mut jumper, mut player) in player_query.iter_mut() {
+    for (mut transform, player_ent, mut jumper, _player) in player_query.iter_mut() {
         let mut move_vector = Vec2::ZERO;
         if keyboard_input.pressed(KeyCode::W) {
             move_vector += Vec2::new(1.0, 0.0);
@@ -175,8 +174,8 @@ pub fn wow_camera_system(
     mut mouse_events: EventReader<MouseMotion>,
     mouse_input: Res<Input<MouseButton>>,
     mut camera_query: Query<(&mut Transform, &mut CameraFollow), With<Camera3d>>,
-    player_query: Query<(&Transform), (With<Player>, Without<CameraFollow>)>,
-    keyboard_input: Res<Input<KeyCode>>,
+    player_query: Query<&Transform, (With<Player>, Without<CameraFollow>)>,
+    _keyboard_input: Res<Input<KeyCode>>,
     camera_type: Res<State<FreeCamState>>,
     config: Res<Config>,
 ) {

@@ -31,7 +31,7 @@ fn main() {
     cursor.visible = false;
     cursor.grab_mode = CursorGrabMode::Locked;
 
-    let mut window = WindowPlugin {
+    let window = WindowPlugin {
         primary_window: Some(Window {
             title: "Realm of the OctoSurvivors!".into(),
             resolution: (WIDTH, HEIGHT).into(),
