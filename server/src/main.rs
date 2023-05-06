@@ -68,7 +68,7 @@ fn start_server(config: &Config) -> ServerResources<EventToServer> {
                         res.event_list.lock().unwrap().push((endpoint, event));
                     },
                     d => {
-                        dbg!(d);
+                        info!(d);
                         error!("invalid net req");
                     }
                 }
