@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 use bevy::reflect::Reflect;
 use bevy_mod_raycast::{Intersection, RaycastSource, RaycastMethod};
-use bevy_rapier3d::prelude::{ActiveEvents, Collider, RigidBody};
+//use bevy_rapier3d::prelude::{ActiveEvents, Collider, RigidBody};
 use rand::{thread_rng, Rng};
 
-use crate::networking::client_bullet_receiver::NetworkPlayer;
+use crate::networking::client_bullet_receiver::{NetworkPlayer, NetworkingState};
 use crate::states::FreeCamState;
 use crate::{player::Player, networking::client_bullet_receiver::MainServerEndpoint};
 use crate::setup::MyRaycastSet;
@@ -13,10 +13,14 @@ use shared::{BulletPhysics, BulletAI, EventToClient, ServerResources, EventToSer
 pub fn init(app: &mut App) -> &mut App {
     app
         .add_system(lifetime_despawn)
-        .add_system(lifetime_event)
         .add_system(update_all_bullets)
-        .add_system(spawn_bullet)
-        .add_system(spawn_animations)
+        .add_systems(
+            (
+                spawn_bullet,
+                spawn_animations,
+                lifetime_event,
+            ).distributive_run_if(in_state(NetworkingState::Connected))
+        )
         // .add_system(tower_shooting)
         .add_system(camera_aim)
         //.add_system(update_collisions)
@@ -147,7 +151,7 @@ fn update_all_bullets(
     }
 }
 
-fn update_collisions(
+fn _update_collisions(
     bullets: Query<(Entity, &Transform), With<BulletPhysics>>,
     players: Query<&Transform, (Without<Player>, With<NetworkPlayer>)>,
     mut commands: Commands,
@@ -277,6 +281,8 @@ fn spawn_bullet(
 
     let ev = EventToServer::ShootBullet(phys);
     let data = serde_json::to_string(&ev).unwrap();
+
+    info!(?data);
     event_list_res.handler.network().send(mse.0, data.as_bytes());
 
 }
@@ -285,63 +291,6 @@ fn spawn_bullet(
 #[reflect(Component)]
 pub struct Tower {
     shooting_timer: Timer,
-}
-
-fn _tower_shooting(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut towers: Query<(&mut Tower, &Transform)>,
-    player: Query<&Transform, With<Player>>,
-    time: Res<Time>,
-) {
-    for (mut tower, tower_transform) in &mut towers {
-        tower.shooting_timer.tick(time.delta());
-        if !tower.shooting_timer.just_finished() {
-            continue;
-        }
-
-        let color = Color::OLIVE;
-
-        if let Some(player_transform) = player.iter().next() {
-            let size = 0.5;
-            let spawn_transform = Transform::from_xyz(
-                tower_transform.translation.x,
-                0.5,
-                tower_transform.translation.z,
-            );
-            commands
-                .spawn((
-                    PbrBundle {
-                        mesh: meshes.add(Mesh::from(shape::Cube::new(size * 2.))),
-                        material: materials.add(color.into()),
-                        transform: spawn_transform,
-                        ..default()
-                    },
-                    RigidBody::Dynamic,
-                ))
-                .insert(Collider::cuboid(size, size, size))
-                .insert(Lifetime {
-                    timer: Timer::from_seconds(5.0, TimerMode::Once),
-                })
-                .insert(BulletPhysics {
-                    // make this player position
-                    fired_from: Vec2 {
-                        x: tower_transform.translation.x,
-                        y: tower_transform.translation.z,
-                    },
-                    // randomize these
-                    fired_target: Vec2 {
-                        x: player_transform.translation.x,
-                        y: player_transform.translation.z,
-                    },
-                    speed: 10.0,
-                    ai: BulletAI::Direct,
-                })
-                .insert(ActiveEvents::COLLISION_EVENTS)
-                .insert(Name::new("Bullet"));
-        }
-    }
 }
 
 fn spawn_tower(

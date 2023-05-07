@@ -1,42 +1,52 @@
-use std::ops::DerefMut;
+use std::{ops::DerefMut, time::Duration};
 
-use bevy::prelude::*;
+use bevy::{prelude::*, time::common_conditions::{on_timer, on_fixed_timer}};
 use bevy_asset_loader::prelude::AssetCollection;
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 use message_io::network::{NetEvent, Transport, Endpoint};
 use rand::{thread_rng, Rng};
 use shared::{event::{PlayerInfo, UpdatePos, ShootBullet, Animation, PlayerDisconnect}, ServerResources, EventFromEndpoint, EventToClient, EventToServer, NetEntId, Config};
 
-use crate::{lifetime::Lifetime, states::GameState, sprites::AnimationTimer, player::{FaceCamera, Player}};
+use crate::{lifetime::Lifetime, sprites::AnimationTimer, player::{FaceCamera, Player}, states::GameState};
 
 pub struct NetworkingPlugin;
 
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
         let config = Config::load_from_main_dir();
-        //let (server, endpoint) = setup_networking_server(&config);
         app
             .add_state::<NetworkingState>()
             .insert_resource(config)
             .register_type::<Config>()
-            //.insert_resource(server)
-            //.insert_resource(endpoint)
             .add_event::<EventFromEndpoint<PlayerInfo>>()
             .add_event::<EventFromEndpoint<UpdatePos>>()
             .add_event::<EventFromEndpoint<ShootBullet>>()
             .add_event::<EventFromEndpoint<Animation>>()
             .add_event::<EventFromEndpoint<PlayerDisconnect>>()
-            .add_system(setup_networking_server.in_schedule(OnEnter(NetworkingState::StartConnection)))
-            .add_systems((
+            .add_system(on_game_ready.in_schedule(OnEnter(GameState::Ready)))
+            .add_system(setup_networking_server.in_schedule(OnEnter(NetworkingState::BeginSetup)))
+            .add_systems(
+                (
                     tick_net_client,
+                    on_player_disconnect,
+                ).distributive_run_if(in_state(NetworkingState::WaitingForServer))
+            )
+            .add_systems(
+                (
                     send_movement_updates,
                     get_movement_updates,
                     on_player_connect,
                     on_player_disconnect,
                     on_player_animate,
                     keep_animation_on_player,
-                    send_heartbeat,
-                    on_player_shoot).distributive_run_if(in_state(NetworkingState::Connected)));
+                    send_heartbeat
+                        .in_base_set(CoreSet::FixedUpdate)
+                        .run_if(on_fixed_timer(Duration::from_millis(500))),
+                    tick_net_client,
+                    on_player_disconnect,
+                    on_player_shoot,
+                ).distributive_run_if(in_state(NetworkingState::Connected))
+            );
     }
 }
 
@@ -44,17 +54,23 @@ impl Plugin for NetworkingPlugin {
 pub(crate) struct MainServerEndpoint(pub Endpoint);
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, States, Default)]
-enum NetworkingState {
+pub enum NetworkingState {
     #[default]
-    NotSetup,
-    StartConnection,
-    Connected,
     Disconnected,
+    BeginSetup,
+    WaitingForServer,
+    Connected,
+}
+
+fn on_game_ready(
+    mut networking_state: ResMut<NextState<NetworkingState>>,
+) {
+    networking_state.set(NetworkingState::BeginSetup);
 }
 
 fn setup_networking_server(
     config: Res<Config>,
-    mut networking_state: ResMut<State<NetworkingState>>,
+    mut networking_state: ResMut<NextState<NetworkingState>>,
     mut commands: Commands,
 ) {
     info!("trying_to_start_server");
@@ -105,8 +121,7 @@ fn setup_networking_server(
 
     commands.insert_resource(res);
     commands.insert_resource(mse);
-    networking_state = NetworkingState::Connected;
-
+    networking_state.set(NetworkingState::WaitingForServer);
 }
 
 fn send_movement_updates(
@@ -138,6 +153,7 @@ fn get_movement_updates(
 
 pub fn tick_net_client(
     event_list_res: Res<ServerResources<EventToClient>>,
+
     mut ev_player_connect: EventWriter<EventFromEndpoint<PlayerInfo>>,
     mut ev_player_movement: EventWriter<EventFromEndpoint<UpdatePos>>,
     mut ev_player_shoot: EventWriter<EventFromEndpoint<ShootBullet>>,
@@ -146,6 +162,7 @@ pub fn tick_net_client(
 
     player: Query<Entity, With<Player>>,
     mut commands: Commands,
+    mut networking_state: ResMut<NextState<NetworkingState>>,
 ) {
     let events_to_process: Vec<_> = std::mem::take(event_list_res.event_list.lock().unwrap().deref_mut());
     for (_endpoint, e) in events_to_process {
@@ -161,11 +178,12 @@ pub fn tick_net_client(
                 info!("The server has returned our networking info {info:?}");
                 commands
                     .entity(player.single())
-                    .insert(NetworkPlayer{
+                    .insert(NetworkPlayer {
                         name: info.name,
                     })
                     .insert(info.id);
 
+                networking_state.set(NetworkingState::Connected);
             },
             _ => {},
         }
@@ -226,15 +244,21 @@ fn on_player_connect(
 fn on_player_disconnect(
     mut ev_player_disconnect: EventReader<EventFromEndpoint<PlayerDisconnect>>,
     mut commands: Commands,
-    sprite_res: Query<(Entity, &NetEntId, &NetworkPlayer)>,
+    sprite_res: Query<(Entity, &NetEntId, &NetworkPlayer, Option<&Player>)>,
+    mut networking_state: ResMut<NextState<NetworkingState>>,
 ) {
     for e in &mut ev_player_disconnect {
-        for (ent, net_ent, player_info) in &sprite_res {
+        for (ent, net_ent, player_info, is_local_player) in &sprite_res {
             if net_ent == &e.event.id {
                 warn!("A player has disconnected: {} ({e:?})", player_info.name);
                 commands
                     .entity(ent)
                     .despawn_recursive();
+
+                if is_local_player.is_some() {
+                    warn!("We have been disconnected from the server.");
+                    networking_state.set(NetworkingState::Disconnected);
+                }
             }
         }
     }

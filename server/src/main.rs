@@ -1,10 +1,12 @@
-use std::{ops::DerefMut, sync::{atomic::AtomicI8, Arc}};
+use std::{ops::DerefMut, sync::{atomic::{AtomicU16, AtomicI16}, Arc}};
 
 use rand::{thread_rng, Rng};
 use shared::{EventToServer, EventToClient, NetEntId, event::{UpdatePos, ShootBullet, Animation, PlayerDisconnect}, Config};
-use bevy::{app::ScheduleRunnerSettings, prelude::*, utils::{Duration, HashMap}, log::LogPlugin};
+use bevy::{app::ScheduleRunnerSettings, prelude::*, utils::{Duration, HashMap}, log::LogPlugin, time::common_conditions::on_fixed_timer};
 use message_io::{node, network::{Transport, NetEvent, Endpoint}};
 use shared::{event::PlayerInfo, ServerResources, EventFromEndpoint};
+
+const HEARTBEAT_MILLIS: u64 = 200;
 
 fn main() {
     info!("Main Start");
@@ -25,12 +27,16 @@ fn main() {
         .add_event::<ShootBullet>()
         .add_event::<Animation>()
         .add_plugins(MinimalPlugins)
-        .add_system(on_player_connect)
-        .add_system(tick_net_server)
-        .add_system(send_shooting_to_all_players)
-        .add_system(send_animations_to_all_players)
-        .add_system(check_heartbeats)
-        .add_system(send_movement_to_all_players);
+        .add_systems((
+            on_player_connect,
+            tick_net_server,
+            send_shooting_to_all_players,
+            send_animations_to_all_players,
+            send_movement_to_all_players,
+            check_heartbeats
+                .in_base_set(CoreSet::FixedUpdate)
+                .run_if(on_fixed_timer(Duration::from_millis(HEARTBEAT_MILLIS))),
+        ));
 
     app.run();
 }
@@ -87,7 +93,7 @@ struct EndpointToNetId {
 
 #[derive(Resource, Default)]
 struct HeartbeatList {
-    heartbeats: HashMap<NetEntId, Arc<AtomicI8>>,
+    heartbeats: HashMap<NetEntId, Arc<AtomicI16>>,
 }
 
 fn tick_net_server(
@@ -117,7 +123,9 @@ fn tick_net_server(
                 ev_player_connect.send(EventFromEndpoint::new(_endpoint, ev));
 
                 entity_mapping.map.insert(_endpoint, id);
-                heartbeat_mapping.heartbeats.insert(id, Arc::new(AtomicI8::new(0)));
+                // give them 5 seconds to connect properly
+                let start_heartbeat = 5000 / (HEARTBEAT_MILLIS as i64);
+                heartbeat_mapping.heartbeats.insert(id, Arc::new(AtomicI16::new(-start_heartbeat as _)));
             },
             EventToServer::UpdatePos(new_pos) => {
                 match entity_mapping.map.get(&_endpoint) {
@@ -157,7 +165,6 @@ fn tick_net_server(
             EventToServer::Heartbeat => {
                 match entity_mapping.map.get(&_endpoint) {
                     Some(id) => {
-                        info!("Player {id:?} is heartbeat");
                         heartbeat_mapping.heartbeats
                             .get(id)
                             .unwrap()
@@ -174,30 +181,29 @@ fn tick_net_server(
 
 
 fn check_heartbeats(
-    heartbeat_mapping: Res<HeartbeatList>,
+    mut heartbeat_mapping: ResMut<HeartbeatList>,
     clients: Query<(Entity, &GameNetClient, &NetEntId)>,
     event_list_res: Res<ServerResources<EventToServer>>,
     mut commands: Commands,
 ) {
+    let mut ents_to_remove = vec![];
+
     for (ent_id, beats_missed) in &heartbeat_mapping.heartbeats {
         let beats = beats_missed.fetch_add(1, std::sync::atomic::Ordering::Acquire);
-        if beats >= 3 {
-            info!("Missed {beats} beats {ent_id:?}");
-        }
-        if beats >= 10 {
+        if beats >= (5000 / HEARTBEAT_MILLIS) as i16 {
             warn!("Missed {beats} beats, disconnecting {ent_id:?}");
-            for (c_ent, c_net_client, _c_net_ent) in &clients {
-                let event = EventToClient::PlayerDisconnect(PlayerDisconnect {
-                    id: *ent_id,
-                });
+            ents_to_remove.push(*ent_id);
+            let event = EventToClient::PlayerDisconnect(PlayerDisconnect {
+                id: *ent_id,
+            });
+            let events_as_str = serde_json::to_string(&event).unwrap();
 
-                let events_as_str = serde_json::to_string(&event).unwrap();
+            for (c_ent, c_net_client, _c_net_ent) in &clients {
                 event_list_res.handler
                     .network()
                     .send(c_net_client.endpoint, events_as_str.as_bytes());
 
                 if _c_net_ent == ent_id {
-                    error!("GOT DESPAWN!!!");
                     commands
                         .entity(c_ent)
                         .despawn_recursive();
@@ -205,7 +211,10 @@ fn check_heartbeats(
             }
 
         }
+    }
 
+    for ent in &ents_to_remove {
+        heartbeat_mapping.heartbeats.remove(ent);
     }
 }
 
@@ -304,28 +313,23 @@ fn on_player_connect(
             });
         }
 
-        // Next, tell the new player about the existing players
-        let connect_event = EventToClient::PlayerList(names);
-        let data = serde_json::to_string(&connect_event).unwrap();
-        event_list_res.handler
-            .network()
-            .send(e.endpoint, data.as_bytes());
-
         // Next, tell the new player who they are
         let connect_event = EventToClient::YouAre(PlayerInfo {
             name: e.event.name.clone(),
             id: e.event.id,
         });
         let handler = event_list_res.handler.clone();
-        let endpoint = e.endpoint;
-        std::thread::spawn(move || {
-            // delay xd
-            std::thread::sleep(Duration::from_millis(900));
-            let data = serde_json::to_string(&connect_event).unwrap();
-            handler
-                .network()
-                .send(endpoint, data.as_bytes());
-        });
+        let data = serde_json::to_string(&connect_event).unwrap();
+        handler
+            .network()
+            .send(e.endpoint, data.as_bytes());
+
+        // Next, tell the new player about the existing players
+        let connect_event = EventToClient::PlayerList(names);
+        let data = serde_json::to_string(&connect_event).unwrap();
+        event_list_res.handler
+            .network()
+            .send(e.endpoint, data.as_bytes());
 
         // Finally, add our client to the ECS
         commands
