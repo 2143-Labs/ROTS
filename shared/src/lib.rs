@@ -29,7 +29,7 @@ pub mod event {
         pub phys: BulletPhysics,
     }
 
-    #[derive(Debug, Clone, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Serialize, Deserialize, Component)]
     pub struct Animation {
         pub id: NetEntId,
         pub animation: AnimationThing,

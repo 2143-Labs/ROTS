@@ -261,19 +261,20 @@ fn send_shooting_to_all_players(
 fn send_animations_to_all_players(
     mut ev_animate: EventReader<Animation>,
     event_list_res: Res<ServerResources<EventToServer>>,
-    players: Query<&GameNetClient>,
+    players: Query<(Entity, &GameNetClient, &NetEntId)>,
+    mut commands: Commands,
 ) {
-    let events: Vec<_> = ev_animate
-        .iter()
-        .map(|x| EventToClient::Animation(x.clone()))
-        .collect();
 
-    for client in &players {
-        for event in &events {
-            let events_as_str = serde_json::to_string(&event).unwrap();
-            event_list_res.handler
-                .network()
-                .send(client.endpoint, events_as_str.as_bytes());
+    for event in ev_animate.iter() {
+        commands
+            .spawn(event.clone());
+
+        let events_as_str = serde_json::to_string(&EventToClient::Animation(event.clone())).unwrap();
+        for (ent, client, net_id) in &players {
+                event_list_res.handler
+                    .network()
+                    .send(client.endpoint, events_as_str.as_bytes());
+
         }
     }
 }
