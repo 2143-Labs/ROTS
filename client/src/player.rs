@@ -36,7 +36,9 @@ pub struct FaceCamera; // tag entity to make it always face the camera
 
 #[derive(Reflect, Component)]
 pub struct Player {
+    pub view_distance: i32,
     pub looking_at: Vec3,
+    pub block_id: [i32; 2],
     pub facing_vel: f32,
     pub velocity: Vec3,
     pub lock_movement: [Option<Vec2>; 4],
@@ -45,6 +47,8 @@ impl Default for Player {
     fn default() -> Self {
         Self {
             // Look at camera
+            block_id: [0, 0],
+            view_distance: 2,
             looking_at: Vec3::new(10., 10., 10.),
             facing_vel: 0.,
             velocity: Vec3::ZERO,
@@ -58,7 +62,7 @@ pub fn spawn_player_sprite(
     images: Res<PlayerSpriteAssets>,
     mut sprite_params: Sprite3dParams,
 ) {
-    let starting_location = Vec3::new(-3., 0.5, 2.);
+    let starting_location = Vec3::new(-1.5, 0.5, 1.5);
     let sprite = AtlasSprite3d {
         atlas: images.run.clone(),
 

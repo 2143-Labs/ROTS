@@ -142,7 +142,13 @@ pub fn camera_topdown_system(
         let rotation_quat = Quat::from_rotation_y(player_camera.yaw_radians);
         dbg!(rotation_quat);
         let rotated_look_direction = rotation_quat * look_direction;
-        cam_transform.rotation = Quat::from_rotation_arc(rotated_look_direction, up_direction)
+        cam_transform.rotation = Quat::from_rotation_arc(rotated_look_direction, up_direction);
+        cam_transform.translation = Quat::from_rotation_y(player_camera.yaw_radians)
+            * Quat::from_rotation_x(player_camera.pitch_radians)
+            * Vec3::Y
+            * player_camera.distance
+            + player_transform.translation;
+
     }
 }
 

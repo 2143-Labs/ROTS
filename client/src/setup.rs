@@ -29,7 +29,7 @@ pub fn spawn_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: ResMut<AssetServer>,
 ) {
-    let size = 1000.;
+    let size = 25.;
     commands
         .spawn((
             PbrBundle {
@@ -42,14 +42,11 @@ pub fn spawn_scene(
                 ..default()
             },
             RaycastMesh::<MyRaycastSet>::default(),
-        ))
-        .with_children(|parent| {
-            parent
-                .spawn(Collider::cuboid(size, 1., size))
-                .insert(TransformBundle::from(Transform::from_xyz(0., -1., 0.)));
-        })
+            Collider::cuboid(size/2., 1., size/2.))
+        )
+        .insert(TransformBundle::from(Transform::from_xyz(0., -1., 0.)))
         .insert(Hideable)
-        .insert(Name::new("Plane"));
+        .insert(Name::new("GroundZero"));
 
     commands
         .spawn(DirectionalLightBundle {

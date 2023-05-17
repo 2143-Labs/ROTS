@@ -17,6 +17,7 @@ pub mod setup;
 pub mod sprites;
 pub mod states;
 pub mod camera;
+pub mod worldgen;
 
 pub const HEIGHT: f32 = 720.0;
 pub const WIDTH: f32 = 1280.0;
@@ -32,6 +33,7 @@ fn main() {
     let mut cursor = Cursor::default();
     cursor.visible = false;
     cursor.grab_mode = CursorGrabMode::Locked;
+    worldgen::init(&mut app);
 
     let window = WindowPlugin {
         primary_window: Some(Window {
