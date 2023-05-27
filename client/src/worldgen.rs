@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use bevy::{prelude::*, utils::HashMap};
 use bevy_asset_loader::prelude::AssetCollection;
 use bevy_rapier3d::prelude::Collider;
@@ -5,9 +7,23 @@ use rand::Rng;
 
 use crate::{states::GameState, player::Player, setup::Hideable};
 
+#[derive(Clone, Debug, PartialEq, Hash, Eq)]
+pub struct Vec2i {
+    pub x: i32,
+    pub y: i32,
+}
+
+impl Vec2i {
+    /// Creates a new vector.
+    #[inline(always)]
+    pub const fn new(x: i32, y: i32) -> Self {
+        Self { x, y }
+    }
+}
+
 pub fn init(app: &mut App) -> &mut App {
     app
-        .insert_resource(ChunkMapResource::default())
+        .insert_resource(BlockMapResource::default())
         .add_system(gen_world.run_if(in_state(GameState::Ready)))
         .add_startup_system(init_biomes)
 }
@@ -27,22 +43,23 @@ fn init_biomes(mut commands: Commands, mut materials: ResMut<Assets<StandardMate
     commands.insert_resource(world_assets);
 }
 
-
 #[derive(Clone, Debug, PartialEq)]
-struct Chunk {
-    position: Vec2,
-    biome: Biome,
+struct Block {
+    position: Vec2i,
+    biome: Arc<Biome>,
     height_variation: f32,
-    // Other chunk data...
+    visible: bool,
+    // Other block data...
 }
 
-impl Chunk {
-    fn new(position: Vec2, biome: Biome) -> Self {
-        Chunk {
+impl Block {
+    fn new(position: Vec2i, biome: Arc<Biome>) -> Self {
+        Block {
             position,
-            biome,
             height_variation: biome.default_height_variation(),
-            // Initialize other chunk data...
+            biome,
+            visible: false,
+            // Initialize other block data...
         }
     }
 }
@@ -153,33 +170,33 @@ impl Biome {
 }
 
 #[derive(AssetCollection, Resource)]
-struct ChunkMapResource {
-    chunk_map: HashMap<Vec2, Chunk>,
-    biome_list: Vec<(Vec2, Biome)>,
+struct BlockMapResource {
+    block_map: HashMap<Vec2i, Block>,
+    biome_list: Vec<(Vec2i, Biome)>,
 }
 
-impl Default for ChunkMapResource {
+impl Default for BlockMapResource {
     fn default() -> Self {
-        ChunkMapResource {
-            chunk_map: HashMap::default(),
+        BlockMapResource {
+            block_map: HashMap::default(),
             biome_list: vec![(
-                Vec2::new(0., 0.),
+                Vec2i::new(0, 0),
                 Biome::Forest,
             ),
             (
-                Vec2::new(10., 30.),
+                Vec2i::new(10, 30),
                 Biome::Desert,
             ),
             (
-                Vec2::new(-20., -5.),
+                Vec2i::new(-20, -5),
                 Biome::Mountains,
             ),
             (
-                Vec2::new(-6.,30.),
+                Vec2i::new(-6,30),
                 Biome::Ocean,
             ),
             (
-                Vec2::new(21.0, -40.0),
+                Vec2i::new(21, -40),
                 Biome::Plains,
             )],
         }   
@@ -190,10 +207,10 @@ pub fn spawn_block(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
-    block_id: [i32; 2]
+    block_id: &Vec2i
 ) {
     let size = 5.;
-    let odd_block = (block_id[0] + block_id[1]).abs() %2i32 == 1;
+    let odd_block = (block_id.x + block_id.y).abs() %2i32 == 1i32;
     commands
         .spawn((
             PbrBundle {
@@ -207,12 +224,12 @@ pub fn spawn_block(
             Collider::cuboid(size/2., 1., size/2.))
         )
         .insert(TransformBundle::from(Transform::from_xyz(
-            block_id[0] as f32 * size,
+            block_id.x as f32 * size,
             -1.,
-            block_id[1] as f32 * size
+            block_id.y as f32 * size
         )))
         .insert(Hideable)
-        .insert(Name::new(format!("Block_{}_{}", block_id[0], block_id[1])));
+        .insert(Name::new(format!("Block_{}_{}", block_id.x, block_id.y)));
 }
 
 pub fn gen_world(
@@ -220,60 +237,52 @@ pub fn gen_world(
     mut player_query: Query<(&Transform, &mut Player)>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-)
-{
+    mut block_map_res: ResMut<BlockMapResource>,
+) {
     for (transform, mut player) in player_query.iter_mut() {
         let standing_on_block_id: [i32; 2] = [
-            ((5. + transform.translation.abs().x - 2.5) * (transform.translation.signum().x)) as i32 / 5,
-            ((5. + transform.translation.abs().z - 2.5) * (transform.translation.signum().z)) as i32 / 5,
+            (transform.translation.x / 10.0).floor() as i32,
+            (transform.translation.z / 10.0).floor() as i32,
         ];
-                                             
+        // if inserting new block
         if standing_on_block_id != player.block_id {
-            let delta_block_id = [
-                standing_on_block_id[0] - player.block_id[0],
-                standing_on_block_id[1] - player.block_id[1]
-            ];
             player.block_id = standing_on_block_id;
-            // spawn center of new row/column
-            let center_block_id = [
-                standing_on_block_id[0] + (delta_block_id[0] * player.view_distance),
-                standing_on_block_id[1] + (delta_block_id[1] * player.view_distance)
-            ];
-            dbg!(center_block_id);
-            spawn_block(&mut commands, &mut meshes, &mut materials, center_block_id);
-            (1..player.view_distance+1).for_each(|i| {
-                let block_id = [
-                    center_block_id[0] + delta_block_id[1] * i,
-                    center_block_id[1] + delta_block_id[0] * i
-                ];
-                let block_id2 = [
-                    center_block_id[0] + delta_block_id[1] * -i,
-                    center_block_id[1] + delta_block_id[0] * -i
-                ];
-                spawn_block(&mut commands, &mut meshes, &mut materials, block_id);
-                spawn_block(&mut commands, &mut meshes, &mut materials, block_id2);
-            })
+            // iterate over every block within radius of players viewdistance (cirlce)
+            for x in (standing_on_block_id[0] - player.view_distance)..=(standing_on_block_id[0] + player.view_distance)
+            {
+                for y in (standing_on_block_id[1] - player.view_distance)..=(standing_on_block_id[1] + player.view_distance)
+                {
+                    // if block is outside of viewdistance
+                    if (x - standing_on_block_id[0]).pow(2) + (y - standing_on_block_id[1]).pow(2) > player.view_distance.pow(2) {
+                        continue;
+                    }
+                    let blockid = Vec2i::new(x,y);
+                    // if block does not exist
+                    if !block_map_res.block_map.contains_key(&blockid) {
+                        // spawn block
+                        spawn_block(&mut commands, &mut meshes, &mut materials, &blockid);
+                        // get biome from nearest neighbor in BlockMapResource.biome_list
+                        let nearest_biome = Arc::new(block_map_res.biome_list.iter().min_by_key(|(coordinates, _)| {
+                            (coordinates.x - blockid.x).abs() + (coordinates.y - blockid.y).abs()
+                        }).unwrap().1);
+                        let block = Block::new(blockid.clone(), nearest_biome);
+                        block_map_res.block_map.insert(blockid, block);
+                    }
+                }
+            }
         }
     }
+
 }
 
-fn setup_chunkmap(mut commands: Commands, mut chunk_map: ResMut<ChunkMapResource>) {
-
-
-    // Insert chunks into the chunk map
-    let coordinates1 = Vec2::new(0.0, 0.0);
-    // get biome from nearest neighbor in ChunkMapResource.biome_list
-    let nearest_biome = chunk_map.biome_list.iter().min_by_key(|(coordinates, _)| {
-        (coordinates.x - coordinates1.x).abs() + (coordinates.y - coordinates1.y).abs()
-    }).unwrap().1;
-    let chunk1 = Chunk::new(coordinates1, nearest_biome);
-    chunk_map.chunk_map.insert(coordinates1, chunk1);
-
-    let chunk2 = Chunk { /* Initialize chunk fields */ };
-    let coordinates2 = Vec2::new(1.0, 0.0);
-    chunk_map.chunk_map.insert(coordinates2, chunk2);
-
-    // Use the chunk map in your systems or plugins
-    commands.spawn(chunk_map.clone());
-    commands.spawn(chunk_map.clone());
+fn init_blockmap(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>, mut materials: ResMut<Assets<StandardMaterial>>, mut block_map_res: ResMut<BlockMapResource>) {
+    // Insert blocks into the block map
+    let blockid= Vec2i::new(0, 0);
+    // get biome from nearest neighbor in BlockMapResource.biome_list
+    let nearest_biome = Arc::new(block_map_res.biome_list.iter().min_by_key(|(coordinates, _)| {
+        (coordinates.x - blockid.x).abs() + (coordinates.y - blockid.y).abs()
+    }).unwrap().1);
+    let block1 = Block::new(blockid.clone(), nearest_biome);
+    spawn_block(&mut commands, &mut meshes, &mut materials, &blockid);
+    block_map_res.block_map.insert(blockid, block1);
 }
