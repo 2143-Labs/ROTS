@@ -82,20 +82,6 @@ fn setup_networking_server(
 
     info!("probably connected");
 
-    let name = match &config.name {
-        Some(name) => name.clone(),
-        None => {
-            let random_id = thread_rng().gen_range(1..10000);
-            format!("Player #{random_id}")
-        }
-    };
-
-    let connect_event = EventToServer::Connect { name };
-    let event_json = serde_json::to_string(&connect_event).unwrap();
-    handler.network().send(server, event_json.as_bytes());
-
-    info!("sent json");
-
     let res = ServerResources::<EventToClient> {
         handler: handler.clone(),
         event_list: Default::default(),
@@ -118,6 +104,21 @@ fn setup_networking_server(
             NetEvent::Disconnected(_endpoint) => println!("Client disconnected"),
         });
     });
+
+    let name = match &config.name {
+        Some(name) => name.clone(),
+        None => {
+            let random_id = thread_rng().gen_range(1..10000);
+            format!("Player #{random_id}")
+        }
+    };
+
+    let connect_event = EventToServer::Connect { name };
+    let event_json = serde_json::to_string(&connect_event).unwrap();
+    handler.network().send(server, event_json.as_bytes());
+
+    info!("sent json");
+
 
     commands.insert_resource(res);
     commands.insert_resource(mse);
