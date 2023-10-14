@@ -48,25 +48,27 @@ fn main() {
 
     app
         // bevy_sprite3d
-        .add_plugin(Sprite3dPlugin)
         // Background Color
         .insert_resource(ClearColor(Color::hex("212121").unwrap()))
         // Load Assets
-        .add_plugin(FlyCameraPlugin)
+        .add_plugins((
+            Sprite3dPlugin,
+            FlyCameraPlugin,
+            FrameTimeDiagnosticsPlugin,
+            WorldInspectorPlugin::new(),
+            StatePlugin,
+            NetworkingPlugin,
+        ))
         // .add_plugin(RapierDebugRenderPlugin::default())
         .add_plugins(
             DefaultPlugins
                 .set(window)
                 .set(ImagePlugin::default_nearest()),
         )
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierDebugRenderPlugin {
+        .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
+        .add_plugins(RapierDebugRenderPlugin {
             mode: DebugRenderMode::all(),
             ..default()
         })
-        .add_plugin(FrameTimeDiagnosticsPlugin)
-        .add_plugin(WorldInspectorPlugin::new())
-        .add_plugin(StatePlugin)
-        .add_plugin(NetworkingPlugin)
         .run();
 }

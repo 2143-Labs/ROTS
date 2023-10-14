@@ -23,15 +23,22 @@ impl Plugin for NetworkingPlugin {
             .add_event::<EventFromEndpoint<ShootBullet>>()
             .add_event::<EventFromEndpoint<Animation>>()
             .add_event::<EventFromEndpoint<PlayerDisconnect>>()
-            .add_system(on_game_ready.in_schedule(OnEnter(GameState::Ready)))
-            .add_system(setup_networking_server.in_schedule(OnEnter(NetworkingState::BeginSetup)))
+            .add_systems(OnEnter(GameState::Ready), on_game_ready)
+            .add_systems(OnEnter(NetworkingState::BeginSetup), setup_networking_server)
             .add_systems(
+                Update,
                 (
                     tick_net_client,
                     on_player_disconnect,
                 ).distributive_run_if(in_state(NetworkingState::WaitingForServer))
             )
             .add_systems(
+                FixedUpdate,
+                send_heartbeat
+                    .run_if(on_fixed_timer(Duration::from_millis(500))),
+            )
+            .add_systems(
+                Update,
                 (
                     send_movement_updates,
                     get_movement_updates,
@@ -39,9 +46,6 @@ impl Plugin for NetworkingPlugin {
                     on_player_disconnect,
                     on_player_animate,
                     keep_animation_on_player,
-                    send_heartbeat
-                        .in_base_set(CoreSet::FixedUpdate)
-                        .run_if(on_fixed_timer(Duration::from_millis(500))),
                     tick_net_client,
                     on_player_disconnect,
                     on_player_shoot,
