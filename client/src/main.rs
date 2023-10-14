@@ -3,7 +3,7 @@ use bevy_fly_camera::FlyCameraPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier3d::{
     prelude::{NoUserData, RapierPhysicsPlugin},
-    render::RapierDebugRenderPlugin,
+    render::{RapierDebugRenderPlugin, DebugRenderMode},
 };
 use bevy_sprite3d::Sprite3dPlugin;
 use networking::client_bullet_receiver::NetworkingPlugin;
@@ -61,7 +61,7 @@ fn main() {
         )
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierDebugRenderPlugin {
-            always_on_top: true,
+            mode: DebugRenderMode::all(),
             ..default()
         })
         .add_plugin(FrameTimeDiagnosticsPlugin)

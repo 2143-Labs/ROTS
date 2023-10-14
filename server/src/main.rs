@@ -1,8 +1,8 @@
-use std::{ops::DerefMut, sync::{atomic::{AtomicU16, AtomicI16}, Arc}};
+use std::{ops::DerefMut, sync::{atomic::AtomicI16, Arc}};
 
 use rand::{thread_rng, Rng};
 use shared::{EventToServer, EventToClient, NetEntId, event::{UpdatePos, ShootBullet, Animation, PlayerDisconnect}, Config};
-use bevy::{app::ScheduleRunnerSettings, prelude::*, utils::{Duration, HashMap}, log::LogPlugin, time::common_conditions::on_fixed_timer};
+use bevy::{prelude::*, utils::{Duration, HashMap}, log::LogPlugin, time::common_conditions::on_fixed_timer};
 use message_io::{node, network::{Transport, NetEvent, Endpoint}};
 use shared::{event::PlayerInfo, ServerResources, EventFromEndpoint};
 
@@ -16,8 +16,7 @@ fn main() {
     let server = start_server(&config);
 
     app
-        .add_plugin(LogPlugin::default())
-        .insert_resource(ScheduleRunnerSettings::run_loop(Duration::from_secs_f64(1.0 / 120.0)))
+        .add_plugins(LogPlugin::default())
         .insert_resource(server)
         .insert_resource(config)
         .insert_resource(EndpointToNetId::default())
@@ -27,16 +26,17 @@ fn main() {
         .add_event::<ShootBullet>()
         .add_event::<Animation>()
         .add_plugins(MinimalPlugins)
-        .add_systems((
+        .add_systems(Update, (
             on_player_connect,
             tick_net_server,
             send_shooting_to_all_players,
             send_animations_to_all_players,
             send_movement_to_all_players,
+        ))
+        .add_systems(FixedUpdate, 
             check_heartbeats
-                .in_base_set(CoreSet::FixedUpdate)
-                .run_if(on_fixed_timer(Duration::from_millis(HEARTBEAT_MILLIS))),
-        ));
+                .run_if(on_fixed_timer(Duration::from_millis(HEARTBEAT_MILLIS)))
+        );
 
     app.run();
 }

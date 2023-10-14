@@ -12,9 +12,9 @@ use shared::{BulletPhysics, BulletAI, EventToClient, ServerResources, EventToSer
 
 pub fn init(app: &mut App) -> &mut App {
     app
-        .add_system(lifetime_despawn)
-        .add_system(update_all_bullets)
+        .add_systems(Update, (lifetime_despawn, update_all_bullets, camera_aim))
         .add_systems(
+            Update,
             (
                 spawn_bullet,
                 spawn_animations,
@@ -22,7 +22,6 @@ pub fn init(app: &mut App) -> &mut App {
             ).distributive_run_if(in_state(NetworkingState::Connected))
         )
         // .add_system(tower_shooting)
-        .add_system(camera_aim)
         //.add_system(update_collisions)
         .register_type::<Tower>()
         .add_startup_system(spawn_tower)

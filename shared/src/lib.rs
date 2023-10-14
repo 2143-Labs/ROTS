@@ -11,41 +11,41 @@ pub struct NetEntId(pub u64);
 pub mod event {
     use super::*;
 
-    #[derive(Debug, Clone, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Serialize, Deserialize, Event)]
     pub struct PlayerInfo {
         pub name: String,
         pub id: NetEntId,
     }
 
-    #[derive(Debug, Clone, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Serialize, Deserialize, Event)]
     pub struct UpdatePos {
         pub id: NetEntId,
         pub transform: Transform,
     }
 
-    #[derive(Debug, Clone, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Serialize, Deserialize, Event)]
     pub struct ShootBullet {
         pub id: NetEntId,
         pub phys: BulletPhysics,
     }
 
-    #[derive(Debug, Clone, Serialize, Deserialize, Component)]
+    #[derive(Debug, Clone, Serialize, Deserialize, Component, Event)]
     pub struct Animation {
         pub id: NetEntId,
         pub animation: AnimationThing,
     }
 
-    #[derive(Debug, Clone, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Serialize, Deserialize, Event)]
     pub struct PlayerDisconnect {
         pub id: NetEntId,
     }
 
-    #[derive(Debug, Clone, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Serialize, Deserialize, Event)]
     pub enum AnimationThing {
         Waterball,
     }
 
-    #[derive(Debug, Clone, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Serialize, Deserialize, Event)]
     pub struct Heartbeat {
         pub id: NetEntId,
     }
@@ -69,7 +69,7 @@ pub struct BulletPhysics {
     //fired_time: time_since_start,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Event)]
 #[non_exhaustive]
 pub enum EventToClient {
     Noop,
@@ -82,7 +82,7 @@ pub enum EventToClient {
     PlayerDisconnect(event::PlayerDisconnect),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Event)]
 #[non_exhaustive]
 pub enum EventToServer {
     Noop,
@@ -93,7 +93,7 @@ pub enum EventToServer {
     Heartbeat,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Event)]
 pub struct EventFromEndpoint<E> {
     pub event: E,
     pub endpoint: Endpoint,

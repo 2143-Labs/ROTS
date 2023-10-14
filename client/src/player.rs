@@ -19,11 +19,11 @@ use shared::Config;
 pub fn init(app: &mut App) -> &mut App {
     app
         .add_system(spawn_player_sprite.run_if(in_state(GameState::Ready).and_then(run_once())))
-        .add_systems(
+        .add_systems(Update,
             (player_movement, wow_camera_system)
                 .distributive_run_if(in_state(FreeCamState::ThirdPersonLocked)),
         )
-        .add_systems(
+        .add_systems(Update,
             (player_movement, wow_camera_system, q_e_rotate_cam)
                 .distributive_run_if(in_state(FreeCamState::ThirdPersonFreeMouse))
         )
