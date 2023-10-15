@@ -18,7 +18,7 @@ use shared::Config;
 
 pub fn init(app: &mut App) -> &mut App {
     app
-        .add_system(spawn_player_sprite.run_if(in_state(GameState::Ready).and_then(run_once())))
+        .add_systems(OnEnter(GameState::Ready), spawn_player_sprite)
         .add_systems(Update,
             (player_movement, wow_camera_system)
                 .distributive_run_if(in_state(FreeCamState::ThirdPersonLocked)),
@@ -76,7 +76,7 @@ pub fn spawn_player_sprite(
         atlas: images.run.clone(),
 
         pixels_per_metre: 32.,
-        partial_alpha: true,
+        alpha_mode: AlphaMode::Add,
         unlit: true,
 
         index: 1,
@@ -190,7 +190,7 @@ pub fn wow_camera_system(
             camera_follow.distance = camera_follow.distance.clamp(camera_follow.min_distance, camera_follow.max_distance);
         }
 
-        if mouse_input.pressed(MouseButton::Right) || camera_type.0 == FreeCamState::ThirdPersonLocked {
+        if mouse_input.pressed(MouseButton::Right) || *camera_type == FreeCamState::ThirdPersonLocked {
             for event in mouse_events.iter() {
                 let sens = config.sens;
                 camera_follow.yaw_radians -= event.delta.x * sens;

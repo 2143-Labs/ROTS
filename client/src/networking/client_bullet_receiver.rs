@@ -222,7 +222,7 @@ fn on_player_connect(
             atlas: sprite_res.run.clone(),
 
             pixels_per_metre: 44.,
-            partial_alpha: true,
+            alpha_mode: AlphaMode::Add,
             unlit: false,
 
             index: 1,
@@ -349,7 +349,6 @@ fn on_player_animate(
                 AtlasSprite3d {
                     atlas: proj_res.waterboll.clone(),
                     pixels_per_metre: 16.,
-                    partial_alpha: true,
                     unlit: false,
                     index: 0,
                     ..default()

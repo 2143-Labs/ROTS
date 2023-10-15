@@ -138,7 +138,7 @@ pub fn spawn_muscle_man(
         atlas: images.run.clone(),
 
         pixels_per_metre: 32.,
-        partial_alpha: true,
+        alpha_mode: AlphaMode::Add,
         unlit: true,
 
         index: 1,
