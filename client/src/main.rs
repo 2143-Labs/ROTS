@@ -1,9 +1,13 @@
-use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*, window::{CursorGrabMode, Cursor}};
+use bevy::{
+    diagnostic::FrameTimeDiagnosticsPlugin,
+    prelude::*,
+    window::{Cursor, CursorGrabMode},
+};
 use bevy_fly_camera::FlyCameraPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier3d::{
     prelude::{NoUserData, RapierPhysicsPlugin},
-    render::{RapierDebugRenderPlugin, DebugRenderMode},
+    render::{DebugRenderMode, RapierDebugRenderPlugin},
 };
 use bevy_sprite3d::Sprite3dPlugin;
 use networking::client_bullet_receiver::NetworkingPlugin;
@@ -55,7 +59,7 @@ fn main() {
             Sprite3dPlugin,
             FlyCameraPlugin,
             FrameTimeDiagnosticsPlugin,
-            WorldInspectorPlugin::new(),
+            // WorldInspectorPlugin::new(),
             StatePlugin,
             NetworkingPlugin,
         ))

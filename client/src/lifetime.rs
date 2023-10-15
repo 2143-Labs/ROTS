@@ -5,25 +5,21 @@ use rand::{thread_rng, Rng};
 
 use crate::networking::client_bullet_receiver::{NetworkPlayer, NetworkingState};
 use crate::states::FreeCamState;
-use crate::{player::Player, networking::client_bullet_receiver::MainServerEndpoint};
-use shared::{BulletPhysics, BulletAI, EventToClient, ServerResources, EventToServer};
+use crate::{networking::client_bullet_receiver::MainServerEndpoint, player::Player};
+use shared::{BulletAI, BulletPhysics, EventToClient, EventToServer, ServerResources};
 
 pub fn init(app: &mut App) -> &mut App {
-    app
-        .add_systems(Update, (lifetime_despawn, update_all_bullets, camera_aim))
+    app.add_systems(Update, (lifetime_despawn, update_all_bullets, camera_aim))
         .add_systems(
             Update,
-            (
-                spawn_bullet,
-                spawn_animations,
-                lifetime_event,
-            ).distributive_run_if(in_state(NetworkingState::Connected))
+            (spawn_bullet, spawn_animations, lifetime_event)
+                .distributive_run_if(in_state(NetworkingState::Connected)),
         )
         // .add_system(tower_shooting)
         //.add_system(update_collisions)
         .register_type::<Tower>()
         .add_systems(Startup, spawn_tower)
-        //.add_plugins(bevy_mod_raycast::DefaultRaycastingPlugin)
+    //.add_plugins(bevy_mod_raycast::DefaultRaycastingPlugin)
 }
 
 #[derive(Reflect, Component, Default)]
@@ -65,21 +61,21 @@ fn lifetime_event(
             commands.entity(entity).despawn_recursive();
 
             //let target: &Intersection<_> = match intersect.iter().next() {
-                //Some(s) => s,
-                //None => {
-                    //info!("No intersection with ground");
-                    //return;
-                //}
+            //Some(s) => s,
+            //None => {
+            //info!("No intersection with ground");
+            //return;
+            //}
             //};
 
             //debug!(?target);
 
             //let isect = match target.position() {
-                //Some(s) => s,
-                //None => {
-                    //error!("No intersect position?");
-                    //return;
-                //}
+            //Some(s) => s,
+            //None => {
+            //error!("No intersect position?");
+            //return;
+            //}
             //};
 
             //debug!(?isect);
@@ -89,25 +85,25 @@ fn lifetime_event(
             ////let spawn_transform = Transform::from_xyz(0.0, -100., 0.0);
 
             //let v: Vec<EventToServer> = (0..100).map(|_i| {
-                //let mut rng = thread_rng();
-                //let x = rng.gen_range(-1.0..1.0);
-                //let y = rng.gen_range(-1.0..1.0);
-                //let spd = rng.gen_range(1.0..20.0);
-                //let rand_offset = Vec2::new(x, y);
-                //let from = Vec2 {
-                    //x: player_transform.translation.x,
-                    //y: player_transform.translation.z,
-                //};
+            //let mut rng = thread_rng();
+            //let x = rng.gen_range(-1.0..1.0);
+            //let y = rng.gen_range(-1.0..1.0);
+            //let spd = rng.gen_range(1.0..20.0);
+            //let rand_offset = Vec2::new(x, y);
+            //let from = Vec2 {
+            //x: player_transform.translation.x,
+            //y: player_transform.translation.z,
+            //};
 
-                //let phys = BulletPhysics {
-                    //fired_target: from + rand_offset,
-                    //fired_from: from,
-                    //speed: spd,
-                    //ai: BulletAI::Wavy,
-                //};
+            //let phys = BulletPhysics {
+            //fired_target: from + rand_offset,
+            //fired_from: from,
+            //speed: spd,
+            //ai: BulletAI::Wavy,
+            //};
 
-                //let ev = EventToServer::ShootBullet(phys);
-                //ev
+            //let ev = EventToServer::ShootBullet(phys);
+            //ev
             //}).collect();
 
             //let data = serde_json::to_string(&v).unwrap();
@@ -155,14 +151,11 @@ fn _update_collisions(
 ) {
     for (bullet_ent, bullet_transform) in bullets.iter() {
         for player_transform in &players {
-            let dist = (
-                player_transform.translation - bullet_transform.translation
-            ).length_squared();
+            let dist =
+                (player_transform.translation - bullet_transform.translation).length_squared();
 
             if dist < 1.0 {
-                commands
-                    .entity(bullet_ent)
-                    .despawn_recursive();
+                commands.entity(bullet_ent).despawn_recursive();
 
                 warn!("hit");
             }
@@ -191,7 +184,10 @@ fn spawn_animations(
     if keyboard_input.just_pressed(KeyCode::B) {
         let ev = EventToServer::BeginAnimation(shared::event::AnimationThing::Waterball);
         let data = serde_json::to_string(&ev).unwrap();
-        event_list_res.handler.network().send(mse.0, data.as_bytes());
+        event_list_res
+            .handler
+            .network()
+            .send(mse.0, data.as_bytes());
     }
 }
 
@@ -214,21 +210,21 @@ fn spawn_bullet(
     };
 
     //let target: &Intersection<_> = match intersect.iter().next() {
-        //Some(s) => s,
-        //None => {
-            //info!("No intersection with ground");
-            //return;
-        //}
+    //Some(s) => s,
+    //None => {
+    //info!("No intersection with ground");
+    //return;
+    //}
     //};
 
     //debug!(?target);
 
     //let isect = match target.position() {
-        //Some(s) => s,
-        //None => {
-            //error!("No intersect position?");
-            //return;
-        //}
+    //Some(s) => s,
+    //None => {
+    //error!("No intersect position?");
+    //return;
+    //}
     //};
 
     //debug!(?isect);
@@ -239,16 +235,16 @@ fn spawn_bullet(
     //let player_transform: &Transform = player.single();
 
     //let phys = BulletPhysics {
-        //fired_target: Vec2 {
-            //x: isect.x,
-            //y: isect.z,
-        //},
-        //fired_from: Vec2 {
-            //x: player_transform.translation.x,
-            //y: player_transform.translation.z,
-        //},
-        //speed: 10.0,
-        //ai,
+    //fired_target: Vec2 {
+    //x: isect.x,
+    //y: isect.z,
+    //},
+    //fired_from: Vec2 {
+    //x: player_transform.translation.x,
+    //y: player_transform.translation.z,
+    //},
+    //speed: 10.0,
+    //ai,
     //};
 
     //let ev = EventToServer::ShootBullet(phys);
@@ -256,7 +252,6 @@ fn spawn_bullet(
 
     //info!(?data);
     //event_list_res.handler.network().send(mse.0, data.as_bytes());
-
 }
 
 #[derive(Reflect, Component, Default)]

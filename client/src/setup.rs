@@ -12,10 +12,13 @@ use crate::{
 };
 
 pub fn init(app: &mut App) -> &mut App {
-    app.add_startup_systems((spawn_camera, spawn_scene))
-        .add_system(modify_collider_active_events)
-        .add_system(spawn_muscle_man.run_if(in_state(GameState::Ready).and_then(run_once())))
-        .add_plugin(DefaultRaycastingPlugin::<MyRaycastSet>::default())
+    app.add_systems(Startup, (spawn_camera, spawn_scene))
+        .add_systems(Update, modify_collider_active_events)
+        .add_systems(
+            Update,
+            spawn_muscle_man.run_if(in_state(GameState::Ready).and_then(run_once())),
+        )
+        .add_plugins(DefaultRaycastingPlugin::<MyRaycastSet>::default())
 }
 
 #[derive(Component)]
@@ -39,7 +42,7 @@ impl Default for CameraFollow {
             max_distance: 200.,
             dragging: false,
             yaw_radians: 0.,
-            pitch_radians: PI * 1.0/4.0,
+            pitch_radians: PI * 1.0 / 4.0,
             old_yaw: 0.,
         }
     }
@@ -110,16 +113,18 @@ pub fn spawn_scene(
             ..Default::default()
         })
         .insert(Name::new("Sun"));
-    commands.spawn(SceneBundle {
-        scene: asset_server.load("sprytilebrickhouse.gltf#Scene0"),
-        transform: Transform::from_xyz(-5.2,-1.0,-20.0).with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
-        ..default()
-    })
-    .with_children(|x| {
-        x.spawn(Collider::cuboid(5., 1.0, 6.))
-        .insert(TransformBundle::from(Transform::from_xyz(-5., 0., -5.)));
-    })
-    .insert(Name::new("House"));
+    commands
+        .spawn(SceneBundle {
+            scene: asset_server.load("sprytilebrickhouse.gltf#Scene0"),
+            transform: Transform::from_xyz(-5.2, -1.0, -20.0)
+                .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
+            ..default()
+        })
+        .with_children(|x| {
+            x.spawn(Collider::cuboid(5., 1.0, 6.))
+                .insert(TransformBundle::from(Transform::from_xyz(-5., 0., -5.)));
+        })
+        .insert(Name::new("House"));
 }
 
 #[derive(AssetCollection, Resource)]
