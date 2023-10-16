@@ -1,21 +1,31 @@
 use std::{ops::DerefMut, time::Duration};
 
-use bevy::{prelude::*, time::common_conditions::{on_timer, on_fixed_timer}};
+use bevy::{
+    prelude::*,
+    time::common_conditions::{on_fixed_timer, on_timer},
+};
 use bevy_asset_loader::prelude::AssetCollection;
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
-use message_io::network::{NetEvent, Transport, Endpoint};
+use message_io::network::{Endpoint, NetEvent, Transport};
 use rand::{thread_rng, Rng};
-use shared::{event::{PlayerInfo, UpdatePos, ShootBullet, Animation, PlayerDisconnect}, ServerResources, EventFromEndpoint, EventToClient, EventToServer, NetEntId, Config};
+use shared::{
+    event::{Animation, PlayerDisconnect, PlayerInfo, ShootBullet, UpdatePos},
+    Config, EventFromEndpoint, EventToClient, EventToServer, NetEntId, ServerResources,
+};
 
-use crate::{lifetime::Lifetime, sprites::AnimationTimer, player::{FaceCamera, Player}, states::GameState};
+use crate::{
+    lifetime::Lifetime,
+    player::{FaceCamera, Player},
+    sprites::AnimationTimer,
+    states::GameState,
+};
 
 pub struct NetworkingPlugin;
 
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
         let config = Config::load_from_main_dir();
-        app
-            .add_state::<NetworkingState>()
+        app.add_state::<NetworkingState>()
             .insert_resource(config)
             .register_type::<Config>()
             .add_event::<EventFromEndpoint<PlayerInfo>>()
@@ -24,18 +34,18 @@ impl Plugin for NetworkingPlugin {
             .add_event::<EventFromEndpoint<Animation>>()
             .add_event::<EventFromEndpoint<PlayerDisconnect>>()
             .add_systems(OnEnter(GameState::Ready), on_game_ready)
-            .add_systems(OnEnter(NetworkingState::BeginSetup), setup_networking_server)
+            .add_systems(
+                OnEnter(NetworkingState::BeginSetup),
+                setup_networking_server,
+            )
             .add_systems(
                 Update,
-                (
-                    tick_net_client,
-                    on_player_disconnect,
-                ).distributive_run_if(in_state(NetworkingState::WaitingForServer))
+                (tick_net_client, on_player_disconnect)
+                    .distributive_run_if(in_state(NetworkingState::WaitingForServer)),
             )
             .add_systems(
                 FixedUpdate,
-                send_heartbeat
-                    .run_if(on_fixed_timer(Duration::from_millis(500))),
+                send_heartbeat.run_if(on_fixed_timer(Duration::from_millis(250))),
             )
             .add_systems(
                 Update,
@@ -49,7 +59,8 @@ impl Plugin for NetworkingPlugin {
                     tick_net_client,
                     on_player_disconnect,
                     on_player_shoot,
-                ).distributive_run_if(in_state(NetworkingState::Connected))
+                )
+                    .distributive_run_if(in_state(NetworkingState::Connected)),
             );
     }
 }
@@ -66,9 +77,7 @@ pub enum NetworkingState {
     Connected,
 }
 
-fn on_game_ready(
-    mut networking_state: ResMut<NextState<NetworkingState>>,
-) {
+fn on_game_ready(mut networking_state: ResMut<NextState<NetworkingState>>) {
     networking_state.set(NetworkingState::BeginSetup);
 }
 
@@ -82,7 +91,10 @@ fn setup_networking_server(
 
     let con_str = (&*config.ip, config.port);
 
-    let (server, _) = handler.network().connect(Transport::Udp, con_str).expect("Failed to connect ot server");
+    let (server, _) = handler
+        .network()
+        .connect(Transport::Udp, con_str)
+        .expect("Failed to connect ot server");
 
     info!("probably connected");
 
@@ -97,7 +109,7 @@ fn setup_networking_server(
 
     std::thread::spawn(move || {
         listener.for_each(move |event| match event.network() {
-            NetEvent::Connected(_, _) => {},
+            NetEvent::Connected(_, _) => {}
             NetEvent::Accepted(_endpoint, _listener) => println!("Client connected"),
             NetEvent::Message(endpoint, data) => {
                 //let s = from_utf8(data);
@@ -123,7 +135,6 @@ fn setup_networking_server(
 
     info!("sent json");
 
-
     commands.insert_resource(res);
     commands.insert_resource(mse);
     networking_state.set(NetworkingState::WaitingForServer);
@@ -133,18 +144,21 @@ fn send_movement_updates(
     player_query: Query<&Transform, With<crate::player::Player>>,
     event_list_res: Res<ServerResources<EventToClient>>,
     mse: Res<MainServerEndpoint>,
-){
+) {
     if let Ok(transform) = player_query.get_single() {
         let ev = EventToServer::UpdatePos(*transform);
         let data = serde_json::to_string(&ev).unwrap();
-        event_list_res.handler.network().send(mse.0, data.as_bytes());
+        event_list_res
+            .handler
+            .network()
+            .send(mse.0, data.as_bytes());
     }
 }
 
 fn get_movement_updates(
     mut movement_events: EventReader<EventFromEndpoint<UpdatePos>>,
     mut players: Query<(&mut Transform, &NetEntId), (With<NetworkPlayer>, Without<Player>)>,
-){
+) {
     let events: Vec<_> = movement_events.iter().collect();
     //info!(?events);
     for (mut player_transform, &net_id) in &mut players {
@@ -169,28 +183,41 @@ pub fn tick_net_client(
     mut commands: Commands,
     mut networking_state: ResMut<NextState<NetworkingState>>,
 ) {
-    let events_to_process: Vec<_> = std::mem::take(event_list_res.event_list.lock().unwrap().deref_mut());
+    let events_to_process: Vec<_> =
+        std::mem::take(event_list_res.event_list.lock().unwrap().deref_mut());
     for (_endpoint, e) in events_to_process {
         match e {
             EventToClient::Noop => warn!("Got noop event"),
-            EventToClient::PlayerConnect(p) => ev_player_connect.send(EventFromEndpoint::new(_endpoint, p)),
-            EventToClient::PlayerList(p_list) => ev_player_connect.send_batch(p_list.into_iter().map(|x| EventFromEndpoint::new(_endpoint, x))),
-            EventToClient::UpdatePos(e) => ev_player_movement.send(EventFromEndpoint::new(_endpoint, e)),
-            EventToClient::ShootBullet(e) => ev_player_shoot.send(EventFromEndpoint::new(_endpoint, e)),
-            EventToClient::Animation(a) => ev_player_animation.send(EventFromEndpoint::new(_endpoint, a)),
-            EventToClient::PlayerDisconnect(a) => ev_player_disconnect.send(EventFromEndpoint::new(_endpoint, a)),
+            EventToClient::PlayerConnect(p) => {
+                ev_player_connect.send(EventFromEndpoint::new(_endpoint, p))
+            }
+            EventToClient::PlayerList(p_list) => ev_player_connect.send_batch(
+                p_list
+                    .into_iter()
+                    .map(|x| EventFromEndpoint::new(_endpoint, x)),
+            ),
+            EventToClient::UpdatePos(e) => {
+                ev_player_movement.send(EventFromEndpoint::new(_endpoint, e))
+            }
+            EventToClient::ShootBullet(e) => {
+                ev_player_shoot.send(EventFromEndpoint::new(_endpoint, e))
+            }
+            EventToClient::Animation(a) => {
+                ev_player_animation.send(EventFromEndpoint::new(_endpoint, a))
+            }
+            EventToClient::PlayerDisconnect(a) => {
+                ev_player_disconnect.send(EventFromEndpoint::new(_endpoint, a))
+            }
             EventToClient::YouAre(info) => {
                 info!("The server has returned our networking info {info:?}");
                 commands
                     .entity(player.single())
-                    .insert(NetworkPlayer {
-                        name: info.name,
-                    })
+                    .insert(NetworkPlayer { name: info.name })
                     .insert(info.id);
 
                 networking_state.set(NetworkingState::Connected);
-            },
-            _ => {},
+            }
+            _ => {}
         }
     }
 }
@@ -202,7 +229,6 @@ pub struct NetPlayerSprite {
     #[asset(path = "MrMan.png")]
     pub run: Handle<TextureAtlas>,
 }
-
 
 #[derive(Component)]
 pub struct NetworkPlayer {
@@ -256,9 +282,7 @@ fn on_player_disconnect(
         for (ent, net_ent, player_info, is_local_player) in &sprite_res {
             if net_ent == &e.event.id {
                 warn!("A player has disconnected: {} ({e:?})", player_info.name);
-                commands
-                    .entity(ent)
-                    .despawn_recursive();
+                commands.entity(ent).despawn_recursive();
 
                 if is_local_player.is_some() {
                     warn!("We have been disconnected from the server.");
@@ -270,7 +294,7 @@ fn on_player_disconnect(
 }
 
 #[derive(AssetCollection, Resource)]
-pub struct ProjectileSheet{
+pub struct ProjectileSheet {
     #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 32.))]
     #[asset(texture_atlas(columns = 1, rows = 1))]
     #[asset(path = "Banana.png")]
@@ -299,12 +323,12 @@ fn on_player_shoot(
         //info!("spawning bullet");
 
         //let sprite = AtlasSprite3d {
-            //atlas: proj_res.waterboll.clone(),
-            //pixels_per_metre: 32.,
-            //partial_alpha: true,
-            //unlit: false,
-            //index: 0,
-            //..default()
+        //atlas: proj_res.waterboll.clone(),
+        //pixels_per_metre: 32.,
+        //partial_alpha: true,
+        //unlit: false,
+        //index: 0,
+        //..default()
         //}
         //.bundle(&mut sprite_params);
 
@@ -321,14 +345,12 @@ fn on_player_shoot(
             })
             .insert(e.event.phys.clone())
             .insert(e.event.id);
-            //.insert(AnimationTimer(Timer::from_seconds(
-                //0.1,
-                //TimerMode::Repeating,
-            //)));
-
+        //.insert(AnimationTimer(Timer::from_seconds(
+        //0.1,
+        //TimerMode::Repeating,
+        //)));
     }
 }
-
 
 #[derive(Component)]
 struct AttachedAnimation(NetEntId);
@@ -345,16 +367,14 @@ fn on_player_animate(
         let frames = 36;
 
         let sprite = match e.event.animation {
-            shared::event::AnimationThing::Waterball => {
-                AtlasSprite3d {
-                    atlas: proj_res.waterboll.clone(),
-                    pixels_per_metre: 16.,
-                    unlit: false,
-                    index: 0,
-                    ..default()
-                }
-                .bundle(&mut sprite_params)
+            shared::event::AnimationThing::Waterball => AtlasSprite3d {
+                atlas: proj_res.waterboll.clone(),
+                pixels_per_metre: 16.,
+                unlit: false,
+                index: 0,
+                ..default()
             }
+            .bundle(&mut sprite_params),
         };
 
         commands
@@ -368,7 +388,6 @@ fn on_player_animate(
                 1.0 / frames as f32,
                 TimerMode::Repeating,
             )));
-
     }
 }
 
@@ -379,7 +398,8 @@ fn keep_animation_on_player(
     'anim: for (mut anim_transform, animation) in &mut animations {
         for (&p_trans, &net_id) in &players {
             if net_id == animation.0 {
-                anim_transform.translation = p_trans.translation + Transform::from_xyz(0.0, 1.0, 0.0).translation;
+                anim_transform.translation =
+                    p_trans.translation + Transform::from_xyz(0.0, 1.0, 0.0).translation;
                 anim_transform.rotation = Quat::from_rotation_x(0.0);
                 continue 'anim;
             }
@@ -393,5 +413,8 @@ fn send_heartbeat(
 ) {
     let ev = EventToServer::Heartbeat;
     let data = serde_json::to_string(&ev).unwrap();
-    event_list_res.handler.network().send(mse.0, data.as_bytes());
+    event_list_res
+        .handler
+        .network()
+        .send(mse.0, data.as_bytes());
 }

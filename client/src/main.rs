@@ -59,7 +59,6 @@ fn main() {
             Sprite3dPlugin,
             FlyCameraPlugin,
             FrameTimeDiagnosticsPlugin,
-            // WorldInspectorPlugin::new(),
             StatePlugin,
             NetworkingPlugin,
         ))
@@ -74,5 +73,6 @@ fn main() {
             mode: DebugRenderMode::all(),
             ..default()
         })
+        .add_plugins(WorldInspectorPlugin::new())
         .run();
 }

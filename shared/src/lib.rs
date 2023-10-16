@@ -1,9 +1,13 @@
-use std::{sync::{Arc, Mutex}, fs::OpenOptions, env::current_dir};
+use std::{
+    env::current_dir,
+    fs::OpenOptions,
+    sync::{Arc, Mutex},
+};
 
 use bevy::prelude::*;
 use event::AnimationThing;
 use message_io::{network::Endpoint, node::NodeHandler};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Component, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct NetEntId(pub u64);
@@ -86,7 +90,7 @@ pub enum EventToClient {
 #[non_exhaustive]
 pub enum EventToServer {
     Noop,
-    Connect{name: String},
+    Connect { name: String },
     UpdatePos(Transform),
     ShootBullet(BulletPhysics),
     BeginAnimation(AnimationThing),
@@ -112,11 +116,11 @@ pub struct ServerResources<T> {
 }
 
 //fn default_qe_sens() -> f32 {
-    //3.0
+//3.0
 //}
 
 //fn default_sens() -> f32 {
-    //0.003
+//0.003
 //}
 
 #[derive(Reflect, Clone, Resource, Deserialize, Serialize, Default, Debug)]
@@ -133,7 +137,7 @@ pub struct Config {
 impl Config {
     fn default_config() -> Self {
         Self {
-            ip: "john2143.com".into(),
+            ip: "127.0.0.1".into(),
             port: 25565,
             sens: 0.003,
             qe_sens: 3.0,
@@ -148,19 +152,17 @@ impl Config {
 
         // Try to open config file
         match OpenOptions::new().read(true).open(&path) {
-            Ok(file) => {
-                match serde_yaml::from_reader(file) {
-                    Ok(v) => v,
-                    Err(e) => {
-                        error!("====================================");
-                        error!("===  Failed to load your config  ===");
-                        error!("====================================");
-                        error!(?e);
-                        error!("Here is the default config:");
-                        let default_config = serde_yaml::to_string(&Self::default_config()).unwrap();
-                        println!("{}", default_config);
-                        panic!("Please fix the above error and restart your program");
-                    }
+            Ok(file) => match serde_yaml::from_reader(file) {
+                Ok(v) => v,
+                Err(e) => {
+                    error!("====================================");
+                    error!("===  Failed to load your config  ===");
+                    error!("====================================");
+                    error!(?e);
+                    error!("Here is the default config:");
+                    let default_config = serde_yaml::to_string(&Self::default_config()).unwrap();
+                    println!("{}", default_config);
+                    panic!("Please fix the above error and restart your program");
                 }
             },
             Err(kind) => match kind.kind() {
@@ -168,12 +170,16 @@ impl Config {
                 std::io::ErrorKind::NotFound => {
                     let config = Self::default_config();
 
-                    let file_handler = OpenOptions::new().create(true).write(true).open(&path).unwrap();
+                    let file_handler = OpenOptions::new()
+                        .create(true)
+                        .write(true)
+                        .open(&path)
+                        .unwrap();
 
                     serde_yaml::to_writer(file_handler, &config).unwrap();
                     // should mabye just crash here and ask them to review their config
                     config
-                },
+                }
                 e => panic!("Failed to open config file {e:?}"),
             },
         }

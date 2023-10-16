@@ -17,15 +17,16 @@ use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 use shared::Config;
 
 pub fn init(app: &mut App) -> &mut App {
-    app
-        .add_systems(OnEnter(GameState::Ready), spawn_player_sprite)
-        .add_systems(Update,
+    app.add_systems(OnEnter(GameState::Ready), spawn_player_sprite)
+        .add_systems(
+            Update,
             (player_movement, wow_camera_system)
                 .distributive_run_if(in_state(FreeCamState::ThirdPersonLocked)),
         )
-        .add_systems(Update,
+        .add_systems(
+            Update,
             (player_movement, wow_camera_system, q_e_rotate_cam)
-                .distributive_run_if(in_state(FreeCamState::ThirdPersonFreeMouse))
+                .distributive_run_if(in_state(FreeCamState::ThirdPersonFreeMouse)),
         )
         .register_type::<Jumper>()
 }
@@ -146,7 +147,8 @@ pub fn player_movement(
             let rotation = Vec2::from_angle(-camera.yaw_radians);
             let movem = move_vector.normalize().rotate(rotation);
 
-            transform.translation += Vec3::new(movem.x, 0.0, movem.y) * PLAYER_SPEED * time.delta_seconds();
+            transform.translation +=
+                Vec3::new(movem.x, 0.0, movem.y) * PLAYER_SPEED * time.delta_seconds();
         }
     }
 }
@@ -187,20 +189,24 @@ pub fn wow_camera_system(
     for (mut camera_transform, mut camera_follow) in camera_query.iter_mut() {
         for event in mouse_wheel_events.iter() {
             camera_follow.distance -= event.y;
-            camera_follow.distance = camera_follow.distance.clamp(camera_follow.min_distance, camera_follow.max_distance);
+            camera_follow.distance = camera_follow
+                .distance
+                .clamp(camera_follow.min_distance, camera_follow.max_distance);
         }
 
-        if mouse_input.pressed(MouseButton::Right) || *camera_type == FreeCamState::ThirdPersonLocked {
+        if mouse_input.pressed(MouseButton::Right)
+            || *camera_type == FreeCamState::ThirdPersonLocked
+        {
             for event in mouse_events.iter() {
                 let sens = config.sens;
                 camera_follow.yaw_radians -= event.delta.x * sens;
                 camera_follow.pitch_radians -= event.delta.y * sens;
-                camera_follow.pitch_radians = camera_follow.pitch_radians.clamp(0.05 * PI, 0.95 * PI);
+                camera_follow.pitch_radians =
+                    camera_follow.pitch_radians.clamp(0.05 * PI, 0.95 * PI);
             }
         }
 
-        let camera_location =
-            Quat::from_rotation_y(camera_follow.yaw_radians)
+        let camera_location = Quat::from_rotation_y(camera_follow.yaw_radians)
             * Quat::from_rotation_z(camera_follow.pitch_radians)
             * Vec3::Y
             * camera_follow.distance
