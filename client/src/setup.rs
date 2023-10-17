@@ -88,12 +88,10 @@ pub fn spawn_scene(
             RaycastMesh::<MyRaycastSet>::default(),
             Hideable,
             Name::new("Plane"),
+            SpatialBundle::default(),
         ))
         .with_children(|parent| {
-            parent.spawn((
-                Collider::cuboid(size, 1., size),
-                TransformBundle::from(Transform::from_xyz(0., -1., 0.)),
-            ));
+            parent.spawn((Collider::cuboid(size, 1., size),));
         });
 
     commands.spawn((
@@ -123,9 +121,10 @@ pub fn spawn_scene(
                 ..default()
             },
             Name::new("House"),
+            SpatialBundle::default(),
         ))
-        .with_children(|x| {
-            x.spawn((
+        .with_children(|commands| {
+            commands.spawn((
                 Collider::cuboid(5., 1.0, 6.),
                 TransformBundle::from(Transform::from_xyz(-5., 0., -5.)),
             ));
