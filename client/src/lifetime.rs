@@ -36,12 +36,16 @@ pub struct LifetimeWithEvent {
 fn lifetime_despawn(
     mut commands: Commands,
     mut bullets: Query<(Entity, &mut Lifetime)>,
+    // Todo: parent bullets to shooter on spawn and remove_children ent from said parent here
+    // parent: Query<Entity, With<Shooter>>,
     time: Res<Time>,
 ) {
-    for (entity, mut lifetime) in &mut bullets {
+    // let parent = parent.single();
+    for (lifetime_entity, mut lifetime) in &mut bullets {
         lifetime.timer.tick(time.delta());
         if lifetime.timer.just_finished() {
-            commands.entity(entity).despawn_recursive();
+            // commands.entity(parent).remove_child(&[lifetime_entity]);
+            commands.entity(lifetime_entity).despawn_recursive();
         }
     }
 }
@@ -50,10 +54,9 @@ fn lifetime_event(
     mut commands: Commands,
     mut bullets: Query<(Entity, &mut LifetimeWithEvent)>,
     time: Res<Time>,
-
-    player: Query<&Transform, With<Player>>,
-    event_list_res: Res<ServerResources<EventToClient>>,
-    mse: Res<MainServerEndpoint>,
+    // player: Query<&Transform, With<Player>>,
+    // event_list_res: Res<ServerResources<EventToClient>>,
+    // mse: Res<MainServerEndpoint>,
 ) {
     for (entity, mut lifetime) in &mut bullets {
         lifetime.timer.tick(time.delta());
