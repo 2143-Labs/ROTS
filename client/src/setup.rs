@@ -52,17 +52,16 @@ impl Default for CameraFollow {
 pub struct MyRaycastSet;
 
 pub fn spawn_camera(mut commands: Commands) {
-    commands
-        .spawn((
-            Camera3dBundle {
-                transform: Transform::from_xyz(10., 10., 10.).looking_at(Vec3::ZERO, Vec3::Y),
-                ..default()
-            },
-            RaycastSource::<MyRaycastSet>::new_transform_empty(),
-        ))
-        .insert(CameraFollow::default())
-        .insert(Name::new("Camera"))
-        .insert(PlayerCamera);
+    commands.spawn((
+        Camera3dBundle {
+            transform: Transform::from_xyz(10., 10., 10.).looking_at(Vec3::ZERO, Vec3::Y),
+            ..default()
+        },
+        RaycastSource::<MyRaycastSet>::new_transform_empty(),
+        CameraFollow::default(),
+        Name::new("Camera"),
+        PlayerCamera,
+    ));
 }
 
 #[derive(Component)]
@@ -87,17 +86,18 @@ pub fn spawn_scene(
                 ..default()
             },
             RaycastMesh::<MyRaycastSet>::default(),
+            Hideable,
+            Name::new("Plane"),
         ))
         .with_children(|parent| {
-            parent
-                .spawn(Collider::cuboid(size, 1., size))
-                .insert(TransformBundle::from(Transform::from_xyz(0., -1., 0.)));
-        })
-        .insert(Hideable)
-        .insert(Name::new("Plane"));
+            parent.spawn((
+                Collider::cuboid(size, 1., size),
+                TransformBundle::from(Transform::from_xyz(0., -1., 0.)),
+            ));
+        });
 
-    commands
-        .spawn(DirectionalLightBundle {
+    commands.spawn((
+        DirectionalLightBundle {
             transform: Transform::from_rotation(Quat::from_rotation_x(
                 -std::f32::consts::FRAC_PI_2,
             ))
@@ -111,20 +111,25 @@ pub fn spawn_scene(
                 ..default()
             },
             ..Default::default()
-        })
-        .insert(Name::new("Sun"));
+        },
+        Name::new("Sun"),
+    ));
     commands
-        .spawn(SceneBundle {
-            scene: asset_server.load("sprytilebrickhouse.gltf#Scene0"),
-            transform: Transform::from_xyz(-5.2, -1.0, -20.0)
-                .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
-            ..default()
-        })
+        .spawn((
+            SceneBundle {
+                scene: asset_server.load("sprytilebrickhouse.gltf#Scene0"),
+                transform: Transform::from_xyz(-5.2, -1.0, -20.0)
+                    .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
+                ..default()
+            },
+            Name::new("House"),
+        ))
         .with_children(|x| {
-            x.spawn(Collider::cuboid(5., 1.0, 6.))
-                .insert(TransformBundle::from(Transform::from_xyz(-5., 0., -5.)));
-        })
-        .insert(Name::new("House"));
+            x.spawn((
+                Collider::cuboid(5., 1.0, 6.),
+                TransformBundle::from(Transform::from_xyz(-5., 0., -5.)),
+            ));
+        });
 }
 
 #[derive(AssetCollection, Resource)]
@@ -154,11 +159,9 @@ pub fn spawn_muscle_man(
     }
     .bundle(&mut sprite_params);
 
-    commands
-        .spawn(sprite)
-        .insert(FaceCamera)
-        .insert(AnimationTimer(Timer::from_seconds(
-            0.2,
-            TimerMode::Repeating,
-        )));
+    commands.spawn((
+        sprite,
+        FaceCamera,
+        AnimationTimer(Timer::from_seconds(0.2, TimerMode::Repeating)),
+    ));
 }

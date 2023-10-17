@@ -88,24 +88,22 @@ pub fn spawn_player_sprite(
     }
     .bundle(&mut sprite_params);
 
-    commands
-        .spawn(sprite)
-        .insert(RigidBody::Dynamic)
-        .insert(Collider::cuboid(0.5, 0.5, 0.2))
-        .insert(LockedAxes::ROTATION_LOCKED)
-        .insert(GravityScale(1.))
-        .insert(ColliderMassProperties::Mass(1.0))
-        .insert(Name::new("PlayerSprite"))
-        .insert(Player::default())
-        .insert(FaceCamera)
-        .insert(Jumper {
+    commands.spawn((
+        sprite,
+        RigidBody::Dynamic,
+        Collider::cuboid(0.5, 0.5, 0.2),
+        LockedAxes::ROTATION_LOCKED,
+        GravityScale(1.),
+        ColliderMassProperties::Mass(1.0),
+        Name::new("PlayerSprite"),
+        Player::default(),
+        FaceCamera,
+        Jumper {
             timer: Timer::from_seconds(1.0, TimerMode::Once),
-        })
-        .insert(Name::new("PlayerBody"))
-        .insert(AnimationTimer(Timer::from_seconds(
-            0.4,
-            TimerMode::Repeating,
-        )));
+        },
+        Name::new("PlayerBody"),
+        AnimationTimer(Timer::from_seconds(0.4, TimerMode::Repeating)),
+    ));
 }
 
 pub const PLAYER_SPEED: f32 = 5.;

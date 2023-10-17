@@ -265,25 +265,27 @@ fn spawn_tower(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    commands
-        .spawn(PbrBundle {
+    commands.spawn((
+        PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Box::new(0.5, 4., 0.5))),
             material: materials.add(Color::hex("#FF0000").unwrap().into()),
             transform: Transform::from_xyz(-4., 2., 4.),
             ..default()
-        })
-        .insert(Tower {
+        },
+        Tower {
             shooting_timer: Timer::from_seconds(2., TimerMode::Repeating),
-        })
-        .insert(Name::new("Tower"));
+        },
+        Name::new("Tower"),
+    ));
 
-    commands
-        .spawn(PbrBundle {
+    commands.spawn((
+        PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube::new(0.1))),
             material: materials.add(Color::PURPLE.into()),
             transform: Transform::default(),
             ..default()
-        })
-        .insert(AimVectorTarget)
-        .insert(Name::new("AimVector"));
+        },
+        AimVectorTarget {},
+        Name::new("AimVector"),
+    ));
 }

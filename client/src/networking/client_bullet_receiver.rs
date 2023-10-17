@@ -258,17 +258,15 @@ fn on_player_connect(
             ..default()
         }
         .bundle(&mut sprite_params);
-        commands
-            .spawn(sprite)
-            .insert(e.event.id)
-            .insert(NetworkPlayer {
+        commands.spawn((
+            sprite,
+            e.event.id,
+            NetworkPlayer {
                 name: e.event.name.clone(),
-            })
-            .insert(FaceCamera)
-            .insert(AnimationTimer(Timer::from_seconds(
-                0.4,
-                TimerMode::Repeating,
-            )));
+            },
+            FaceCamera,
+            AnimationTimer(Timer::from_seconds(0.4, TimerMode::Repeating)),
+        ));
     }
 }
 
@@ -332,19 +330,20 @@ fn on_player_shoot(
         //}
         //.bundle(&mut sprite_params);
 
-        commands
-            .spawn(PbrBundle {
+        commands.spawn((
+            PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Cube::new(0.3))),
                 material: materials.add(Color::BLUE.into()),
                 transform: Transform::from_xyz(0.0, -100.0, 0.0),
                 ..default()
-            })
+            },
             //.spawn(sprite)
-            .insert(Lifetime {
+            Lifetime {
                 timer: Timer::from_seconds(5.0, TimerMode::Once),
-            })
-            .insert(e.event.phys.clone())
-            .insert(e.event.id);
+            },
+            e.event.phys.clone(),
+            e.event.id,
+        ));
         //.insert(AnimationTimer(Timer::from_seconds(
         //0.1,
         //TimerMode::Repeating,
@@ -377,17 +376,18 @@ fn on_player_animate(
             .bundle(&mut sprite_params),
         };
 
-        commands
-            .spawn(sprite)
-            .insert(crate::lifetime::LifetimeWithEvent {
+        commands.spawn((
+            sprite,
+            crate::lifetime::LifetimeWithEvent {
                 timer: Timer::from_seconds(0.9, TimerMode::Once),
-            })
-            .insert(FaceCamera)
-            .insert(AttachedAnimation(e.event.id))
-            .insert(AnimationTimer(Timer::from_seconds(
+            },
+            FaceCamera,
+            AttachedAnimation(e.event.id),
+            AnimationTimer(Timer::from_seconds(
                 1.0 / frames as f32,
                 TimerMode::Repeating,
-            )));
+            )),
+        ));
     }
 }
 
