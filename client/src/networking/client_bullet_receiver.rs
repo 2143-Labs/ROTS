@@ -43,10 +43,10 @@ impl Plugin for NetworkingPlugin {
                 (tick_net_client, on_player_disconnect)
                     .distributive_run_if(in_state(NetworkingState::WaitingForServer)),
             )
-            .add_systems(
-                FixedUpdate,
-                send_heartbeat.run_if(on_fixed_timer(Duration::from_millis(250))),
-            )
+            // .add_systems(
+            //     FixedUpdate,
+            //     send_heartbeat.run_if(on_fixed_timer(Duration::from_millis(250))),
+            // )
             .add_systems(
                 Update,
                 (

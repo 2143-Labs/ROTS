@@ -101,7 +101,6 @@ pub fn spawn_player_sprite(
         Jumper {
             timer: Timer::from_seconds(1.0, TimerMode::Once),
         },
-        Name::new("PlayerBody"),
         AnimationTimer(Timer::from_seconds(0.4, TimerMode::Repeating)),
     ));
 }
