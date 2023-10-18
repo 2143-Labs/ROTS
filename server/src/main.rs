@@ -1,10 +1,12 @@
-use std::ops::DerefMut;
+use std::{ops::DerefMut, sync::{atomic::AtomicI16, Arc}};
 
 use rand::{thread_rng, Rng};
-use shared::{EventToServer, EventToClient, NetEntId, event::{UpdatePos, ShootBullet, Animation}, Config};
-use bevy::{app::ScheduleRunnerSettings, prelude::*, utils::{Duration, HashMap}, log::LogPlugin};
+use shared::{EventToServer, EventToClient, NetEntId, event::{UpdatePos, ShootBullet, Animation, PlayerDisconnect}, Config};
+use bevy::{prelude::*, utils::{Duration, HashMap}, log::LogPlugin, time::common_conditions::on_fixed_timer};
 use message_io::{node, network::{Transport, NetEvent, Endpoint}};
 use shared::{event::PlayerInfo, ServerResources, EventFromEndpoint};
+
+const HEARTBEAT_MILLIS: u64 = 200;
 
 fn main() {
     info!("Main Start");
@@ -14,21 +16,27 @@ fn main() {
     let server = start_server(&config);
 
     app
-        .add_plugin(LogPlugin::default())
-        .insert_resource(ScheduleRunnerSettings::run_loop(Duration::from_secs_f64(1.0 / 120.0)))
+        .add_plugins(LogPlugin::default())
         .insert_resource(server)
         .insert_resource(config)
         .insert_resource(EndpointToNetId::default())
+        .insert_resource(HeartbeatList::default())
         .add_event::<EventFromEndpoint<PlayerInfo>>()
         .add_event::<UpdatePos>()
         .add_event::<ShootBullet>()
         .add_event::<Animation>()
         .add_plugins(MinimalPlugins)
-        .add_system(on_player_connect)
-        .add_system(tick_net_server)
-        .add_system(send_shooting_to_all_players)
-        .add_system(send_animations_to_all_players)
-        .add_system(send_movement_to_all_players);
+        .add_systems(Update, (
+            on_player_connect,
+            tick_net_server,
+            send_shooting_to_all_players,
+            send_animations_to_all_players,
+            send_movement_to_all_players,
+        ))
+        .add_systems(FixedUpdate, 
+            check_heartbeats
+                .run_if(on_fixed_timer(Duration::from_millis(HEARTBEAT_MILLIS)))
+        );
 
     app.run();
 }
@@ -61,11 +69,12 @@ fn start_server(config: &Config) -> ServerResources<EventToServer> {
                             elist.push((endpoint, e));
                         }
                     },
-                    b'{' => {
+                    b'{' | b'"' => {
                         let event = serde_json::from_slice(data).unwrap();
                         res.event_list.lock().unwrap().push((endpoint, event));
                     },
-                    _ => {
+                    d => {
+                        info!(d);
                         error!("invalid net req");
                     }
                 }
@@ -82,9 +91,17 @@ struct EndpointToNetId {
     map: HashMap<Endpoint, NetEntId>,
 }
 
+#[derive(Resource, Default)]
+struct HeartbeatList {
+    heartbeats: HashMap<NetEntId, Arc<AtomicI16>>,
+}
+
 fn tick_net_server(
     event_list_res: Res<ServerResources<EventToServer>>,
+
     mut entity_mapping: ResMut<EndpointToNetId>,
+    mut heartbeat_mapping: ResMut<HeartbeatList>,
+
     mut ev_player_connect: EventWriter<EventFromEndpoint<PlayerInfo>>,
     mut ev_player_movement: EventWriter<UpdatePos>,
     mut ev_player_shooting: EventWriter<ShootBullet>,
@@ -106,6 +123,9 @@ fn tick_net_server(
                 ev_player_connect.send(EventFromEndpoint::new(_endpoint, ev));
 
                 entity_mapping.map.insert(_endpoint, id);
+                // give them 5 seconds to connect properly
+                let start_heartbeat = 5000 / (HEARTBEAT_MILLIS as i64);
+                heartbeat_mapping.heartbeats.insert(id, Arc::new(AtomicI16::new(-start_heartbeat as _)));
             },
             EventToServer::UpdatePos(new_pos) => {
                 match entity_mapping.map.get(&_endpoint) {
@@ -115,7 +135,7 @@ fn tick_net_server(
                             transform: new_pos,
                         });
                     }
-                    None => error!("Failed to match endpoint {_endpoint:?}to id"),
+                    None => {} // error!("Failed to match endpoint {_endpoint:?}to id"),
                 }
             },
             EventToServer::ShootBullet(phys) => {
@@ -142,8 +162,59 @@ fn tick_net_server(
                     None => error!("Failed to match endpoint {_endpoint:?}to id"),
                 }
             }
+            EventToServer::Heartbeat => {
+                match entity_mapping.map.get(&_endpoint) {
+                    Some(id) => {
+                        heartbeat_mapping.heartbeats
+                            .get(id)
+                            .unwrap()
+                            .store(0, std::sync::atomic::Ordering::Release);
+                    }
+                    None => error!("Failed to match endpoint {_endpoint:?}to id"),
+                }
+            }
+
             _ => todo!(),
         }
+    }
+}
+
+
+fn check_heartbeats(
+    mut heartbeat_mapping: ResMut<HeartbeatList>,
+    clients: Query<(Entity, &GameNetClient, &NetEntId)>,
+    event_list_res: Res<ServerResources<EventToServer>>,
+    mut commands: Commands,
+) {
+    let mut ents_to_remove = vec![];
+
+    for (ent_id, beats_missed) in &heartbeat_mapping.heartbeats {
+        let beats = beats_missed.fetch_add(1, std::sync::atomic::Ordering::Acquire);
+        if beats >= (5000 / HEARTBEAT_MILLIS) as i16 {
+            warn!("Missed {beats} beats, disconnecting {ent_id:?}");
+            ents_to_remove.push(*ent_id);
+            let event = EventToClient::PlayerDisconnect(PlayerDisconnect {
+                id: *ent_id,
+            });
+            let events_as_str = serde_json::to_string(&event).unwrap();
+
+            for (c_ent, c_net_client, _c_net_ent) in &clients {
+                event_list_res.handler
+                    .network()
+                    .send(c_net_client.endpoint, events_as_str.as_bytes());
+
+                if _c_net_ent == ent_id {
+                    commands
+                        .entity(c_ent)
+                        .despawn_recursive();
+                }
+            }
+
+        }
+    }
+
+    for ent in &ents_to_remove {
+        heartbeat_mapping.heartbeats.remove(ent);
     }
 }
 
@@ -190,19 +261,20 @@ fn send_shooting_to_all_players(
 fn send_animations_to_all_players(
     mut ev_animate: EventReader<Animation>,
     event_list_res: Res<ServerResources<EventToServer>>,
-    players: Query<&GameNetClient>,
+    players: Query<(Entity, &GameNetClient, &NetEntId)>,
+    mut commands: Commands,
 ) {
-    let events: Vec<_> = ev_animate
-        .iter()
-        .map(|x| EventToClient::Animation(x.clone()))
-        .collect();
 
-    for client in &players {
-        for event in &events {
-            let events_as_str = serde_json::to_string(&event).unwrap();
-            event_list_res.handler
-                .network()
-                .send(client.endpoint, events_as_str.as_bytes());
+    for event in ev_animate.iter() {
+        commands
+            .spawn(event.clone());
+
+        let events_as_str = serde_json::to_string(&EventToClient::Animation(event.clone())).unwrap();
+        for (ent, client, net_id) in &players {
+                event_list_res.handler
+                    .network()
+                    .send(client.endpoint, events_as_str.as_bytes());
+
         }
     }
 }
@@ -242,28 +314,23 @@ fn on_player_connect(
             });
         }
 
-        // Next, tell the new player about the existing players
-        let connect_event = EventToClient::PlayerList(names);
-        let data = serde_json::to_string(&connect_event).unwrap();
-        event_list_res.handler
-            .network()
-            .send(e.endpoint, data.as_bytes());
-
         // Next, tell the new player who they are
         let connect_event = EventToClient::YouAre(PlayerInfo {
             name: e.event.name.clone(),
             id: e.event.id,
         });
         let handler = event_list_res.handler.clone();
-        let endpoint = e.endpoint;
-        std::thread::spawn(move || {
-            // delay xd
-            std::thread::sleep(Duration::from_millis(900));
-            let data = serde_json::to_string(&connect_event).unwrap();
-            handler
-                .network()
-                .send(endpoint, data.as_bytes());
-        });
+        let data = serde_json::to_string(&connect_event).unwrap();
+        handler
+            .network()
+            .send(e.endpoint, data.as_bytes());
+
+        // Next, tell the new player about the existing players
+        let connect_event = EventToClient::PlayerList(names);
+        let data = serde_json::to_string(&connect_event).unwrap();
+        event_list_res.handler
+            .network()
+            .send(e.endpoint, data.as_bytes());
 
         // Finally, add our client to the ECS
         commands

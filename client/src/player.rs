@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use crate::{
     setup::CameraFollow,
     sprites::AnimationTimer,
@@ -5,7 +7,6 @@ use crate::{
 };
 use bevy::{
     input::mouse::{MouseMotion, MouseWheel},
-    math::Vec2Swizzles,
     prelude::*,
 };
 use bevy_asset_loader::prelude::AssetCollection;
@@ -13,19 +14,26 @@ use bevy_rapier3d::prelude::{
     Collider, ColliderMassProperties, ExternalImpulse, GravityScale, LockedAxes, RigidBody,
 };
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
+use shared::Config;
 
 pub fn init(app: &mut App) -> &mut App {
-    app.add_system(spawn_player_sprite.run_if(in_state(GameState::Ready).and_then(run_once())))
+    app.add_systems(OnEnter(GameState::Ready), spawn_player_sprite)
         .add_systems(
-            (player_movement, camera_follow_system)
-                .distributive_run_if(in_state(FreeCamState::Locked)),
+            Update,
+            (player_movement, wow_camera_system)
+                .distributive_run_if(in_state(FreeCamState::ThirdPersonLocked)),
+        )
+        .add_systems(
+            Update,
+            (player_movement, wow_camera_system, q_e_rotate_cam)
+                .distributive_run_if(in_state(FreeCamState::ThirdPersonFreeMouse)),
         )
         .register_type::<Jumper>()
 }
 
 #[derive(Reflect, Component)]
 pub struct Jumper {
-    pub cooldown: f32,
+    //pub cooldown: f32,
     pub timer: Timer,
 }
 
@@ -69,7 +77,7 @@ pub fn spawn_player_sprite(
         atlas: images.run.clone(),
 
         pixels_per_metre: 32.,
-        partial_alpha: true,
+        alpha_mode: AlphaMode::Add,
         unlit: true,
 
         index: 1,
@@ -80,25 +88,21 @@ pub fn spawn_player_sprite(
     }
     .bundle(&mut sprite_params);
 
-    commands
-        .spawn(sprite)
-        .insert(RigidBody::Dynamic)
-        .insert(Collider::cuboid(0.5, 0.5, 0.2))
-        .insert(LockedAxes::ROTATION_LOCKED)
-        .insert(GravityScale(1.))
-        .insert(ColliderMassProperties::Mass(1.0))
-        .insert(Name::new("PlayerSprite"))
-        .insert(Player::default())
-        .insert(FaceCamera)
-        .insert(Jumper {
-            cooldown: 0.5,
-            timer: Timer::from_seconds(1., TimerMode::Once),
-        })
-        .insert(Name::new("PlayerBody"))
-        .insert(AnimationTimer(Timer::from_seconds(
-            0.4,
-            TimerMode::Repeating,
-        )));
+    commands.spawn((
+        sprite,
+        RigidBody::Dynamic,
+        Collider::cuboid(0.5, 0.5, 0.2),
+        LockedAxes::ROTATION_LOCKED,
+        GravityScale(1.),
+        ColliderMassProperties::Mass(1.0),
+        Name::new("PlayerSprite"),
+        Player::default(),
+        FaceCamera,
+        Jumper {
+            timer: Timer::from_seconds(1.0, TimerMode::Once),
+        },
+        AnimationTimer(Timer::from_seconds(0.4, TimerMode::Repeating)),
+    ));
 }
 
 pub const PLAYER_SPEED: f32 = 5.;
@@ -109,64 +113,21 @@ pub fn player_movement(
     keyboard_input: Res<Input<KeyCode>>,
     time: Res<Time>,
 ) {
-    // let old_rotation= Vec2::new(
-    // f32::to_radians(camera_query.single().old_degrees).sin(),
-    // f32::to_radians(camera_query.single().old_degrees).cos()
-    // );
-    let rotation = Vec2::new(
-        f32::to_radians(camera_query.single().degrees).sin(),
-        f32::to_radians(camera_query.single().degrees).cos(),
-    );
-    let dragging = camera_query.single().dragging;
-    for (mut transform, player_ent, mut jumper, mut player) in player_query.iter_mut() {
-        if keyboard_input.just_pressed(KeyCode::W) {
-            player.lock_movement[0] = Some(rotation);
-        } else if keyboard_input.just_released(KeyCode::W) {
-            player.lock_movement[0] = None;
-        }
-        // if keyboard_input.just_pressed(KeyCode::A){
-        //     player.lock_movement[1] = Some(rotation);
-        // } else if keyboard_input.just_released(KeyCode::A){
-        //     player.lock_movement[1] = None;
-        // }
-        if keyboard_input.just_pressed(KeyCode::S) {
-            player.lock_movement[2] = Some(rotation);
-        } else if keyboard_input.just_released(KeyCode::S) {
-            player.lock_movement[2] = None;
-        }
-        // if keyboard_input.just_pressed(KeyCode::D){
-        //     player.lock_movement[3] = Some(rotation);
-        // } else if keyboard_input.just_released(KeyCode::D){
-        //     player.lock_movement[3] = None;
-        // }
-        let mut direction = Vec3::ZERO;
+    for (mut transform, player_ent, mut jumper, _player) in player_query.iter_mut() {
+        let mut move_vector = Vec2::ZERO;
         if keyboard_input.pressed(KeyCode::W) {
-            let cur_rotation = if dragging {
-                player.lock_movement[0].unwrap_or(rotation)
-            } else {
-                rotation
-            };
-            direction += cur_rotation.xyy() * Vec3::new(-1., 0., -1.);
-            // direction += Vec3::new(-rotation.x, 0., -rotation.y )
-        }
-        if keyboard_input.pressed(KeyCode::A) {
-            // let cur_rotation = if dragging {player.lock_movement[1].unwrap_or(rotation)} else {rotation};
-            direction += rotation.perp().xyy() * Vec3::new(1., 0., 1.);
-            // direction += Vec3::new(rotation.perp().x, 0., rotation.perp().y )
+            move_vector += Vec2::new(1.0, 0.0);
         }
         if keyboard_input.pressed(KeyCode::S) {
-            let cur_rotation = if dragging {
-                player.lock_movement[2].unwrap_or(rotation)
-            } else {
-                rotation
-            };
-            direction += cur_rotation.xyy() * Vec3::new(1., 0., 1.);
+            move_vector += Vec2::new(-1.0, 0.0);
+        }
+        if keyboard_input.pressed(KeyCode::A) {
+            move_vector += Vec2::new(0.0, -1.0);
         }
         if keyboard_input.pressed(KeyCode::D) {
-            // let cur_rotation = if dragging {player.lock_movement[3].unwrap_or(rotation)} else {rotation};
-            direction += rotation.perp().xyy() * Vec3::new(-1., 0., -1.);
-            // direction += Vec3::new(-rotation.perp().x, 0., -rotation.perp().y)
+            move_vector += Vec2::new(0.0, 1.0);
         }
+
         jumper.timer.tick(time.delta());
         if keyboard_input.pressed(KeyCode::Space) {
             if jumper.timer.finished() {
@@ -178,73 +139,80 @@ pub fn player_movement(
             }
         }
 
-        if direction.length() > 0. {
-            direction = direction.normalize();
+        if move_vector.length_squared() > 0.0 {
+            let camera = camera_query.single();
+            let rotation = Vec2::from_angle(-camera.yaw_radians);
+            let movem = move_vector.normalize().rotate(rotation);
+
+            transform.translation +=
+                Vec3::new(movem.x, 0.0, movem.y) * PLAYER_SPEED * time.delta_seconds();
         }
-        transform.translation += direction * PLAYER_SPEED * time.delta_seconds();
     }
 }
 
-pub fn camera_follow_system(
+pub fn q_e_rotate_cam(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut camera_query: Query<&mut CameraFollow>,
+    time: Res<Time>,
+    config: Res<Config>,
+) {
+    let mut rotation = 0.0;
+    if keyboard_input.pressed(KeyCode::Q) {
+        rotation += 1.0;
+    }
+    if keyboard_input.pressed(KeyCode::E) {
+        rotation -= 1.0;
+    }
+    if rotation != 0.0 {
+        camera_query.single_mut().yaw_radians += config.qe_sens * rotation * time.delta_seconds();
+    }
+}
+
+pub fn wow_camera_system(
     mut mouse_wheel_events: EventReader<MouseWheel>,
     mut mouse_events: EventReader<MouseMotion>,
     mouse_input: Res<Input<MouseButton>>,
     mut camera_query: Query<(&mut Transform, &mut CameraFollow), With<Camera3d>>,
-    mut player_query: Query<(&Transform, &mut Player), Without<CameraFollow>>,
-    keyboard_input: Res<Input<KeyCode>>,
+    player_query: Query<&Transform, (With<Player>, Without<CameraFollow>)>,
+    _keyboard_input: Res<Input<KeyCode>>,
+    camera_type: Res<State<FreeCamState>>,
+    config: Res<Config>,
 ) {
-    if let Ok((player_transform, mut player)) = player_query.get_single_mut() {
-        for (_, mut camera_follow) in camera_query.iter_mut() {
-            //dbg!{player.lock_movement};
-            for event in mouse_wheel_events.iter() {
-                camera_follow.distance = match event.y {
-                    y if y < 0. => (camera_follow.distance + 1.).abs(),
-                    y if y > 0. => (camera_follow.distance - 1.).abs(),
-                    _ => camera_follow.distance,
-                };
-                if camera_follow.distance < camera_follow.min_distance {
-                    camera_follow.distance = camera_follow.min_distance;
-                } else if camera_follow.distance > camera_follow.max_distance {
-                    camera_follow.distance = camera_follow.max_distance;
-                }
-            }
-            if mouse_input.pressed(MouseButton::Right) {
-                camera_follow.dragging = true;
-                for event in mouse_events.iter() {
-                    camera_follow.degrees += event.delta.x;
-                }
-                // player.lock_movement = [None; 4];
-            }
-            if mouse_input.just_released(MouseButton::Right) {
-                camera_follow.dragging = false;
-                camera_follow.old_degrees = camera_follow.degrees;
-                player.lock_movement = [None; 4];
-                if keyboard_input.pressed(KeyCode::W) {
-                    player.lock_movement[0] = Some(Vec2::new(
-                        f32::to_radians(camera_follow.degrees).sin(),
-                        f32::to_radians(camera_follow.degrees).cos(),
-                    ));
-                }
-                if keyboard_input.pressed(KeyCode::S) {
-                    player.lock_movement[2] = Some(Vec2::new(
-                        f32::to_radians(camera_follow.degrees).sin(),
-                        f32::to_radians(camera_follow.degrees).cos(),
-                    ));
-                }
+    let player_transform = match player_query.get_single() {
+        Ok(s) => s,
+        Err(_) => return,
+    };
+
+    for (mut camera_transform, mut camera_follow) in camera_query.iter_mut() {
+        for event in mouse_wheel_events.iter() {
+            camera_follow.distance -= event.y;
+            camera_follow.distance = camera_follow
+                .distance
+                .clamp(camera_follow.min_distance, camera_follow.max_distance);
+        }
+
+        if mouse_input.pressed(MouseButton::Right)
+            || *camera_type == FreeCamState::ThirdPersonLocked
+        {
+            for event in mouse_events.iter() {
+                let sens = config.sens;
+                camera_follow.yaw_radians -= event.delta.x * sens;
+                camera_follow.pitch_radians -= event.delta.y * sens;
+                camera_follow.pitch_radians =
+                    camera_follow.pitch_radians.clamp(0.05 * PI, 0.95 * PI);
             }
         }
-        for (mut transform, camera_follow) in camera_query.iter_mut() {
-            let new_transform = Transform::from_translation(
-                Vec3::new(
-                    f32::to_radians(camera_follow.degrees).sin(),
-                    1.,
-                    f32::to_radians(camera_follow.degrees).cos(),
-                ) * camera_follow.distance
-                    + player_transform.translation,
-            )
-            .looking_at(player_transform.translation, Vec3::Y);
-            transform.translation = new_transform.translation;
-            transform.rotation = new_transform.rotation;
-        }
+
+        let camera_location = Quat::from_rotation_y(camera_follow.yaw_radians)
+            * Quat::from_rotation_z(camera_follow.pitch_radians)
+            * Vec3::Y
+            * camera_follow.distance
+            + player_transform.translation;
+
+        let new_transform = Transform::from_translation(camera_location)
+            .looking_at(player_transform.translation + 0.5 * Vec3::Y, Vec3::Y);
+
+        camera_transform.translation = new_transform.translation;
+        camera_transform.rotation = new_transform.rotation;
     }
 }

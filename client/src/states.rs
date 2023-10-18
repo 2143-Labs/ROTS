@@ -21,15 +21,15 @@ impl Plugin for StatePlugin {
             .add_collection_to_loading_state::<_, NetPlayerSprite>(GameState::Loading)
             .add_collection_to_loading_state::<_, ProjectileSheet>(GameState::Loading)
             .add_collection_to_loading_state::<_, MuscleManAssets>(GameState::Loading)
-            .add_system(toggle_freecam)
-            .add_system(toggle_phyics_debug_view);
+            .add_systems(Update, (toggle_freecam, toggle_phyics_debug_view));
     }
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, States, Default)]
 pub enum FreeCamState {
     #[default]
-    Locked,
+    ThirdPersonLocked,
+    ThirdPersonFreeMouse,
     Free,
 }
 
@@ -64,17 +64,18 @@ pub fn toggle_freecam(
             };
             window.cursor.visible = !window.cursor.visible;
         };
-        println!("::: ESCAPE PRESSED! :::");
-        next_state.set(match cam_state.0 {
+        //info!(?cam_state.0);
+        next_state.set(match **cam_state {
             FreeCamState::Free => {
-                println!("::: FreeCamState::Free :::");
                 for player in players.iter_mut() {
                     commands.entity(player).remove::<FlyCamera>();
                 }
-                FreeCamState::Locked
+                FreeCamState::ThirdPersonLocked
             }
-            FreeCamState::Locked => {
-                println!("::: FreeCamState::Locked :::");
+            FreeCamState::ThirdPersonLocked => {
+                FreeCamState::ThirdPersonFreeMouse
+            }
+            FreeCamState::ThirdPersonFreeMouse => {
                 for player in players.iter_mut() {
                     commands.entity(player).insert(FlyCamera::default());
                 }
@@ -91,7 +92,7 @@ pub fn toggle_phyics_debug_view(
     input: Res<Input<KeyCode>>,
 ) {
     if input.just_pressed(KeyCode::F1) {
-        next_state.set(match phys_state.0 {
+        next_state.set(match **phys_state {
             PhysView::Normal => {
                 println!("::: PhysView::Debug :::");
                 for mut pbr in &mut vis_query.iter_mut() {

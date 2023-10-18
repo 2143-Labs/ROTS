@@ -1,4 +1,6 @@
-use bevy::prelude::*;
+use std::f32::consts::PI;
+
+use bevy::{prelude::*, transform};
 use bevy_asset_loader::prelude::AssetCollection;
 use bevy_mod_raycast::{DefaultRaycastingPlugin, RaycastMesh, RaycastSource};
 use bevy_rapier3d::prelude::*;
@@ -10,10 +12,13 @@ use crate::{
 };
 
 pub fn init(app: &mut App) -> &mut App {
-    app.add_startup_systems((spawn_camera, spawn_scene))
-        .add_system(modify_collider_active_events)
-        .add_system(spawn_muscle_man.run_if(in_state(GameState::Ready).and_then(run_once())))
-        .add_plugin(DefaultRaycastingPlugin::<MyRaycastSet>::default())
+    app.add_systems(Startup, (spawn_camera, spawn_scene))
+        .add_systems(Update, modify_collider_active_events)
+        .add_systems(
+            Update,
+            spawn_muscle_man.run_if(in_state(GameState::Ready).and_then(run_once())),
+        )
+        .add_plugins(DefaultRaycastingPlugin::<MyRaycastSet>::default())
 }
 
 #[derive(Component)]
@@ -25,8 +30,9 @@ pub struct CameraFollow {
     pub min_distance: f32,
     pub max_distance: f32,
     pub dragging: bool,
-    pub degrees: f32,
-    pub old_degrees: f32,
+    pub yaw_radians: f32,
+    pub pitch_radians: f32,
+    pub old_yaw: f32,
 }
 impl Default for CameraFollow {
     fn default() -> Self {
@@ -35,8 +41,9 @@ impl Default for CameraFollow {
             min_distance: 2.,
             max_distance: 200.,
             dragging: false,
-            degrees: 0.,
-            old_degrees: 0.,
+            yaw_radians: 0.,
+            pitch_radians: PI * 1.0 / 4.0,
+            old_yaw: 0.,
         }
     }
 }
@@ -45,17 +52,16 @@ impl Default for CameraFollow {
 pub struct MyRaycastSet;
 
 pub fn spawn_camera(mut commands: Commands) {
-    commands
-        .spawn((
-            Camera3dBundle {
-                transform: Transform::from_xyz(10., 10., 10.).looking_at(Vec3::ZERO, Vec3::Y),
-                ..default()
-            },
-            RaycastSource::<MyRaycastSet>::new_transform_empty(),
-        ))
-        .insert(CameraFollow::default())
-        .insert(Name::new("Camera"))
-        .insert(PlayerCamera);
+    commands.spawn((
+        Camera3dBundle {
+            transform: Transform::from_xyz(10., 10., 10.).looking_at(Vec3::ZERO, Vec3::Y),
+            ..default()
+        },
+        RaycastSource::<MyRaycastSet>::new_transform_empty(),
+        CameraFollow::default(),
+        Name::new("Camera"),
+        PlayerCamera,
+    ));
 }
 
 #[derive(Component)]
@@ -67,7 +73,8 @@ pub fn spawn_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: ResMut<AssetServer>,
 ) {
-    let size = 10.;
+    let size = 30.;
+    // Ground
     commands
         .spawn((
             PbrBundle {
@@ -76,20 +83,23 @@ pub fn spawn_scene(
                     subdivisions: 10,
                 })),
                 material: materials.add(Color::hex("#1f7840").unwrap().into()),
+                transform: Transform::from_xyz(0.0, -0.01, 0.0),
                 ..default()
             },
             RaycastMesh::<MyRaycastSet>::default(),
+            Hideable,
+            Name::new("Plane"),
         ))
-        .with_children(|parent| {
-            parent
-                .spawn(Collider::cuboid(size, 1., size))
-                .insert(TransformBundle::from(Transform::from_xyz(0., -1., 0.)));
-        })
-        .insert(Hideable)
-        .insert(Name::new("Plane"));
-
-    commands
-        .spawn(DirectionalLightBundle {
+        .with_children(|commands| {
+            commands.spawn((
+                Collider::cuboid(size, 1., size),
+                Name::new("PlaneCollider"),
+                TransformBundle::from(Transform::from_xyz(0., -1., 0.)),
+            ));
+        });
+    // Sun
+    commands.spawn((
+        DirectionalLightBundle {
             transform: Transform::from_rotation(Quat::from_rotation_x(
                 -std::f32::consts::FRAC_PI_2,
             ))
@@ -103,18 +113,26 @@ pub fn spawn_scene(
                 ..default()
             },
             ..Default::default()
-        })
-        .insert(Name::new("Sun"));
-    commands.spawn(SceneBundle {
-        scene: asset_server.load("sprytilebrickhouse.gltf#Scene0"),
-        transform: Transform::from_xyz(-5.2,-1.0,-20.0).with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
-        ..default()
-    })
-    .with_children(|x| {
-        x.spawn(Collider::cuboid(5., 1.0, 6.))
-        .insert(TransformBundle::from(Transform::from_xyz(-5., 0., -5.)));
-    })
-    .insert(Name::new("House"));
+        },
+        Name::new("Sun"),
+    ));
+    // House
+    commands
+        .spawn((
+            SceneBundle {
+                scene: asset_server.load("sprytilebrickhouse.gltf#Scene0"),
+                transform: Transform::from_xyz(-5.2, -1.0, -20.0)
+                    .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
+                ..default()
+            },
+            Name::new("House"),
+        ))
+        .with_children(|commands| {
+            commands.spawn((
+                SpatialBundle::from_transform(Transform::from_xyz(-5., 0., -5.)),
+                Collider::cuboid(5., 1.0, 6.),
+            ));
+        });
 }
 
 #[derive(AssetCollection, Resource)]
@@ -133,7 +151,7 @@ pub fn spawn_muscle_man(
         atlas: images.run.clone(),
 
         pixels_per_metre: 32.,
-        partial_alpha: true,
+        alpha_mode: AlphaMode::Add,
         unlit: true,
 
         index: 1,
@@ -144,11 +162,9 @@ pub fn spawn_muscle_man(
     }
     .bundle(&mut sprite_params);
 
-    commands
-        .spawn(sprite)
-        .insert(FaceCamera)
-        .insert(AnimationTimer(Timer::from_seconds(
-            0.2,
-            TimerMode::Repeating,
-        )));
+    commands.spawn((
+        sprite,
+        FaceCamera,
+        AnimationTimer(Timer::from_seconds(0.2, TimerMode::Repeating)),
+    ));
 }
