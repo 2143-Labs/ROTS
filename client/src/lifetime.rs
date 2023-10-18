@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 use bevy::reflect::Reflect;
 //use bevy_rapier3d::prelude::{ActiveEvents, Collider, RigidBody};
-use rand::{thread_rng, Rng};
+// use rand::{thread_rng, Rng};
 
 use crate::networking::client_bullet_receiver::{NetworkPlayer, NetworkingState};
-use crate::states::FreeCamState;
+// use crate::states::FreeCamState;
 use crate::{networking::client_bullet_receiver::MainServerEndpoint, player::Player};
 use shared::{BulletAI, BulletPhysics, EventToClient, EventToServer, ServerResources};
 
@@ -166,12 +166,12 @@ fn _update_collisions(
     }
 }
 
-fn camera_aim(
-    mut cursor: EventReader<CursorMoved>,
-    //camera_query: Query<(&bevy::render::camera::Camera, &Transform)>,
-    camera_type: Res<State<FreeCamState>>,
-) {
-}
+// fn camera_aim(
+//     mut cursor: EventReader<CursorMoved>,
+//     //camera_query: Query<(&bevy::render::camera::Camera, &Transform)>,
+//     camera_type: Res<State<FreeCamState>>,
+// ) {
+// }
 
 #[derive(Component, Reflect)]
 struct AimVectorTarget;
