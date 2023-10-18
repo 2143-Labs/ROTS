@@ -197,9 +197,9 @@ fn spawn_animations(
 fn spawn_bullet(
     mouse_button_input: Res<Input<MouseButton>>,
     keyboard_input: Res<Input<KeyCode>>,
-    player: Query<&Transform, With<Player>>,
-    event_list_res: Res<ServerResources<EventToClient>>,
-    mse: Res<MainServerEndpoint>,
+    // player: Query<&Transform, With<Player>>,
+    // event_list_res: Res<ServerResources<EventToClient>>,
+    // mse: Res<MainServerEndpoint>,
 ) {
     // Right click, red wavy, left click, blue direct
     let (_color, ai) = if mouse_button_input.just_pressed(MouseButton::Left) {
