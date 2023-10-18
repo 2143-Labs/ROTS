@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, transform};
 use bevy_asset_loader::prelude::AssetCollection;
 use bevy_mod_raycast::{DefaultRaycastingPlugin, RaycastMesh, RaycastSource};
 use bevy_rapier3d::prelude::*;
@@ -73,7 +73,8 @@ pub fn spawn_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: ResMut<AssetServer>,
 ) {
-    let size = 1000.;
+    let size = 30.;
+    // Ground
     commands
         .spawn((
             PbrBundle {
@@ -89,10 +90,14 @@ pub fn spawn_scene(
             Hideable,
             Name::new("Plane"),
         ))
-        .with_children(|parent| {
-            parent.spawn((Collider::cuboid(size, 1., size),));
+        .with_children(|commands| {
+            commands.spawn((
+                Collider::cuboid(size, 1., size),
+                Name::new("PlaneCollider"),
+                TransformBundle::from(Transform::from_xyz(0., -1., 0.)),
+            ));
         });
-
+    // Sun
     commands.spawn((
         DirectionalLightBundle {
             transform: Transform::from_rotation(Quat::from_rotation_x(
@@ -111,6 +116,7 @@ pub fn spawn_scene(
         },
         Name::new("Sun"),
     ));
+    // House
     commands
         .spawn((
             SceneBundle {
