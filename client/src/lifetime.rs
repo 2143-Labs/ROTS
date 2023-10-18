@@ -9,7 +9,7 @@ use crate::{networking::client_bullet_receiver::MainServerEndpoint, player::Play
 use shared::{BulletAI, BulletPhysics, EventToClient, EventToServer, ServerResources};
 
 pub fn init(app: &mut App) -> &mut App {
-    app.add_systems(Update, (lifetime_despawn, update_all_bullets, camera_aim))
+    app.add_systems(Update, (lifetime_despawn, update_all_bullets))
         .add_systems(
             Update,
             (spawn_bullet, spawn_animations, lifetime_event)
