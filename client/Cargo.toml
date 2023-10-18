@@ -26,6 +26,9 @@ rand = "0.8.5"
 message-io = "0.18.0"
 shared = { path = "../shared" }
 
+[dev-dependencies]
+tungstenite = "0.20.1"
+
 # [features]
 #bevy_dynamic = ["bevy/dynamic_linking"]
 # default = ["bevy_dynamic"]
