@@ -10,10 +10,12 @@ use bevy_rapier3d::{
     render::{DebugRenderMode, RapierDebugRenderPlugin},
 };
 use bevy_sprite3d::Sprite3dPlugin;
+use menu::MenuPlugin;
 use networking::client_bullet_receiver::NetworkingPlugin;
 use states::StatePlugin;
 
 pub mod lifetime;
+pub mod menu;
 pub mod networking;
 pub mod physics;
 pub mod player;
@@ -32,8 +34,8 @@ fn main() {
     sprites::init(&mut app);
     lifetime::init(&mut app);
     let mut cursor = Cursor::default();
-    cursor.visible = false;
-    cursor.grab_mode = CursorGrabMode::Locked;
+    cursor.visible = true; // false;
+    cursor.grab_mode = CursorGrabMode::None; //CursorGrabMode::Locked;
 
     let window = WindowPlugin {
         primary_window: Some(Window {
@@ -61,18 +63,17 @@ fn main() {
             FrameTimeDiagnosticsPlugin,
             StatePlugin,
             NetworkingPlugin,
-        ))
-        // .add_plugin(RapierDebugRenderPlugin::default())
-        .add_plugins(
+            // Default Plugins
             DefaultPlugins
                 .set(window)
                 .set(ImagePlugin::default_nearest()),
-        )
-        .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugins(RapierDebugRenderPlugin {
-            mode: DebugRenderMode::all(),
-            ..default()
-        })
-        .add_plugins(WorldInspectorPlugin::new())
+            MenuPlugin,
+            RapierPhysicsPlugin::<NoUserData>::default(),
+            RapierDebugRenderPlugin {
+                mode: DebugRenderMode::all(),
+                ..default()
+            },
+            WorldInspectorPlugin::new(),
+        ))
         .run();
 }
