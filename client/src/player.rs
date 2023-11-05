@@ -9,7 +9,6 @@ use bevy::{
     input::mouse::{MouseMotion, MouseWheel},
     prelude::*,
 };
-use bevy_asset_loader::prelude::AssetCollection;
 use bevy_rapier3d::prelude::{
     Collider, ColliderMassProperties, ExternalImpulse, GravityScale, LockedAxes, RigidBody,
 };
@@ -37,13 +36,13 @@ pub struct Jumper {
     pub timer: Timer,
 }
 
-#[derive(AssetCollection, Resource)]
-pub struct PlayerSpriteAssets {
-    #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 32.))]
-    #[asset(texture_atlas(columns = 3, rows = 1))]
-    #[asset(path = "brownSheet.png")]
-    pub run: Handle<TextureAtlas>,
-}
+//#[derive(Resource)]
+//pub struct PlayerSpriteAssets {
+    //#[asset(texture_atlas(tile_size_x = 32., tile_size_y = 32.))]
+    //#[asset(texture_atlas(columns = 3, rows = 1))]
+    //#[asset(path = "brownSheet.png")]
+    //pub run: Handle<TextureAtlas>,
+//}
 
 #[derive(Component)]
 pub struct FaceCamera; // tag entity to make it always face the camera
@@ -69,12 +68,15 @@ impl Default for Player {
 
 pub fn spawn_player_sprite(
     mut commands: Commands,
-    images: Res<PlayerSpriteAssets>,
+    images: Res<AssetServer>,
     mut sprite_params: Sprite3dParams,
 ) {
+    let texture_handle = images.load("brownSheet.png");
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(32.0, 32.0), 3, 1, None, None);
+
     let starting_location = Vec3::new(-3., 0.5, 2.);
     let sprite = AtlasSprite3d {
-        atlas: images.run.clone(),
+        atlas: texture_atlas,
 
         pixels_per_metre: 32.,
         alpha_mode: AlphaMode::Add,
