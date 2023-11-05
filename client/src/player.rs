@@ -69,6 +69,7 @@ impl Default for Player {
 pub fn spawn_player_sprite(
     mut commands: Commands,
     images: Res<AssetServer>,
+    atlases: ResMut<Assets<TextureAtlas>>,
     mut sprite_params: Sprite3dParams,
 ) {
     let texture_handle = images.load("brownSheet.png");
@@ -76,7 +77,7 @@ pub fn spawn_player_sprite(
 
     let starting_location = Vec3::new(-3., 0.5, 2.);
     let sprite = AtlasSprite3d {
-        atlas: texture_atlas,
+        atlas: atlases.add(texture_atlas),
 
         pixels_per_metre: 32.,
         alpha_mode: AlphaMode::Add,
