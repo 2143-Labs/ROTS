@@ -1,8 +1,7 @@
 use std::f32::consts::PI;
 
-use bevy::{prelude::*, transform};
-use bevy_mod_raycast::{DefaultRaycastingPlugin};
-use bevy_rapier3d::prelude::*;
+use bevy::{prelude::*};
+use bevy_rapier3d::prelude::Collider;
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 
 use crate::{
@@ -17,7 +16,6 @@ pub fn init(app: &mut App) -> &mut App {
             Update,
             spawn_muscle_man.run_if(in_state(GameState::Ready).and_then(run_once())),
         )
-        .add_plugins(DefaultRaycastingPlugin::<MyRaycastSet>::default())
 }
 
 #[derive(Component)]
@@ -56,7 +54,6 @@ pub fn spawn_camera(mut commands: Commands) {
             transform: Transform::from_xyz(10., 10., 10.).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         },
-        RaycastSource::<MyRaycastSet>::new_transform_empty(),
         CameraFollow::default(),
         Name::new("Camera"),
         PlayerCamera,
@@ -85,7 +82,6 @@ pub fn spawn_scene(
                 transform: Transform::from_xyz(0.0, -0.01, 0.0),
                 ..default()
             },
-            RaycastMesh::<MyRaycastSet>::default(),
             Hideable,
             Name::new("Plane"),
         ))
@@ -129,7 +125,7 @@ pub fn spawn_scene(
         .with_children(|commands| {
             commands.spawn((
                 SpatialBundle::from_transform(Transform::from_xyz(-5., 0., -5.)),
-                Collider::cuboid(5., 1.0, 6.),
+                //Collider::cuboid(5., 1.0, 6.),
             ));
         });
 }
