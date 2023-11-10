@@ -134,6 +134,16 @@ pub struct Config {
     pub qe_sens: f32,
 }
 
+pub struct ConfigPlugin;
+impl Plugin for ConfigPlugin {
+    fn build(&self, app: &mut App) {
+        let config = Config::load_from_main_dir();
+        app
+            .insert_resource(config)
+            .register_type::<Config>();
+    }
+}
+
 impl Config {
     fn default_config() -> Self {
         Self {
