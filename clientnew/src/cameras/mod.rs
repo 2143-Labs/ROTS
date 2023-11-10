@@ -253,6 +253,8 @@ pub fn toggle_freecam(
             };
             window.cursor.visible = !window.cursor.visible;
         };
+    }
+    if input.just_pressed(KeyCode::C) {
         //info!(?cam_state.0);
         next_state.set(match **cam_state {
             FreeCamState::Free => {
