@@ -1,7 +1,7 @@
 use std::{
     env::current_dir,
     fs::OpenOptions,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex}, collections::HashMap,
 };
 
 use bevy::prelude::*;
@@ -123,6 +123,17 @@ pub struct ServerResources<T> {
 //0.003
 //}
 
+#[derive(Reflect, Hash, Eq, PartialEq, Clone, Deserialize, Serialize, Debug)]
+pub enum GameAction {
+    MoveForward,
+    MoveBackward,
+    StrafeRight,
+    StrafeLeft,
+    Jump,
+    Fire1,
+    Special1,
+}
+
 #[derive(Reflect, Clone, Resource, Deserialize, Serialize, Default, Debug)]
 pub struct Config {
     pub ip: String,
@@ -132,6 +143,30 @@ pub struct Config {
     pub sens: f32,
     //#[serde(default="default_qe_sens")]
     pub qe_sens: f32,
+
+    pub keybindings: HashMap<GameAction, Vec<KeyCode>> // TODO rust_phf
+}
+
+impl Config {
+    pub fn pressing_keybind(&self, mut keyboard_input: impl FnMut(KeyCode) -> bool, ga: GameAction) -> bool {
+        for key in self.keybindings.get(&ga).unwrap() {
+            if keyboard_input(*key) {
+                return true;
+            }
+        }
+
+        false
+    }
+}
+
+pub struct ConfigPlugin;
+impl Plugin for ConfigPlugin {
+    fn build(&self, app: &mut App) {
+        let config = Config::load_from_main_dir();
+        app
+            .insert_resource(config)
+            .register_type::<Config>();
+    }
 }
 
 impl Config {
@@ -142,14 +177,21 @@ impl Config {
             sens: 0.003,
             qe_sens: 3.0,
             name: None,
+            keybindings: HashMap::from([
+                (GameAction::MoveForward, vec![KeyCode::W]),
+                (GameAction::MoveBackward, vec![KeyCode::S]),
+                (GameAction::StrafeLeft, vec![KeyCode::A]),
+                (GameAction::StrafeRight, vec![KeyCode::D]),
+                (GameAction::Jump, vec![KeyCode::Space]),
+            ])
         }
     }
 
     pub fn load_from_main_dir() -> Self {
         let mut path = current_dir().unwrap();
-        path.pop();
         path.push("config.yaml");
 
+        info!("Loading config from {path:?}");
         // Try to open config file
         match OpenOptions::new().read(true).open(&path) {
             Ok(file) => match serde_yaml::from_reader(file) {

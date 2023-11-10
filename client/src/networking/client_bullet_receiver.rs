@@ -2,9 +2,7 @@ use std::{ops::DerefMut, time::Duration};
 
 use bevy::{
     prelude::*,
-    time::common_conditions::{on_fixed_timer, on_timer},
 };
-use bevy_asset_loader::prelude::AssetCollection;
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 use message_io::network::{Endpoint, NetEvent, Transport};
 use rand::{thread_rng, Rng};
@@ -159,7 +157,7 @@ fn get_movement_updates(
     mut movement_events: EventReader<EventFromEndpoint<UpdatePos>>,
     mut players: Query<(&mut Transform, &NetEntId), (With<NetworkPlayer>, Without<Player>)>,
 ) {
-    let events: Vec<_> = movement_events.iter().collect();
+    let events: Vec<_> = movement_events.read().collect();
     //info!(?events);
     for (mut player_transform, &net_id) in &mut players {
         for event in &events {
@@ -222,13 +220,13 @@ pub fn tick_net_client(
     }
 }
 
-#[derive(AssetCollection, Resource)]
-pub struct NetPlayerSprite {
-    #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 44.))]
-    #[asset(texture_atlas(columns = 2, rows = 1))]
-    #[asset(path = "MrMan.png")]
-    pub run: Handle<TextureAtlas>,
-}
+//#[derive(AssetCollection, Resource)]
+//pub struct NetPlayerSprite {
+    //#[asset(texture_atlas(tile_size_x = 32., tile_size_y = 44.))]
+    //#[asset(texture_atlas(columns = 2, rows = 1))]
+    //#[asset(path = "MrMan.png")]
+    //pub run: Handle<TextureAtlas>,
+//}
 
 #[derive(Component)]
 pub struct NetworkPlayer {
@@ -238,14 +236,18 @@ pub struct NetworkPlayer {
 fn on_player_connect(
     mut ev_player_connect: EventReader<EventFromEndpoint<PlayerInfo>>,
     mut commands: Commands,
-    sprite_res: Res<NetPlayerSprite>,
+    sprite_res: Res<AssetServer>,
+    atlases: ResMut<Assets<TextureAtlas>>,
     mut sprite_params: Sprite3dParams,
 ) {
-    for e in &mut ev_player_connect {
+    for e in &mut ev_player_connect.read() {
         info!("TODO spawn player in world... {e:?}");
 
+        let texture_handle = sprite_res.load("MrMan.png");
+        let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(32.0, 44.0), 2, 1, None, None);
+
         let sprite = AtlasSprite3d {
-            atlas: sprite_res.run.clone(),
+            atlas: atlases.add(texture_atlas),
 
             pixels_per_metre: 44.,
             alpha_mode: AlphaMode::Add,
@@ -276,7 +278,7 @@ fn on_player_disconnect(
     sprite_res: Query<(Entity, &NetEntId, &NetworkPlayer, Option<&Player>)>,
     mut networking_state: ResMut<NextState<NetworkingState>>,
 ) {
-    for e in &mut ev_player_disconnect {
+    for e in &mut ev_player_disconnect.read() {
         for (ent, net_ent, player_info, is_local_player) in &sprite_res {
             if net_ent == &e.event.id {
                 warn!("A player has disconnected: {} ({e:?})", player_info.name);
@@ -291,23 +293,23 @@ fn on_player_disconnect(
     }
 }
 
-#[derive(AssetCollection, Resource)]
-pub struct ProjectileSheet {
-    #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 32.))]
-    #[asset(texture_atlas(columns = 1, rows = 1))]
-    #[asset(path = "Banana.png")]
-    pub banana: Handle<TextureAtlas>,
+//#[derive(AssetCollection, Resource)]
+//pub struct ProjectileSheet {
+    //#[asset(texture_atlas(tile_size_x = 32., tile_size_y = 32.))]
+    //#[asset(texture_atlas(columns = 1, rows = 1))]
+    //#[asset(path = "Banana.png")]
+    //pub banana: Handle<TextureAtlas>,
 
-    #[asset(texture_atlas(tile_size_x = 128., tile_size_y = 128.))]
-    #[asset(texture_atlas(columns = 25, rows = 1))]
-    #[asset(path = "orb-Sheet.png")]
-    pub fireball: Handle<TextureAtlas>,
+    //#[asset(texture_atlas(tile_size_x = 128., tile_size_y = 128.))]
+    //#[asset(texture_atlas(columns = 25, rows = 1))]
+    //#[asset(path = "orb-Sheet.png")]
+    //pub fireball: Handle<TextureAtlas>,
 
-    #[asset(texture_atlas(tile_size_x = 128., tile_size_y = 128.))]
-    #[asset(texture_atlas(columns = 32, rows = 1))]
-    #[asset(path = "waterboll2-Sheet.png")]
-    pub waterboll: Handle<TextureAtlas>,
-}
+    //#[asset(texture_atlas(tile_size_x = 128., tile_size_y = 128.))]
+    //#[asset(texture_atlas(columns = 32, rows = 1))]
+    //#[asset(path = "waterboll2-Sheet.png")]
+    //pub waterboll: Handle<TextureAtlas>,
+//}
 
 fn on_player_shoot(
     mut ev_player_shoot: EventReader<EventFromEndpoint<ShootBullet>>,
@@ -317,7 +319,7 @@ fn on_player_shoot(
     //proj_res: Res<ProjectileSheet>,
     //mut sprite_params: Sprite3dParams,
 ) {
-    for e in &mut ev_player_shoot {
+    for e in &mut ev_player_shoot.read() {
         //info!("spawning bullet");
 
         //let sprite = AtlasSprite3d {
@@ -357,37 +359,37 @@ struct AttachedAnimation(NetEntId);
 fn on_player_animate(
     mut ev_player_animate: EventReader<EventFromEndpoint<Animation>>,
     mut commands: Commands,
-    proj_res: Res<ProjectileSheet>,
+    //proj_res: Res<ProjectileSheet>,
     mut sprite_params: Sprite3dParams,
 ) {
-    for e in &mut ev_player_animate {
+    for e in &mut ev_player_animate.read() {
         info!("starting animation {:?}", e.event.animation);
 
         let frames = 36;
 
-        let sprite = match e.event.animation {
-            shared::event::AnimationThing::Waterball => AtlasSprite3d {
-                atlas: proj_res.waterboll.clone(),
-                pixels_per_metre: 16.,
-                unlit: false,
-                index: 0,
-                ..default()
-            }
-            .bundle(&mut sprite_params),
-        };
+        //let sprite = match e.event.animation {
+            //shared::event::AnimationThing::Waterball => AtlasSprite3d {
+                //atlas: proj_res.waterboll.clone(),
+                //pixels_per_metre: 16.,
+                //unlit: false,
+                //index: 0,
+                //..default()
+            //}
+            //.bundle(&mut sprite_params),
+        //};
 
-        commands.spawn((
-            sprite,
-            crate::lifetime::LifetimeWithEvent {
-                timer: Timer::from_seconds(0.9, TimerMode::Once),
-            },
-            FaceCamera,
-            AttachedAnimation(e.event.id),
-            AnimationTimer(Timer::from_seconds(
-                1.0 / frames as f32,
-                TimerMode::Repeating,
-            )),
-        ));
+        //commands.spawn((
+            //sprite,
+            //crate::lifetime::LifetimeWithEvent {
+                //timer: Timer::from_seconds(0.9, TimerMode::Once),
+            //},
+            //FaceCamera,
+            //AttachedAnimation(e.event.id),
+            //AnimationTimer(Timer::from_seconds(
+                //1.0 / frames as f32,
+                //TimerMode::Repeating,
+            //)),
+        //));
     }
 }
 

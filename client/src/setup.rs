@@ -1,24 +1,21 @@
 use std::f32::consts::PI;
 
-use bevy::{prelude::*, transform};
-use bevy_asset_loader::prelude::AssetCollection;
-use bevy_mod_raycast::{DefaultRaycastingPlugin, RaycastMesh, RaycastSource};
-use bevy_rapier3d::prelude::*;
+use bevy::{prelude::*};
+use bevy_rapier3d::prelude::Collider;
 use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 
 use crate::{
-    physics::modify_collider_active_events, player::FaceCamera, sprites::AnimationTimer,
+    player::FaceCamera, sprites::AnimationTimer,
     states::GameState,
 };
 
 pub fn init(app: &mut App) -> &mut App {
     app.add_systems(Startup, (spawn_camera, spawn_scene))
-        .add_systems(Update, modify_collider_active_events)
+        //.add_systems(Update, modify_collider_active_events)
         .add_systems(
             Update,
             spawn_muscle_man.run_if(in_state(GameState::Ready).and_then(run_once())),
         )
-        .add_plugins(DefaultRaycastingPlugin::<MyRaycastSet>::default())
 }
 
 #[derive(Component)]
@@ -57,7 +54,6 @@ pub fn spawn_camera(mut commands: Commands) {
             transform: Transform::from_xyz(10., 10., 10.).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         },
-        RaycastSource::<MyRaycastSet>::new_transform_empty(),
         CameraFollow::default(),
         Name::new("Camera"),
         PlayerCamera,
@@ -86,7 +82,6 @@ pub fn spawn_scene(
                 transform: Transform::from_xyz(0.0, -0.01, 0.0),
                 ..default()
             },
-            RaycastMesh::<MyRaycastSet>::default(),
             Hideable,
             Name::new("Plane"),
         ))
@@ -130,25 +125,29 @@ pub fn spawn_scene(
         .with_children(|commands| {
             commands.spawn((
                 SpatialBundle::from_transform(Transform::from_xyz(-5., 0., -5.)),
-                Collider::cuboid(5., 1.0, 6.),
+                //Collider::cuboid(5., 1.0, 6.),
             ));
         });
 }
 
-#[derive(AssetCollection, Resource)]
-pub struct MuscleManAssets {
-    #[asset(texture_atlas(tile_size_x = 64., tile_size_y = 64.))]
-    #[asset(texture_atlas(columns = 21, rows = 1))]
-    #[asset(path = "buff-Sheet.png")]
-    pub run: Handle<TextureAtlas>,
-}
+//#[derive(Resource)]
+//pub struct MuscleManAssets {
+    //#[asset(texture_atlas(tile_size_x = 64., tile_size_y = 64.))]
+    //#[asset(texture_atlas(columns = 21, rows = 1))]
+    //#[asset(path = "buff-Sheet.png")]
+    //pub run: Handle<TextureAtlas>,
+//}
 pub fn spawn_muscle_man(
     mut commands: Commands,
-    images: Res<MuscleManAssets>,
+    images: Res<AssetServer>,
+    atlases: ResMut<Assets<TextureAtlas>>,
     mut sprite_params: Sprite3dParams,
 ) {
+    let texture_handle = images.load("buff-Sheet.png");
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(64.0, 64.0), 21, 1, None, None);
+
     let sprite = AtlasSprite3d {
-        atlas: images.run.clone(),
+        atlas: atlases.add(texture_atlas),
 
         pixels_per_metre: 32.,
         alpha_mode: AlphaMode::Add,

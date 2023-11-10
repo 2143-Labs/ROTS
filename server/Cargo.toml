@@ -5,14 +5,14 @@ authors = []
 edition = "2021"
 
 [dependencies.bevy]
-version = "0.11.3"
+version = "0.12.0"
 default-features = false
 features = ["serialize"]
 
 [dependencies]
-serde_yaml = "0.9.25"
-serde_json = "1.0.107"
-serde = { version = "1.0.189", features = ["derive"] }
+serde_yaml = "0.9.27"
+serde_json = "1.0.108"
+serde = { version = "1.0.190", features = ["derive"] }
 rand = "0.8.5"
 message-io = "0.18.0"
 #bevy_egui = "0.2.0"
