@@ -64,20 +64,21 @@ pub fn player_movement(
     mut player_query: Query<(&mut Transform, Entity, &mut Jumper, &mut Player)>,
     camera_query: Query<&CameraFollow>,
     keyboard_input: Res<Input<KeyCode>>,
+    config: Res<Config>,
     time: Res<Time>,
 ) {
     for (mut transform, player_ent, mut jumper, _player) in player_query.iter_mut() {
         let mut move_vector = Vec2::ZERO;
-        if keyboard_input.pressed(KeyCode::W) {
+        if config.pressing_keybind(|x| keyboard_input.pressed(x), shared::GameAction::MoveForward) {
             move_vector += Vec2::new(1.0, 0.0);
         }
-        if keyboard_input.pressed(KeyCode::S) {
+        if config.pressing_keybind(|x| keyboard_input.pressed(x), shared::GameAction::MoveBackward) {
             move_vector += Vec2::new(-1.0, 0.0);
         }
-        if keyboard_input.pressed(KeyCode::A) {
+        if config.pressing_keybind(|x| keyboard_input.pressed(x), shared::GameAction::StrafeLeft) {
             move_vector += Vec2::new(0.0, -1.0);
         }
-        if keyboard_input.pressed(KeyCode::D) {
+        if config.pressing_keybind(|x| keyboard_input.pressed(x), shared::GameAction::StrafeRight) {
             move_vector += Vec2::new(0.0, 1.0);
         }
 
