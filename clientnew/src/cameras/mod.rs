@@ -60,14 +60,14 @@ pub fn spawn_player_sprite(
 
 pub const PLAYER_SPEED: f32 = 5.;
 pub fn player_movement(
-    mut commands: Commands,
+    _commands: Commands,
     mut player_query: Query<(&mut Transform, Entity, &mut Jumper, &mut Player)>,
     camera_query: Query<&CameraFollow>,
     keyboard_input: Res<Input<KeyCode>>,
     config: Res<Config>,
     time: Res<Time>,
 ) {
-    for (mut transform, player_ent, mut jumper, _player) in player_query.iter_mut() {
+    for (mut transform, _player_ent, mut jumper, _player) in player_query.iter_mut() {
         let mut move_vector = Vec2::ZERO;
         if config.pressing_keybind(|x| keyboard_input.pressed(x), shared::GameAction::MoveForward) {
             move_vector += Vec2::new(1.0, 0.0);
@@ -238,8 +238,8 @@ pub enum FreeCamState {
 }
 
 pub fn toggle_freecam(
-    mut players: Query<Entity, With<CameraFollow>>,
-    mut commands: Commands,
+    _players: Query<Entity, With<CameraFollow>>,
+    _commands: Commands,
     cam_state: Res<State<FreeCamState>>,
     mut next_state: ResMut<NextState<FreeCamState>>,
     input: Res<Input<KeyCode>>,
