@@ -3,7 +3,6 @@ mod thirdperson;
 use bevy::{
     prelude::*, window::CursorGrabMode,
 };
-use shared::Config;
 
 #[derive(Reflect, Component)]
 pub struct Jumper {
@@ -41,12 +40,12 @@ impl Plugin for CameraPlugin {
             .add_systems(Update, toggle_camera_mode)
             .add_systems(
                 Update,
-                (player_movement_thirdperson, thirdperson::wow_camera_system)
+                (thirdperson::player_movement_thirdperson, thirdperson::wow_camera_system)
                     .distributive_run_if(in_state(FreeCamState::ThirdPersonLocked)),
             )
             .add_systems(
                 Update,
-                (player_movement_thirdperson, thirdperson::wow_camera_system, thirdperson::q_e_rotate_cam)
+                (thirdperson::player_movement_thirdperson, thirdperson::wow_camera_system, thirdperson::q_e_rotate_cam)
                     .distributive_run_if(in_state(FreeCamState::ThirdPersonFreeMouse)),
             )
             .register_type::<Jumper>()
@@ -137,47 +136,3 @@ pub fn spawn_player_sprite(
         },
     ));
 }
-
-pub const PLAYER_SPEED: f32 = 5.;
-pub fn player_movement_thirdperson(
-    _commands: Commands,
-    mut player_query: Query<(&mut Transform, Entity, &mut Jumper, &mut Player)>,
-    camera_query: Query<&thirdperson::CameraFollow>,
-    keyboard_input: Res<Input<KeyCode>>,
-    config: Res<Config>,
-    time: Res<Time>,
-) {
-    for (mut transform, _player_ent, mut jumper, _player) in player_query.iter_mut() {
-        let mut move_vector = Vec2::ZERO;
-        if config.pressing_keybind(|x| keyboard_input.pressed(x), shared::GameAction::MoveForward) {
-            move_vector += Vec2::new(1.0, 0.0);
-        }
-        if config.pressing_keybind(|x| keyboard_input.pressed(x), shared::GameAction::MoveBackward) {
-            move_vector += Vec2::new(-1.0, 0.0);
-        }
-        if config.pressing_keybind(|x| keyboard_input.pressed(x), shared::GameAction::StrafeLeft) {
-            move_vector += Vec2::new(0.0, -1.0);
-        }
-        if config.pressing_keybind(|x| keyboard_input.pressed(x), shared::GameAction::StrafeRight) {
-            move_vector += Vec2::new(0.0, 1.0);
-        }
-
-        jumper.timer.tick(time.delta());
-        if keyboard_input.pressed(KeyCode::Space) {
-            if jumper.timer.finished() {
-                // TODO jump
-                jumper.timer.reset();
-            }
-        }
-
-        if move_vector.length_squared() > 0.0 {
-            let camera = camera_query.single();
-            let rotation = Vec2::from_angle(-camera.yaw_radians);
-            let movem = move_vector.normalize().rotate(rotation);
-
-            transform.translation +=
-                Vec3::new(movem.x, 0.0, movem.y) * PLAYER_SPEED * time.delta_seconds();
-        }
-    }
-}
-
