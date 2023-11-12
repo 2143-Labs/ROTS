@@ -1,8 +1,8 @@
 pub mod cameras;
-pub mod states;
 pub mod menu;
-pub mod player;
 pub mod physics;
+pub mod player;
+pub mod states;
 
 use bevy::{
     diagnostic::FrameTimeDiagnosticsPlugin,
@@ -35,11 +35,8 @@ fn main() {
         ..default()
     };
 
-    app
-        .insert_resource(ClearColor(Color::hex("212121").unwrap()))
-        .add_plugins((
-            FrameTimeDiagnosticsPlugin,
-        ))
+    app.insert_resource(ClearColor(Color::hex("212121").unwrap()))
+        .add_plugins((FrameTimeDiagnosticsPlugin,))
         // .add_plugin(RapierDebugRenderPlugin::default())
         .add_plugins((
             DefaultPlugins
@@ -55,10 +52,7 @@ fn main() {
         .run();
 }
 
-pub fn despawn_all_component<T: Component>(
-    items: Query<Entity, With<T>>,
-    mut commands: Commands,
-) {
+pub fn despawn_all_component<T: Component>(items: Query<Entity, With<T>>, mut commands: Commands) {
     for item in &items {
         commands.entity(item).despawn_recursive();
     }

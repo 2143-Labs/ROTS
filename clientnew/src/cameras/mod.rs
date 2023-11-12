@@ -1,8 +1,6 @@
 mod thirdperson;
 
-use bevy::{
-    prelude::*, window::CursorGrabMode,
-};
+use bevy::{prelude::*, window::CursorGrabMode};
 
 #[derive(Component)]
 pub struct FaceCamera; // tag entity to make it always face the camera
@@ -15,15 +13,21 @@ impl Plugin for CameraPlugin {
             .add_systems(Update, toggle_camera_mode)
             .add_systems(
                 Update,
-                (thirdperson::player_movement_thirdperson, thirdperson::wow_camera_system)
+                (
+                    thirdperson::player_movement_thirdperson,
+                    thirdperson::wow_camera_system,
+                )
                     .distributive_run_if(in_state(FreeCamState::ThirdPersonLocked)),
             )
             .add_systems(
                 Update,
-                (thirdperson::player_movement_thirdperson, thirdperson::wow_camera_system, thirdperson::q_e_rotate_cam)
+                (
+                    thirdperson::player_movement_thirdperson,
+                    thirdperson::wow_camera_system,
+                    thirdperson::q_e_rotate_cam,
+                )
                     .distributive_run_if(in_state(FreeCamState::ThirdPersonFreeMouse)),
-            )
-        ;
+            );
     }
 }
 
@@ -70,16 +74,14 @@ pub fn toggle_camera_mode(
         next_state.set(match **cam_state {
             FreeCamState::Free => {
                 //for player in players.iter_mut() {
-                    //commands.entity(player).remove::<FlyCamera>();
+                //commands.entity(player).remove::<FlyCamera>();
                 //}
                 FreeCamState::ThirdPersonLocked
             }
-            FreeCamState::ThirdPersonLocked => {
-                FreeCamState::ThirdPersonFreeMouse
-            }
+            FreeCamState::ThirdPersonLocked => FreeCamState::ThirdPersonFreeMouse,
             FreeCamState::ThirdPersonFreeMouse => {
                 //for player in players.iter_mut() {
-                    //commands.entity(player).insert(FlyCamera::default());
+                //commands.entity(player).insert(FlyCamera::default());
                 //}
                 FreeCamState::Free
             }

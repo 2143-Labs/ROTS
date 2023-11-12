@@ -11,9 +11,7 @@ pub struct PhysPlugin;
 
 impl Plugin for PhysPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_plugins(PhysicsPlugins::default())
-            .register_type::<Jumper>()
-            ;
+        app.add_plugins(PhysicsPlugins::default())
+            .register_type::<Jumper>();
     }
 }
