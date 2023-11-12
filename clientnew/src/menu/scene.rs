@@ -6,6 +6,15 @@ use crate::{states::GameState, cameras::Player};
 
 use super::MenuItem;
 
+#[derive(Component, Debug)]
+pub enum MenuButton {
+    Connect,
+    Quit,
+}
+
+#[derive(Component)]
+pub struct SelectedButton;
+
 pub fn menu_select(
     keyboard_input: Res<Input<KeyCode>>,
     _config: Res<shared::Config>,
@@ -34,12 +43,6 @@ pub fn menu_select(
     game_state.set(GameState::InGame);
 }
 
-#[derive(Component, Debug)]
-pub enum MenuButton {
-    Connect,
-    Quit,
-}
-
 impl MenuButton {
     fn spawn(
         self,
@@ -63,9 +66,6 @@ impl MenuButton {
             ));
     }
 }
-
-#[derive(Component)]
-pub struct SelectedButton;
 
 pub fn check_is_next_to_button(
     mut commands: Commands,
