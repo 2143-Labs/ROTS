@@ -1,47 +1,18 @@
 use std::f32::consts::PI;
 
-use bevy::{prelude::*, render::{camera::RenderTarget, render_resource::{TextureDimension, TextureDescriptor, TextureFormat, TextureUsages, Extent3d}}, ecs::query::QuerySingleError};
-
-use crate::{states::GameState, cameras::Player};
+use bevy::{prelude::*, render::{camera::RenderTarget, render_resource::{TextureDimension, TextureDescriptor, TextureFormat, TextureUsages, Extent3d}}};
 
 use super::MenuItem;
 
 #[derive(Component, Debug)]
 pub enum MenuButton {
     Connect,
+    CreateServer,
     Quit,
 }
 
 #[derive(Component)]
 pub struct SelectedButton;
-
-pub fn menu_select(
-    keyboard_input: Res<Input<KeyCode>>,
-    _config: Res<shared::Config>,
-    mut game_state: ResMut<NextState<GameState>>,
-    buttons: Query<&MenuButton, With<SelectedButton>>,
-) {
-
-    if !keyboard_input.just_pressed(KeyCode::H) {
-        return;
-    }
-
-    let button = match buttons.get_single() {
-        Ok(button) => button,
-        Err(QuerySingleError::NoEntities(_)) => {
-            // Play sound error
-            info!("Not near a button");
-            return;
-        }
-        Err(QuerySingleError::MultipleEntities(_)) => {
-            info!("Somehow got multiple selected buttons?");
-            return;
-        }
-    };
-
-    info!("Clicked button {button:?}");
-    game_state.set(GameState::InGame);
-}
 
 impl MenuButton {
     fn spawn(
@@ -64,37 +35,6 @@ impl MenuButton {
                 self,
                 MenuItem,
             ));
-    }
-}
-
-pub fn check_is_next_to_button(
-    mut commands: Commands,
-    players: Query<(Entity, &Player, &Transform)>,
-    mut buttons: Query<(Entity, &MenuButton, &mut Transform, Option<&SelectedButton>), Without<Player>>,
-    time: Res<Time>
-) {
-    // This system will add or remove the `SelectedButton` component, and make the buttons spin
-    let max_dist = 2.0;
-    for (_player_ent, _player, player_transform) in &players {
-        for (button_ent, button_type, mut button_transform, selected) in &mut buttons {
-            if selected.is_some() {
-                button_transform.rotate_x(time.delta_seconds() * 3.0);
-                button_transform.rotate_y(time.delta_seconds() * 1.0);
-                button_transform.rotate_z(time.delta_seconds() * 1.0);
-                let dist = player_transform.translation.distance(button_transform.translation);
-                if dist > max_dist {
-                    info!("Left range of {button_type:?}");
-                    commands.entity(button_ent).remove::<SelectedButton>();
-                }
-            } else {
-                button_transform.rotation = Quat::from_rotation_y(0.0);
-                let dist = player_transform.translation.distance(button_transform.translation);
-                if dist < max_dist {
-                    info!("Approached {button_type:?}");
-                    commands.entity(button_ent).insert(SelectedButton);
-                }
-            }
-        }
     }
 }
 
@@ -167,7 +107,8 @@ pub fn spawn_menu_scene(
         });
 
 
-    MenuButton::Quit.spawn(Transform::from_xyz(3.0, 1.0, 0.0), &mut commands, &mut materials, &mut meshes);
+    MenuButton::Quit.spawn(Transform::from_xyz(0.0, 1.5, -3.0), &mut commands, &mut materials, &mut meshes);
+    MenuButton::CreateServer.spawn(Transform::from_xyz(3.0, 1.0, 0.0), &mut commands, &mut materials, &mut meshes);
     MenuButton::Connect.spawn(Transform::from_xyz(0.0, 1.0, 3.0), &mut commands, &mut materials, &mut meshes);
 
 }
