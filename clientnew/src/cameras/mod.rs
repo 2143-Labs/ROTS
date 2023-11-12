@@ -4,34 +4,9 @@ use bevy::{
     prelude::*, window::CursorGrabMode,
 };
 
-#[derive(Reflect, Component)]
-pub struct Jumper {
-    //pub cooldown: f32,
-    pub timer: Timer,
-}
-
 #[derive(Component)]
 pub struct FaceCamera; // tag entity to make it always face the camera
 
-#[derive(Reflect, Component)]
-pub struct Player {
-    pub looking_at: Vec3,
-    pub facing_vel: f32,
-    pub velocity: Vec3,
-    pub lock_movement: [Option<Vec2>; 4],
-}
-
-impl Default for Player {
-    fn default() -> Self {
-        Self {
-            // Look at camera
-            looking_at: Vec3::new(10., 10., 10.),
-            facing_vel: 0.,
-            velocity: Vec3::ZERO,
-            lock_movement: [None; 4],
-        }
-    }
-}
 pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
@@ -48,7 +23,6 @@ impl Plugin for CameraPlugin {
                 (thirdperson::player_movement_thirdperson, thirdperson::wow_camera_system, thirdperson::q_e_rotate_cam)
                     .distributive_run_if(in_state(FreeCamState::ThirdPersonFreeMouse)),
             )
-            .register_type::<Jumper>()
         ;
     }
 }
@@ -111,28 +85,4 @@ pub fn toggle_camera_mode(
             }
         });
     }
-}
-
-
-pub fn spawn_player_sprite(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    let cube = PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-        material: materials.add(Color::rgb(0.5, 0.5, 1.0).into()),
-        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
-        ..Default::default()
-    };
-
-    commands.spawn((
-        cube,
-        Name::new("Player"),
-        Player::default(),
-        FaceCamera,
-        Jumper {
-            timer: Timer::from_seconds(1.0, TimerMode::Once),
-        },
-    ));
 }

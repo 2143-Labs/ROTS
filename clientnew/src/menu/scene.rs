@@ -1,6 +1,7 @@
 use std::f32::consts::PI;
 
 use bevy::{prelude::*, render::{camera::RenderTarget, render_resource::{TextureDimension, TextureDescriptor, TextureFormat, TextureUsages, Extent3d}}};
+use bevy_xpbd_3d::prelude::{Collider, RigidBody};
 
 use super::MenuItem;
 
@@ -58,6 +59,8 @@ pub fn spawn_menu_scene(
                 ..default()
             },
             Name::new("Plane"),
+            RigidBody::Static,
+            Collider::cuboid(size, 0.002, size),
             MenuItem,
         ));
         //.with_children(|commands| {

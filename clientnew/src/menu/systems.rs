@@ -1,6 +1,6 @@
 use bevy::{prelude::*, ecs::query::QuerySingleError};
 
-use crate::{states::GameState, cameras::Player};
+use crate::{states::GameState, player::Player};
 
 use super::scene::{SelectedButton, MenuButton};
 

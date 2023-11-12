@@ -1,13 +1,14 @@
 pub mod cameras;
 pub mod states;
 pub mod menu;
+pub mod player;
+pub mod physics;
 
 use bevy::{
     diagnostic::FrameTimeDiagnosticsPlugin,
     prelude::*,
     window::{Cursor, CursorGrabMode},
 };
-use states::GameState;
 
 pub const HEIGHT: f32 = 720.0;
 pub const WIDTH: f32 = 1280.0;
@@ -48,6 +49,7 @@ fn main() {
             shared::ConfigPlugin,
             states::StatePlugin,
             menu::MenuPlugin,
+            physics::PhysPlugin,
         ))
         .add_systems(Update, bevy::window::close_on_esc) // Close the window when you press escape
         .run();

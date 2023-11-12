@@ -6,7 +6,9 @@ use bevy::{
 };
 use shared::Config;
 
-use super::{Player, FreeCamState};
+use crate::{physics::Jumper, player::Player};
+
+use super::FreeCamState;
 
 #[derive(Reflect, Component)]
 pub struct CameraFollow {
@@ -103,7 +105,7 @@ pub const PLAYER_SPEED: f32 = 5.;
 pub fn player_movement_thirdperson(
     _commands: Commands,
     mut player_query: Query<(&mut Transform, Entity, &mut Jumper, &mut Player)>,
-    camera_query: Query<&thirdperson::CameraFollow>,
+    camera_query: Query<&CameraFollow>,
     keyboard_input: Res<Input<KeyCode>>,
     config: Res<Config>,
     time: Res<Time>,
