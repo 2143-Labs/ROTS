@@ -2,8 +2,7 @@ use bevy::prelude::*;
 
 use crate::states::GameState;
 
-#[derive(Component)]
-pub struct MenuItem;
+use super::MenuItem;
 
 pub fn menu_select(
     keyboard_input: Res<Input<KeyCode>>,
@@ -12,6 +11,36 @@ pub fn menu_select(
 ) {
     if keyboard_input.pressed(KeyCode::H) {
         game_state.set(GameState::InGame);
+    }
+}
+
+#[derive(Component)]
+pub enum MenuButton {
+    Connect,
+    Quit,
+}
+
+impl MenuButton {
+    fn spawn(
+        self,
+        transform: Transform,
+        commands: &mut Commands,
+        materials: &mut ResMut<Assets<StandardMaterial>>,
+        meshes: &mut ResMut<Assets<Mesh>>,
+    ){
+        commands
+            .spawn((
+                PbrBundle {
+                    mesh: meshes.add(Mesh::from(shape::Cube {
+                        size: 0.5,
+                    })),
+                    material: materials.add(Color::hex("#3090b0").unwrap().into()),
+                    transform,
+                    ..default()
+                },
+                self,
+                MenuItem,
+            ));
     }
 }
 
@@ -82,4 +111,28 @@ pub fn spawn_menu_scene(
                 //Collider::cuboid(5., 1.0, 6.),
             ));
         });
+
+
+    MenuButton::Quit.spawn(Transform::from_xyz(3.0, 1.0, 0.0), &mut commands, &mut materials, &mut meshes);
+    MenuButton::Connect.spawn(Transform::from_xyz(0.0, 1.0, 3.0), &mut commands, &mut materials, &mut meshes);
+
+    commands.spawn((
+        TextBundle::from_section(
+            "test ui element",
+            TextStyle {
+                font: asset_server.load("fonts/fonts/ttf/JetBrainsMono-Regular.ttf"),
+                font_size: 14.0,
+                color: Color::WHITE,
+            },
+        )
+        .with_text_alignment(TextAlignment::Center)
+        .with_style(Style {
+            position_type: PositionType::Absolute,
+            left: Val::Px(10.0),
+            bottom: Val::Px(10.0),
+            ..default()
+        }),
+        MenuItem,
+    ));
+
 }
