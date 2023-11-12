@@ -1,11 +1,14 @@
 pub mod cameras;
+pub mod physics;
+pub mod player;
 
 use bevy::{
     diagnostic::FrameTimeDiagnosticsPlugin,
     prelude::*,
     window::{Cursor, CursorGrabMode},
 };
-use cameras::spawn_player_sprite;
+use bevy_xpbd_3d::prelude::{Collider, RigidBody};
+use player::spawn_player_sprite;
 
 pub const HEIGHT: f32 = 720.0;
 pub const WIDTH: f32 = 1280.0;
@@ -32,11 +35,8 @@ fn main() {
         ..default()
     };
 
-    app
-        .insert_resource(ClearColor(Color::hex("212121").unwrap()))
-        .add_plugins((
-            FrameTimeDiagnosticsPlugin,
-        ))
+    app.insert_resource(ClearColor(Color::hex("212121").unwrap()))
+        .add_plugins((FrameTimeDiagnosticsPlugin,))
         // .add_plugin(RapierDebugRenderPlugin::default())
         .add_plugins((
             DefaultPlugins
@@ -44,6 +44,7 @@ fn main() {
                 .set(ImagePlugin::default_nearest()),
             cameras::CameraPlugin,
             shared::ConfigPlugin,
+            physics::PhysPlugin,
         ))
         .add_systems(Startup, (spawn_scene, spawn_player_sprite))
         .run();
@@ -55,28 +56,22 @@ pub fn spawn_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: ResMut<AssetServer>,
 ) {
-    let size = 30.;
+    let size = 40.;
     // Ground
-    commands
-        .spawn((
-            PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Plane {
-                    size: size * 2.0,
-                    subdivisions: 10,
-                })),
-                material: materials.add(Color::hex("#1f7840").unwrap().into()),
-                transform: Transform::from_xyz(0.0, -0.01, 0.0),
-                ..default()
-            },
-            Name::new("Plane"),
-        ));
-        //.with_children(|commands| {
-            //commands.spawn((
-                //Collider::cuboid(size, 1., size),
-                //Name::new("PlaneCollider"),
-                //TransformBundle::from(Transform::from_xyz(0., -1., 0.)),
-            //));
-        //});
+    commands.spawn((
+        RigidBody::Static,
+        Collider::cuboid(size, 0.002, size),
+        PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Plane {
+                size: size,
+                subdivisions: 10,
+            })),
+            material: materials.add(Color::hex("#1f7840").unwrap().into()),
+            // transform: Transform::from_xyz(0.0, -0.01, 0.0),
+            ..default()
+        },
+        Name::new("Plane"),
+    ));
     // Sun
     commands.spawn((
         DirectionalLightBundle {
