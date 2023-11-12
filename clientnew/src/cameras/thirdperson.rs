@@ -112,16 +112,28 @@ pub fn player_movement_thirdperson(
 ) {
     for (mut transform, _player_ent, mut jumper, _player) in player_query.iter_mut() {
         let mut move_vector = Vec2::ZERO;
-        if config.pressing_keybind(|x| keyboard_input.pressed(x), shared::GameAction::MoveForward) {
+        if config.pressing_keybind(
+            |x| keyboard_input.pressed(x),
+            shared::GameAction::MoveForward,
+        ) {
             move_vector += Vec2::new(1.0, 0.0);
         }
-        if config.pressing_keybind(|x| keyboard_input.pressed(x), shared::GameAction::MoveBackward) {
+        if config.pressing_keybind(
+            |x| keyboard_input.pressed(x),
+            shared::GameAction::MoveBackward,
+        ) {
             move_vector += Vec2::new(-1.0, 0.0);
         }
-        if config.pressing_keybind(|x| keyboard_input.pressed(x), shared::GameAction::StrafeLeft) {
+        if config.pressing_keybind(
+            |x| keyboard_input.pressed(x),
+            shared::GameAction::StrafeLeft,
+        ) {
             move_vector += Vec2::new(0.0, -1.0);
         }
-        if config.pressing_keybind(|x| keyboard_input.pressed(x), shared::GameAction::StrafeRight) {
+        if config.pressing_keybind(
+            |x| keyboard_input.pressed(x),
+            shared::GameAction::StrafeRight,
+        ) {
             move_vector += Vec2::new(0.0, 1.0);
         }
 
@@ -143,4 +155,3 @@ pub fn player_movement_thirdperson(
         }
     }
 }
-
