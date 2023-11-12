@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, render::{camera::RenderTarget, render_resource::{TextureDimension, TextureDescriptor, TextureFormat, TextureUsages, Extent3d}}};
 
 use crate::states::GameState;
 
@@ -47,6 +47,7 @@ impl MenuButton {
 pub fn spawn_menu_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
+    mut images: ResMut<Assets<Image>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: ResMut<AssetServer>,
 ) {
@@ -118,7 +119,7 @@ pub fn spawn_menu_scene(
 
     commands.spawn((
         TextBundle::from_section(
-            "test ui element",
+            "GameState: Menu",
             TextStyle {
                 font: asset_server.load("fonts/fonts/ttf/JetBrainsMono-Regular.ttf"),
                 font_size: 14.0,
@@ -135,4 +136,67 @@ pub fn spawn_menu_scene(
         MenuItem,
     ));
 
+
+    let cam_size = Extent3d {
+        width: 100,
+        height: 100,
+        ..default()
+    };
+
+    // This is the texture that will be rendered to.
+    let mut image = Image {
+        texture_descriptor: TextureDescriptor {
+            label: None,
+            size: cam_size,
+            dimension: TextureDimension::D2,
+            format: TextureFormat::Bgra8UnormSrgb,
+            mip_level_count: 1,
+            sample_count: 1,
+            usage: TextureUsages::TEXTURE_BINDING
+                | TextureUsages::COPY_DST
+                | TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        },
+        ..default()
+    };
+
+    // fill image.data with zeroes
+    image.resize(cam_size);
+
+    let image_handle = images.add(image);
+
+    let camera = Camera3dBundle {
+        transform: Transform::from_xyz(0.0, 3.0, 0.0).looking_at(Vec3::new(3.0, 1.0, 3.0), Vec3::Y),
+        camera: Camera {
+            target: RenderTarget::Image(image_handle.clone()),
+            ..default()
+        },
+        ..default()
+    };
+
+    commands.spawn((
+        camera,
+        MenuItem,
+    ));
+
+    let material_handle = materials.add(StandardMaterial {
+        base_color_texture: Some(image_handle.clone()),
+        reflectance: 0.02,
+        unlit: false,
+        ..default()
+    });
+
+    let cube_size = 4.0;
+    let cube_handle = meshes.add(Mesh::from(shape::Box::new(cube_size, cube_size, cube_size)));
+
+    // Main pass cube, with material containing the rendered first pass texture.
+    commands.spawn((
+        PbrBundle {
+            mesh: cube_handle,
+            material: material_handle,
+            transform: Transform::from_xyz(-3.0, 1.0, 0.0),
+            ..default()
+        },
+        MenuItem,
+    ));
 }
