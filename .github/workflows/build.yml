@@ -95,7 +95,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: v${{ github.run_number }}
-        release_name: github.event.pull_request.title && format("PR: {0} (v{1})", github.event.pull_request.title, github.run_number) || format("Release {0}", github.run_number)
+        release_name: ${{ github.event.pull_request.title && format("PR: {0} (v{1})", github.event.pull_request.title, github.run_number) || format("Release {0}", github.run_number) }}
         draft: github.event_name == 'pull_request'
         prerelease: ! (github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ready'))
 
