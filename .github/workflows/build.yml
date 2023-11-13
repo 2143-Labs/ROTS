@@ -88,16 +88,29 @@ jobs:
         bash -c "rm -rf ubuntu-latest || true"
         bash -c "chmod +x client server || true"
 
-    - name: Create Release
+    - name: Create Draft
+      if: github.event_name == 'pull_request'
       id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: v${{ github.run_number }}
-        release_name: ${{ github.event.pull_request.title && format("PR: {0} (v{1})", github.event.pull_request.title, github.run_number) || format("Release {0}", github.run_number) }}
-        draft: github.event_name == 'pull_request'
-        prerelease: ! (github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ready'))
+        release_name: ${{ format("PR: {0} (v{1})", github.event.pull_request.title, github.run_number) }}
+        draft: true
+        prerelease: !contains(github.event.pull_request.labels.*.name, 'ready')
+
+    - name: Create Release
+      if: github.event_name == 'push'
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ github.run_number }}
+        release_name: ${{ format("Release {0}", github.run_number) }}
+        draft: false
+        prerelease: false
 
     - name: Create Zip
       uses: thedoctor0/zip-release@0.7.1
