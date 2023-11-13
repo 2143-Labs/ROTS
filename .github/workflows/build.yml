@@ -98,7 +98,7 @@ jobs:
         tag_name: v${{ github.run_number }}
         release_name: "PR: ${{github.event.pull_request.title}} (v ${{github.run_number}} )"
         draft: true
-        prerelease: !contains(github.event.pull_request.labels.*.name, 'ready')
+        prerelease: ${{ ! contains(github.event.pull_request.labels.*.name, 'ready') }}
 
     - name: Create Release
       if: github.event_name == 'push'
