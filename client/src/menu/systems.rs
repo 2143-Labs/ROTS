@@ -1,4 +1,5 @@
 use bevy::{ecs::query::QuerySingleError, prelude::*};
+use shared::Config;
 
 use crate::{player::Player, states::GameState};
 
@@ -9,8 +10,9 @@ pub fn menu_select(
     _config: Res<shared::Config>,
     mut game_state: ResMut<NextState<GameState>>,
     buttons: Query<&MenuButton, With<SelectedButton>>,
+    config: Res<Config>,
 ) {
-    if !keyboard_input.just_pressed(KeyCode::H) {
+    if !config.just_pressed(&keyboard_input, shared::GameAction::Use) {
         return;
     }
 

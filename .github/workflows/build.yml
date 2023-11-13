@@ -83,11 +83,11 @@ jobs:
         #mv windows-latest/* .
         #rm windows-latest
       run: |
-        bash -c "mv windows-latest/* ."
-        bash -c "rm -rf windows-latest"
-        bash -c "mv ubuntu-latest/* ."
-        bash -c "rm -rf ubuntu-latest"
-        bash -c "chmod +x client server"
+        bash -c "mv windows-latest/* . || true"
+        bash -c "rm -rf windows-latest || true"
+        bash -c "mv ubuntu-latest/* . || true"
+        bash -c "rm -rf ubuntu-latest || true"
+        bash -c "chmod +x client server || true"
 
     - name: Create Release
       id: create_release

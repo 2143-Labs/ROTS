@@ -1,12 +1,14 @@
 use std::{
+    collections::HashMap,
     env::current_dir,
     fs::OpenOptions,
-    sync::{Arc, Mutex}, collections::HashMap,
+    sync::{Arc, Mutex},
 };
 
 use bevy::prelude::*;
 use event::AnimationThing;
 use message_io::{network::Endpoint, node::NodeHandler};
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Component, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -129,12 +131,18 @@ pub enum GameAction {
     MoveBackward,
     StrafeRight,
     StrafeLeft,
+    RotateRight,
+    RotateLeft,
+    Use,
     Jump,
+    ChangeCamera,
+    UnlockCursor,
+
     Fire1,
     Special1,
 }
 
-#[derive(Reflect, Clone, Resource, Deserialize, Serialize, Default, Debug)]
+#[derive(Reflect, Clone, Resource, Deserialize, Serialize, Debug)]
 pub struct Config {
     pub ip: String,
     pub port: u16,
@@ -144,12 +152,23 @@ pub struct Config {
     //#[serde(default="default_qe_sens")]
     pub qe_sens: f32,
 
-    pub keybindings: HashMap<GameAction, Vec<KeyCode>> // TODO rust_phf
+    pub keybindings: Keybinds, // TODO rust_phf
 }
 
+type Keybinds = HashMap<GameAction, Vec<KeyCode>>;
+
 impl Config {
-    pub fn pressing_keybind(&self, mut keyboard_input: impl FnMut(KeyCode) -> bool, ga: GameAction) -> bool {
-        for key in self.keybindings.get(&ga).unwrap() {
+    pub fn pressing_keybind(
+        &self,
+        mut keyboard_input: impl FnMut(KeyCode) -> bool,
+        ga: GameAction,
+    ) -> bool {
+        let bound_key_codes = match self.keybindings.get(&ga) {
+            Some(b) => b,
+            None => DEFAULT_BINDS.get(&ga).unwrap(),
+        };
+
+        for key in bound_key_codes {
             if keyboard_input(*key) {
                 return true;
             }
@@ -157,36 +176,57 @@ impl Config {
 
         false
     }
-}
 
-pub struct ConfigPlugin;
-impl Plugin for ConfigPlugin {
-    fn build(&self, app: &mut App) {
-        let config = Config::load_from_main_dir();
-        app
-            .insert_resource(config)
-            .register_type::<Config>();
+    pub fn just_pressed(&self, keyboard_input: &Res<Input<KeyCode>>, ga: GameAction) -> bool {
+        self.pressing_keybind(|x| keyboard_input.just_pressed(x), ga)
+    }
+
+    pub fn pressed(&self, keyboard_input: &Res<Input<KeyCode>>, ga: GameAction) -> bool {
+        self.pressing_keybind(|x| keyboard_input.pressed(x), ga)
+    }
+
+    pub fn just_released(&self, keyboard_input: &Res<Input<KeyCode>>, ga: GameAction) -> bool {
+        self.pressing_keybind(|x| keyboard_input.just_released(x), ga)
     }
 }
 
-impl Config {
-    fn default_config() -> Self {
+static DEFAULT_BINDS: Lazy<Keybinds> = Lazy::new(|| {
+    HashMap::from([
+        (GameAction::MoveForward, vec![KeyCode::W]),
+        (GameAction::MoveBackward, vec![KeyCode::S]),
+        (GameAction::StrafeLeft, vec![KeyCode::A]),
+        (GameAction::StrafeRight, vec![KeyCode::D]),
+        (GameAction::RotateLeft, vec![KeyCode::Q]),
+        (GameAction::RotateRight, vec![KeyCode::E]),
+        (GameAction::Jump, vec![KeyCode::Space]),
+        (GameAction::Use, vec![KeyCode::F]),
+        (GameAction::ChangeCamera, vec![KeyCode::C]),
+        (GameAction::UnlockCursor, vec![KeyCode::X]),
+    ])
+});
+
+impl Default for Config {
+    fn default() -> Self {
         Self {
             ip: "127.0.0.1".into(),
             port: 25565,
             sens: 0.003,
             qe_sens: 3.0,
             name: None,
-            keybindings: HashMap::from([
-                (GameAction::MoveForward, vec![KeyCode::W]),
-                (GameAction::MoveBackward, vec![KeyCode::S]),
-                (GameAction::StrafeLeft, vec![KeyCode::A]),
-                (GameAction::StrafeRight, vec![KeyCode::D]),
-                (GameAction::Jump, vec![KeyCode::Space]),
-            ])
+            keybindings: DEFAULT_BINDS.clone(),
         }
     }
+}
 
+pub struct ConfigPlugin;
+impl Plugin for ConfigPlugin {
+    fn build(&self, app: &mut App) {
+        let config = Config::load_from_main_dir();
+        app.insert_resource(config).register_type::<Config>();
+    }
+}
+
+impl Config {
     pub fn load_from_main_dir() -> Self {
         let mut path = current_dir().unwrap();
         path.push("config.yaml");
@@ -202,7 +242,7 @@ impl Config {
                     error!("====================================");
                     error!(?e);
                     error!("Here is the default config:");
-                    let default_config = serde_yaml::to_string(&Self::default_config()).unwrap();
+                    let default_config = serde_yaml::to_string(&Self::default()).unwrap();
                     println!("{}", default_config);
                     panic!("Please fix the above error and restart your program");
                 }
@@ -210,7 +250,7 @@ impl Config {
             Err(kind) => match kind.kind() {
                 //if it doesn't exist, try to create it.
                 std::io::ErrorKind::NotFound => {
-                    let config = Self::default_config();
+                    let config = Self::default();
 
                     let file_handler = OpenOptions::new()
                         .create(true)
