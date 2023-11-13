@@ -129,6 +129,7 @@ pub enum GameAction {
     MoveBackward,
     StrafeRight,
     StrafeLeft,
+    Use,
     Jump,
     Fire1,
     Special1,
@@ -183,6 +184,7 @@ impl Config {
                 (GameAction::StrafeLeft, vec![KeyCode::A]),
                 (GameAction::StrafeRight, vec![KeyCode::D]),
                 (GameAction::Jump, vec![KeyCode::Space]),
+                (GameAction::Use, vec![KeyCode::E]),
             ])
         }
     }
