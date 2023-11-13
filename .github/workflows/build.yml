@@ -90,7 +90,7 @@ jobs:
 
     - name: Create Draft
       if: github.event_name == 'pull_request'
-      id: create_release
+      id: create_release_draft
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -102,7 +102,7 @@ jobs:
 
     - name: Create Release
       if: github.event_name == 'push'
-      id: create_release
+      id: create_release_real
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -123,7 +123,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        upload_url: ${{ steps.create_release_real && steps.create_release_real.outputs.upload_url || steps.create_release_draft.outputs.upload_url }}
         asset_path: release.zip
         asset_name: release.zip
         asset_content_type: application/octet-stream
