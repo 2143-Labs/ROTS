@@ -1,8 +1,17 @@
 use bevy::prelude::*;
-use bevy_rapier3d::prelude::ActiveEvents;
+use bevy_xpbd_3d::prelude::PhysicsPlugins;
 
-//pub fn modify_collider_active_events(mut active_events: Query<&mut ActiveEvents>) {
-    //for active_event in active_events.iter_mut() {
-        //debug!(?active_event);
-    //}
-//}
+#[derive(Reflect, Component)]
+pub struct Jumper {
+    //pub cooldown: f32,
+    pub timer: Timer,
+}
+
+pub struct PhysPlugin;
+
+impl Plugin for PhysPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins(PhysicsPlugins::default())
+            .register_type::<Jumper>();
+    }
+}

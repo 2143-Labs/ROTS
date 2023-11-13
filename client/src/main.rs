@@ -1,25 +1,14 @@
+pub mod cameras;
+pub mod menu;
+pub mod physics;
+pub mod player;
+pub mod states;
+
 use bevy::{
     diagnostic::FrameTimeDiagnosticsPlugin,
     prelude::*,
     window::{Cursor, CursorGrabMode},
 };
-use bevy_fly_camera::FlyCameraPlugin;
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use bevy_rapier3d::{
-    prelude::{NoUserData, RapierPhysicsPlugin},
-    render::{DebugRenderMode, RapierDebugRenderPlugin},
-};
-use bevy_sprite3d::Sprite3dPlugin;
-use networking::client_bullet_receiver::NetworkingPlugin;
-use states::StatePlugin;
-
-pub mod lifetime;
-pub mod networking;
-pub mod physics;
-pub mod player;
-pub mod setup;
-pub mod sprites;
-pub mod states;
 
 pub const HEIGHT: f32 = 720.0;
 pub const WIDTH: f32 = 1280.0;
@@ -27,10 +16,6 @@ pub const WIDTH: f32 = 1280.0;
 fn main() {
     let mut app = App::new();
 
-    setup::init(&mut app);
-    player::init(&mut app);
-    sprites::init(&mut app);
-    lifetime::init(&mut app);
     let mut cursor = Cursor::default();
     cursor.visible = false;
     cursor.grab_mode = CursorGrabMode::Locked;
@@ -50,29 +35,25 @@ fn main() {
         ..default()
     };
 
-    app
-        // bevy_sprite3d
-        // Background Color
-        .insert_resource(ClearColor(Color::hex("212121").unwrap()))
-        // Load Assets
-        .add_plugins((
-            Sprite3dPlugin,
-            FlyCameraPlugin,
-            FrameTimeDiagnosticsPlugin,
-            StatePlugin,
-            NetworkingPlugin,
-        ))
+    app.insert_resource(ClearColor(Color::hex("212121").unwrap()))
+        .add_plugins((FrameTimeDiagnosticsPlugin,))
         // .add_plugin(RapierDebugRenderPlugin::default())
-        .add_plugins(
+        .add_plugins((
             DefaultPlugins
                 .set(window)
                 .set(ImagePlugin::default_nearest()),
-        )
-        .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugins(RapierDebugRenderPlugin {
-            mode: DebugRenderMode::all(),
-            ..default()
-        })
-        .add_plugins(WorldInspectorPlugin::new())
+            cameras::CameraPlugin,
+            shared::ConfigPlugin,
+            states::StatePlugin,
+            menu::MenuPlugin,
+            physics::PhysPlugin,
+        ))
+        .add_systems(Update, bevy::window::close_on_esc) // Close the window when you press escape
         .run();
+}
+
+pub fn despawn_all_component<T: Component>(items: Query<Entity, With<T>>, mut commands: Commands) {
+    for item in &items {
+        commands.entity(item).despawn_recursive();
+    }
 }
