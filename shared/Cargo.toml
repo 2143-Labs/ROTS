@@ -27,6 +27,7 @@ bevy_time = "0.12.0"
 bevy_transform = "0.12.0"
 bevy_hierarchy = "0.12.0"
 bevy_diagnostic = "0.12.0"
+phf = { version = "0.11.2", features = ["macros"] }
 
 [dev-dependencies]
 tungstenite = "0.20.1"

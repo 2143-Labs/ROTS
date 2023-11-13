@@ -13,10 +13,7 @@ impl Plugin for CameraPlugin {
             .add_systems(Update, toggle_camera_mode)
             .add_systems(
                 Update,
-                (
-                    thirdperson::player_movement,
-                    thirdperson::wow_camera_system,
-                )
+                (thirdperson::player_movement, thirdperson::wow_camera_system)
                     .distributive_run_if(in_state(FreeCamState::ThirdPersonLocked)),
             )
             .add_systems(
