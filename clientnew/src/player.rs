@@ -14,7 +14,9 @@ impl Default for Player {
         Self {
             // Look at camera
             looking_at: Vec3::new(10., 10., 10.),
-            ..default()
+            facing_vel: 0.,
+            velocity: Vec3::ZERO,
+            lock_movement: [None; 4],
         }
     }
 }
