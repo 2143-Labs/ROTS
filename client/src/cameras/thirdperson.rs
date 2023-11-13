@@ -102,7 +102,7 @@ pub fn wow_camera_system(
 }
 
 pub const PLAYER_SPEED: f32 = 5.;
-pub fn player_movement_thirdperson(
+pub fn player_movement(
     _commands: Commands,
     mut player_query: Query<(&mut Transform, Entity, &mut Jumper, &mut Player)>,
     camera_query: Query<&CameraFollow>,
