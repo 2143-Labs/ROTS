@@ -6,4 +6,6 @@ pub fn kb_input(
     if config.pressing_keybind(|x| keyboard_input.pressed(x), shared::GameAction::MoveBackward) {
         //Sokethig
     }
+    if config.just_pressed(&keyboard_input, shared::GameAction::UnlockCursor) {
+    }
 }

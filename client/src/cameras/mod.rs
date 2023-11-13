@@ -1,6 +1,7 @@
 mod thirdperson;
 
 use bevy::{prelude::*, window::CursorGrabMode};
+use shared::Config;
 
 #[derive(Component)]
 pub struct FaceCamera; // tag entity to make it always face the camera
@@ -56,8 +57,9 @@ pub fn toggle_camera_mode(
     mut next_state: ResMut<NextState<FreeCamState>>,
     input: Res<Input<KeyCode>>,
     mut windows_query: Query<&mut Window>,
+    config: Res<Config>,
 ) {
-    if input.just_pressed(KeyCode::X) {
+    if config.just_pressed(&input, shared::GameAction::UnlockCursor) {
         if let Ok(mut window) = windows_query.get_single_mut() {
             window.cursor.grab_mode = match window.cursor.grab_mode {
                 CursorGrabMode::None => CursorGrabMode::Locked,
@@ -66,7 +68,7 @@ pub fn toggle_camera_mode(
             window.cursor.visible = !window.cursor.visible;
         };
     }
-    if input.just_pressed(KeyCode::C) {
+    if config.just_pressed(&input, shared::GameAction::ChangeCamera) {
         //info!(?cam_state.0);
         next_state.set(match **cam_state {
             FreeCamState::Free => {

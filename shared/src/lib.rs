@@ -177,15 +177,15 @@ impl Config {
         false
     }
 
-    pub fn just_pressed(&self, keyboard_input: Res<Input<KeyCode>>, ga: GameAction) -> bool {
+    pub fn just_pressed(&self, keyboard_input: &Res<Input<KeyCode>>, ga: GameAction) -> bool {
         self.pressing_keybind(|x| keyboard_input.just_pressed(x), ga)
     }
 
-    pub fn pressed(&self, keyboard_input: Res<Input<KeyCode>>, ga: GameAction) -> bool {
+    pub fn pressed(&self, keyboard_input: &Res<Input<KeyCode>>, ga: GameAction) -> bool {
         self.pressing_keybind(|x| keyboard_input.pressed(x), ga)
     }
 
-    pub fn just_released(&self, keyboard_input: Res<Input<KeyCode>>, ga: GameAction) -> bool {
+    pub fn just_released(&self, keyboard_input: &Res<Input<KeyCode>>, ga: GameAction) -> bool {
         self.pressing_keybind(|x| keyboard_input.just_released(x), ga)
     }
 }

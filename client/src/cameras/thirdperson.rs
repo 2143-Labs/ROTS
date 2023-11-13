@@ -41,10 +41,10 @@ pub fn q_e_rotate_cam(
     config: Res<Config>,
 ) {
     let mut rotation = 0.0;
-    if keyboard_input.pressed(KeyCode::Q) {
+    if config.pressed(&keyboard_input, shared::GameAction::RotateLeft) {
         rotation += 1.0;
     }
-    if keyboard_input.pressed(KeyCode::E) {
+    if config.pressed(&keyboard_input, shared::GameAction::RotateRight) {
         rotation -= 1.0;
     }
     if rotation != 0.0 {
@@ -112,21 +112,21 @@ pub fn player_movement(
 ) {
     for (mut transform, _player_ent, mut jumper, _player) in player_query.iter_mut() {
         let mut move_vector = Vec2::ZERO;
-        if config.pressed(keyboard_input, shared::GameAction::MoveForward) {
+        if config.pressed(&keyboard_input, shared::GameAction::MoveForward) {
             move_vector += Vec2::new(1.0, 0.0);
         }
-        if config.pressed(keyboard_input, shared::GameAction::MoveBackward) {
+        if config.pressed(&keyboard_input, shared::GameAction::MoveBackward) {
             move_vector += Vec2::new(-1.0, 0.0);
         }
-        if config.pressed(keyboard_input, shared::GameAction::StrafeLeft) {
+        if config.pressed(&keyboard_input, shared::GameAction::StrafeLeft) {
             move_vector += Vec2::new(0.0, -1.0);
         }
-        if config.pressed(keyboard_input, shared::GameAction::StrafeRight) {
+        if config.pressed(&keyboard_input, shared::GameAction::StrafeRight) {
             move_vector += Vec2::new(0.0, 1.0);
         }
 
         jumper.timer.tick(time.delta());
-        if keyboard_input.pressed(KeyCode::Space) {
+        if config.pressed(&keyboard_input, shared::GameAction::Jump) {
             if jumper.timer.finished() {
                 // TODO jump
                 jumper.timer.reset();
