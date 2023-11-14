@@ -63,13 +63,13 @@ fn setup_panel(
 }
 
 fn delete_old_notifs(
-    mut commands: Commands,
+    _commands: Commands,
     notifs: Query<(Entity, &NotificationElement, &NotificationExpiresAt)>,
     mut expired: ResMut<NotificationResource>,
     time: Res<Time>,
 ) {
     let cur_time = time.elapsed_seconds();
-    for (ent, NotificationElement(text), NotificationExpiresAt(expire)) in &notifs {
+    for (_ent, NotificationElement(text), NotificationExpiresAt(expire)) in &notifs {
         if expire < &cur_time {
             // TODO: This crashes the game
             //match commands.get_entity(ent) {

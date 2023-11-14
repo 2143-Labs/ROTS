@@ -47,7 +47,7 @@ fn cast_skills(
     player: Query<(Entity, &Player, &Transform, Option<&Actions>)>,
     mut ev_sa: EventWriter<StartAnimation>,
 ) {
-    let (ent, ply_face, transform, actions) = player.single();
+    let (_ent, _ply_face, _transform, actions) = player.single();
 
     match actions {
         Some(a @ Actions::AnimationWindup) => {
@@ -71,7 +71,7 @@ fn cast_skills(
 fn start_local_skill_cast_animation(
     mut ev_sa: EventReader<StartAnimation>,
 ) {
-    for ev in ev_sa.read() {
+    for _ev in ev_sa.read() {
     }
 }
 
