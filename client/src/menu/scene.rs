@@ -131,6 +131,26 @@ pub fn spawn_menu_scene(
         &mut materials,
         &mut meshes,
     );
+
+    commands.spawn((
+        TextBundle::from_section(
+            "GameState: Menu",
+            TextStyle {
+                font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
+                font_size: 14.0,
+                color: Color::WHITE,
+            },
+        )
+        .with_text_alignment(TextAlignment::Center)
+        .with_style(Style {
+            position_type: PositionType::Absolute,
+            left: Val::Px(10.0),
+            bottom: Val::Px(10.0),
+            ..default()
+        }),
+        MenuItem,
+    ));
+
 }
 
 fn _test_sub_render(

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use shared::Config;
 
-use crate::player::Player;
+use crate::{player::Player, cameras::notifications::Notification};
 
 pub struct SkillsPlugin;
 
@@ -14,7 +14,7 @@ impl Plugin for SkillsPlugin {
     }
 }
 
-
+#[derive(Debug, Clone)]
 struct SkillData;
 
 pub type GameTime = f64;
@@ -31,7 +31,7 @@ impl Actions {
     }
 }
 
-#[derive(Event)]
+#[derive(Event, Debug)]
 struct StartAnimation(SkillData);
 
 /// Run condition that returns true if this keycode was just pressed
@@ -77,8 +77,10 @@ fn start_local_skill_cast_animation(
 
 fn send_network_packet(
     mut ev_sa: EventReader<StartAnimation>,
+    mut ev_notif: EventWriter<Notification>,
 ) {
     for ev in ev_sa.read() {
+        ev_notif.send(Notification(format!("This is a test notification {:?}", ev)));
         // TODO send netowrk packet to say that we are casting a skill
     }
 }

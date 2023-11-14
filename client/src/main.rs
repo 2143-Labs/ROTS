@@ -44,6 +44,7 @@ fn main() {
                 .set(window)
                 .set(ImagePlugin::default_nearest()),
             cameras::CameraPlugin,
+            cameras::notifications::NotificationPlugin,
             shared::ConfigPlugin,
             states::StatePlugin,
             menu::MenuPlugin,
