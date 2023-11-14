@@ -202,6 +202,7 @@ static DEFAULT_BINDS: Lazy<Keybinds> = Lazy::new(|| {
         (GameAction::Use, vec![KeyCode::F]),
         (GameAction::ChangeCamera, vec![KeyCode::C]),
         (GameAction::UnlockCursor, vec![KeyCode::X]),
+        (GameAction::Fire1, vec![KeyCode::T]),
     ])
 });
 
