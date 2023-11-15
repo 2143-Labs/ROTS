@@ -1,3 +1,4 @@
+pub mod notifications;
 mod thirdperson;
 
 use bevy::{prelude::*, window::CursorGrabMode};

@@ -3,6 +3,7 @@ pub mod menu;
 pub mod physics;
 pub mod player;
 pub mod states;
+pub mod skills;
 
 use bevy::{
     diagnostic::FrameTimeDiagnosticsPlugin,
@@ -43,10 +44,12 @@ fn main() {
                 .set(window)
                 .set(ImagePlugin::default_nearest()),
             cameras::CameraPlugin,
+            cameras::notifications::NotificationPlugin,
             shared::ConfigPlugin,
             states::StatePlugin,
             menu::MenuPlugin,
             physics::PhysPlugin,
+            skills::SkillsPlugin,
         ))
         .add_systems(Update, bevy::window::close_on_esc) // Close the window when you press escape
         .run();
