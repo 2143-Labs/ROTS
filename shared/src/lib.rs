@@ -5,6 +5,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+pub mod events;
+
 use bevy::prelude::*;
 use event::AnimationThing;
 use message_io::{network::Endpoint, node::NodeHandler};
@@ -92,7 +94,7 @@ pub enum EventToClient {
 #[non_exhaustive]
 pub enum EventToServer {
     Noop,
-    Connect { name: String },
+    Connect { name: Option<String> },
     UpdatePos(Transform),
     ShootBullet(BulletPhysics),
     BeginAnimation(AnimationThing),
