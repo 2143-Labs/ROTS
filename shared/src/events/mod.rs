@@ -2,9 +2,12 @@ pub mod connect;
 use bevy::prelude::*;
 use serde::{Serialize, de::DeserializeOwned};
 
-//pub trait C2S {
-    //fn 
-//}
+pub enum ClientRequests {
+    Connect(connect::Req),
+}
+pub enum ServerResponses {
+    Connect(connect::Res),
+}
 
 ///Net Event - Client to Server
 pub trait NEC2S {
