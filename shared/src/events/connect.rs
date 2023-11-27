@@ -1,12 +1,12 @@
 use bevy::prelude::*;
 use serde::{Serialize, Deserialize};
 
-#[derive(Event, Serialize, Deserialize, Debug)]
+#[derive(Event, Serialize, Deserialize, Debug, Clone)]
 pub struct Req {
     pub name: Option<String>,
 }
 
-#[derive(Event, Serialize, Deserialize, Debug)]
+#[derive(Event, Serialize, Deserialize, Debug, Clone)]
 pub struct Res {
     pub your_name: String,
     pub client_id: u64,

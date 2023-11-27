@@ -1,10 +1,13 @@
 pub mod connect;
 use bevy::prelude::*;
-use serde::{Serialize, de::DeserializeOwned};
+use serde::{Serialize, Deserialize, de::DeserializeOwned};
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum ClientRequests {
     Connect(connect::Req),
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum ServerResponses {
     Connect(connect::Res),
 }

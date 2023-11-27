@@ -1,4 +1,3 @@
-use std::str::from_utf8;
 use std::sync::{Arc, Mutex};
 
 //use crate::{despawn_all_component, player::spawn_player_sprite, states::GameState};
@@ -40,8 +39,8 @@ pub struct ServerHandler {
 }
 
 #[derive(Resource, Clone)]
-pub struct ServerEventList {
-    pub event_list: Arc<Mutex<Vec<(Endpoint, String)>>>,
+pub struct EventList<T: Clone> {
+    pub event_list: Arc<Mutex<Vec<(Endpoint, T)>>>,
 }
 
 #[derive(States, Clone, Hash, PartialEq, Eq, Debug, Default)]
@@ -69,7 +68,7 @@ fn go_connect(
 
     info!("probably connected");
 
-    let server_event_list = ServerEventList {
+    let server_event_list = EventList::<shared::events::ServerResponses> {
         event_list: Default::default(),
     };
 
@@ -84,9 +83,9 @@ fn go_connect(
             NetEvent::Connected(_, _) => {}
             NetEvent::Accepted(_endpoint, _listener) => println!("Client connected"),
             NetEvent::Message(endpoint, data) => {
-                server_event_list_clone.event_list.lock().unwrap().push((endpoint, from_utf8(data).unwrap().to_owned()));
-                //let event = serde_json::from_slice(data).unwrap();
-                //server_event_list_clone.event_list.lock().unwrap().push((endpoint, event));
+                //server_event_list_clone.event_list.lock().unwrap().push((endpoint, from_utf8(data).unwrap().to_owned()));
+                let event = serde_json::from_slice(data).unwrap();
+                server_event_list_clone.event_list.lock().unwrap().push((endpoint, event));
             }
             NetEvent::Disconnected(_endpoint) => println!("Client disconnected"),
         });
