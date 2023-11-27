@@ -1,7 +1,16 @@
+use std::str::from_utf8;
+use std::sync::{Arc, Mutex};
+
 //use crate::{despawn_all_component, player::spawn_player_sprite, states::GameState};
 use bevy::prelude::*;
-use message_io::network::NetEvent;
-use shared::{Config, EventToServer};
+
+use message_io::node::NodeHandler;
+use shared::Config;
+use shared::events::NEC2S;
+use shared::events::connect::ConnectEventClient;
+use shared::events::{init_msg_to_server, connect::ClientConnect};
+
+use message_io::network::{Endpoint, NetEvent, Transport};
 
 use crate::states::GameState;
 
@@ -13,13 +22,41 @@ pub struct NetworkingPlugin;
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Connecting), go_connect);
-        app.add_systems(OnEnter(GameState::Connecting), go_start);
+        app.add_state::<NetworkingState>();
+
+        init_msg_to_server::<ClientConnect>(app);
+        app.add_systems(OnEnter(NetworkingState::Connecting), send_connect_packet);
+        app.add_systems(Update, wait_request_packet.run_if(in_state(NetworkingState::Connecting)));
+
     }
+}
+
+#[derive(Resource)]
+struct ServerEndpoints {
+    pub main: Endpoint,
+}
+
+#[derive(Resource)]
+struct ServerHandler {
+    pub handler: NodeHandler<()>,
+}
+
+#[derive(Resource, Clone)]
+struct ServerEventList {
+    pub event_list: Arc<Mutex<Vec<(Endpoint, String)>>>,
+}
+
+#[derive(States, Clone, Hash, PartialEq, Eq, Debug, Default)]
+enum NetworkingState {
+    #[default]
+    NotConnected,
+    Connecting,
+    Connected,
 }
 
 fn go_connect(
     config: Res<Config>,
-    //mut networking_state: ResMut<NextState<NetworkingState>>,
+    mut networking_state: ResMut<NextState<NetworkingState>>,
     mut commands: Commands,
 ) {
     info!("trying_to_start_server");
@@ -34,47 +71,55 @@ fn go_connect(
 
     info!("probably connected");
 
-    //let res = ServerResources::<EventToClient> {
-        //handler: handler.clone(),
-        //event_list: Default::default(),
-    //};
+    let server_event_list = ServerEventList {
+        event_list: Default::default(),
+    };
 
-    //let res_copy = res.clone();
+    let server_handler = ServerHandler {
+        handler: handler.clone(),
+    };
 
-    //let mse = MainServerEndpoint(server.clone());
+    let server_event_list_clone = server_event_list.clone();
 
     std::thread::spawn(move || {
         listener.for_each(move |event| match event.network() {
             NetEvent::Connected(_, _) => {}
             NetEvent::Accepted(_endpoint, _listener) => println!("Client connected"),
             NetEvent::Message(endpoint, data) => {
-                //let s = from_utf8(data);
-                //info!(?s);
-                let event = serde_json::from_slice(data).unwrap();
-                res_copy.event_list.lock().unwrap().push((endpoint, event));
+                server_event_list_clone.event_list.lock().unwrap().push((endpoint, from_utf8(data).unwrap().to_owned()));
+                //let event = serde_json::from_slice(data).unwrap();
+                //server_event_list_clone.event_list.lock().unwrap().push((endpoint, event));
             }
             NetEvent::Disconnected(_endpoint) => println!("Client disconnected"),
         });
     });
 
-    //let name = match &config.name {
-        //Some(name) => name.clone(),
-        //None => {
-            //let random_id = thread_rng().gen_range(1..10000);
-            //format!("Player #{random_id}")
-        //}
-    //};
+    commands.insert_resource(server_event_list);
+    commands.insert_resource(server_handler);
+    commands.insert_resource(ServerEndpoints {
+        main: server,
+    });
+    networking_state.set(NetworkingState::Connecting);
+}
+
+fn send_connect_packet(
+    config: Res<Config>,
+    mut client_connect: EventWriter<ConnectEventClient>,
+) {
     let connect_event = shared::events::connect::ConnectEventClient {
-        name: config.name,
+        name: config.name.clone(),
     };
 
-    //let connect_event = EventToServer::Connect { name: config.name };
-    let event_json = serde_json::to_string(&connect_event).unwrap();
-    handler.network().send(server, event_json.as_bytes());
+    client_connect.send(connect_event);
 
     info!("sent json");
+}
 
-    commands.insert_resource(res);
-    commands.insert_resource(mse);
-    networking_state.set(NetworkingState::WaitingForServer);
+
+fn wait_request_packet(
+    mut client_connect: EventReader<shared::events::connect::ConnectEventResp>,
+) {
+    for e in client_connect.read() {
+        info!("{:?}", e);
+    }
 }
