@@ -4,7 +4,11 @@ use bevy::prelude::*;
 pub enum GameState {
     #[default]
     MainMenu,
-    Connecting,
+
+    ClientConnecting,
+    ClientConnectWaitServer,
+    ClientConnected,
+
     CreateServer,
     InGame,
     Quit,

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use message_io::network::Transport;
+use message_io::{network::{Transport, Endpoint}, node::NodeHandler};
 use shared::{Config, EventToClient, ServerResources, EventToServer};
 
 use crate::{player::Player, cameras::notifications::Notification, states::GameState};
@@ -9,9 +9,13 @@ pub struct NetworkingPlugin;
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_systems(OnEnter(GameState::Connecting), setup_server)
+            .add_systems(OnEnter(GameState::ClientConnecting), setup_server)
             ;
     }
+}
+
+pub fn send_event_to_server(handler: &NodeHandler<()>, endpoint: Endpoint, event: &EventToServer) {
+    handler.network().send(endpoint, &postcard::to_stdvec(&event).unwrap());
 }
 
 fn setup_server(
@@ -34,11 +38,11 @@ fn setup_server(
     commands.insert_resource(res.clone());
 
     let event = EventToServer::Connect { name: config.name.clone() };
-    handler.network().send(endpoint, &postcard::to_stdvec(&event).unwrap());
+    send_event_to_server(&handler, endpoint, &event);
 
     //std::thread::spawn(move || {
         //listener.for_each(|event| on_node_event(&res, event));
     //});
 
-    game_state.set(GameState::Connecting);
+    game_state.set(GameState::ClientConnectWaitServer);
 }

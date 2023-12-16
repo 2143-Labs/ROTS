@@ -32,7 +32,7 @@ pub fn menu_select(
     info!("Clicked button {button:?}");
     match button {
         MenuButton::Connect => {
-            game_state.set(GameState::Connecting);
+            game_state.set(GameState::ClientConnecting);
         }
         MenuButton::CreateServer => {
             game_state.set(GameState::CreateServer);
