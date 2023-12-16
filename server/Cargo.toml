@@ -30,6 +30,7 @@ bevy_diagnostic = "0.12.1"
 phf = { version = "0.11.2", features = ["macros"] }
 
 shared = { path = "../shared" }
+postcard = { version = "1.0.8", features = ["use-std", "alloc"] }
 
 [dev-dependencies]
 tungstenite = "0.21.0"

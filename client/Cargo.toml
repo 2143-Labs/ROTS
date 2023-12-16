@@ -15,6 +15,7 @@ rand = "0.8.5"
 message-io = "0.18.0"
 shared = { path = "../shared" }
 bevy_xpbd_3d = "0.3.2"
+postcard = { version = "1.0.8", features = ["use-std", "alloc"] }
 
 #[features]
 #bevy_dynamic = ["bevy/dynamic_linking"]

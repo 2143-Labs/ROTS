@@ -92,7 +92,7 @@ pub enum EventToClient {
 #[non_exhaustive]
 pub enum EventToServer {
     Noop,
-    Connect { name: String },
+    Connect { name: Option<String> },
     UpdatePos(Transform),
     ShootBullet(BulletPhysics),
     BeginAnimation(AnimationThing),
@@ -228,6 +228,10 @@ impl Plugin for ConfigPlugin {
 }
 
 impl Config {
+    pub fn default_config_str() -> String {
+        serde_yaml::to_string(&Self::default()).unwrap()
+    }
+
     pub fn load_from_main_dir() -> Self {
         let mut path = current_dir().unwrap();
         path.push("config.yaml");
@@ -243,8 +247,7 @@ impl Config {
                     error!("====================================");
                     error!(?e);
                     error!("Here is the default config:");
-                    let default_config = serde_yaml::to_string(&Self::default()).unwrap();
-                    println!("{}", default_config);
+                    println!("{}", Self::default_config_str());
                     panic!("Please fix the above error and restart your program");
                 }
             },
