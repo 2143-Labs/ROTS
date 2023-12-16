@@ -1,5 +1,5 @@
 use bevy::{prelude::*, log::LogPlugin};
-use shared::{ConfigPlugin};
+use shared::ConfigPlugin;
 
 #[derive(States, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 enum ServerState {
@@ -34,8 +34,53 @@ fn main() {
     app.run();
 }
 
-fn setup_server() {
+fn setup_server(
+    mut commands: Commands,
+    config: Res<shared::Config>,
+) {
     info!("Seting up the server!");
+
+    let (handler, listener) = message_io::node::split::<()>();
+
+    //let res = ServerResources {
+        //handler: handler.clone(),
+        //event_list: Default::default(),
+    //};
+
+    //let res_copy = res.clone();
+
+    //std::thread::spawn(move || {
+        //let con_str = (&*config.ip, config.port);
+        //handler.network().listen(Transport::Udp, con_str).unwrap();
+
+        //listener.for_each(move |event| match event.network() {
+            //NetEvent::Connected(_, _) => unreachable!(),
+            //NetEvent::Accepted(_endpoint, _listener) => println!("Client connected"),
+            //NetEvent::Message(endpoint, data) => {
+                //match data[0] {
+                    //b'[' => {
+                        //let event: Vec<EventToServer> = serde_json::from_slice(data).unwrap();
+
+                        //let mut elist = res.event_list.lock().unwrap();
+                        //for e in event {
+                            //elist.push((endpoint, e));
+                        //}
+                    //},
+                    //b'{' | b'"' => {
+                        //let event = serde_json::from_slice(data).unwrap();
+                        //res.event_list.lock().unwrap().push((endpoint, event));
+                    //},
+                    //d => {
+                        //info!(d);
+                        //error!("invalid net req");
+                    //}
+                //}
+            //},
+            //NetEvent::Disconnected(_endpoint) => println!("Client disconnected"),
+        //});
+    //});
+
+    //res_copy
 }
 
 //fn start_server(config: &Config) -> ServerResources<EventToServer> {
