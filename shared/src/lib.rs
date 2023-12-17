@@ -2,128 +2,15 @@ use std::{
     collections::HashMap,
     env::current_dir,
     fs::OpenOptions,
-    sync::{Arc, Mutex},
 };
 
 use bevy::prelude::*;
-use event::AnimationThing;
-use message_io::{network::Endpoint, node::NodeHandler};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, Component, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct NetEntId(pub u64);
+pub mod netlib;
+pub mod event;
 
-pub mod event {
-    use super::*;
-
-    #[derive(Debug, Clone, Serialize, Deserialize, Event)]
-    pub struct PlayerInfo {
-        pub name: String,
-        pub id: NetEntId,
-    }
-
-    #[derive(Debug, Clone, Serialize, Deserialize, Event)]
-    pub struct UpdatePos {
-        pub id: NetEntId,
-        pub transform: Transform,
-    }
-
-    #[derive(Debug, Clone, Serialize, Deserialize, Event)]
-    pub struct ShootBullet {
-        pub id: NetEntId,
-        pub phys: BulletPhysics,
-    }
-
-    #[derive(Debug, Clone, Serialize, Deserialize, Component, Event)]
-    pub struct Animation {
-        pub id: NetEntId,
-        pub animation: AnimationThing,
-    }
-
-    #[derive(Debug, Clone, Serialize, Deserialize, Event)]
-    pub struct PlayerDisconnect {
-        pub id: NetEntId,
-    }
-
-    #[derive(Debug, Clone, Serialize, Deserialize, Event)]
-    pub enum AnimationThing {
-        Waterball,
-    }
-
-    #[derive(Debug, Clone, Serialize, Deserialize, Event)]
-    pub struct Heartbeat {
-        pub id: NetEntId,
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum BulletAI {
-    /// Bullet directly travels from point to point
-    Direct,
-    Wavy,
-    Wavy2,
-}
-
-#[derive(Component, Clone, Serialize, Deserialize, Debug)]
-pub struct BulletPhysics {
-    pub fired_from: Vec2,
-    pub fired_target: Vec2,
-    // Tiles per second
-    pub speed: f32,
-    pub ai: BulletAI,
-    //fired_time: time_since_start,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Event)]
-#[non_exhaustive]
-pub enum EventToClient {
-    Noop,
-    YouAre(event::PlayerInfo),
-    PlayerConnect(event::PlayerInfo),
-    PlayerList(Vec<event::PlayerInfo>),
-    UpdatePos(event::UpdatePos),
-    ShootBullet(event::ShootBullet),
-    Animation(event::Animation),
-    PlayerDisconnect(event::PlayerDisconnect),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Event)]
-#[non_exhaustive]
-pub enum EventToServer {
-    Noop,
-    Connect { name: Option<String> },
-    UpdatePos(Transform),
-    ShootBullet(BulletPhysics),
-    BeginAnimation(AnimationThing),
-    Heartbeat,
-}
-
-#[derive(Debug, Clone, Event)]
-pub struct EventFromEndpoint<E> {
-    pub event: E,
-    pub endpoint: Endpoint,
-}
-
-impl<E> EventFromEndpoint<E> {
-    pub fn new(endpoint: Endpoint, e: E) -> Self {
-        EventFromEndpoint { event: e, endpoint }
-    }
-}
-
-#[derive(Resource, Clone)]
-pub struct ServerResources<T> {
-    pub event_list: Arc<Mutex<Vec<(Endpoint, T)>>>,
-    pub handler: NodeHandler<()>,
-}
-
-//fn default_qe_sens() -> f32 {
-//3.0
-//}
-
-//fn default_sens() -> f32 {
-//0.003
-//}
 
 #[derive(Reflect, Hash, Eq, PartialEq, Clone, Deserialize, Serialize, Debug)]
 pub enum GameAction {

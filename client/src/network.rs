@@ -1,48 +1,35 @@
 use bevy::prelude::*;
-use message_io::{network::{Transport, Endpoint}, node::NodeHandler};
-use shared::{Config, EventToClient, ServerResources, EventToServer};
-
-use crate::{player::Player, cameras::notifications::Notification, states::GameState};
+use shared::{netlib::{MainServerEndpoint, setup_client, EventToClient, ServerResources, send_event_to_server, EventToServer}, Config};
+use crate::states::GameState;
 
 pub struct NetworkingPlugin;
 
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_systems(OnEnter(GameState::ClientConnecting), setup_server)
-            ;
+            .add_systems(OnEnter(GameState::ClientConnecting), (
+                // Setup the client and immediatly advance the state
+                setup_client::<EventToClient>,
+                |mut state: ResMut<NextState<GameState>>| {
+                    state.set(GameState::ClientConnected)
+                }
+            ))
+            .add_systems(OnEnter(GameState::ClientConnected), (send_connect_packet,))
+            .add_systems(Update, (
+                shared::netlib::drain_events::<EventToClient>,
+            ).run_if(resource_exists::<MainServerEndpoint>()));
     }
 }
 
-pub fn send_event_to_server(handler: &NodeHandler<()>, endpoint: Endpoint, event: &EventToServer) {
-    handler.network().send(endpoint, &postcard::to_stdvec(&event).unwrap());
-}
 
-fn setup_server(
-    mut commands: Commands,
-    config: Res<shared::Config>,
-    mut game_state: ResMut<NextState<GameState>>,
+fn send_connect_packet(
+    sr: Res<ServerResources<EventToClient>>,
+    mse: Res<MainServerEndpoint>,
+    config: Res<Config>,
 ) {
-    info!("Seting up the server!");
-
-    let (handler, listener) = message_io::node::split::<()>();
-
-    let res = ServerResources::<EventToClient> {
-        handler: handler.clone(),
-        event_list: Default::default(),
-    };
-
-    let con_str = (&*config.ip, config.port);
-    let (endpoint, _addr) = handler.network().connect(Transport::Udp, con_str).unwrap();
-
-    commands.insert_resource(res.clone());
-
+    //TODO how to eliminate clone here when pulling from config?
     let event = EventToServer::Connect { name: config.name.clone() };
-    send_event_to_server(&handler, endpoint, &event);
-
-    //std::thread::spawn(move || {
-        //listener.for_each(|event| on_node_event(&res, event));
-    //});
-
-    game_state.set(GameState::ClientConnectWaitServer);
+    send_event_to_server(&sr.handler, mse.0, &event);
+    //let event = EventToServer::UpdatePos(Transform::from_xyz(0.0, 1.0, 2.0));
+    //send_event_to_server(&sr.handler, mse.0, &event);
 }

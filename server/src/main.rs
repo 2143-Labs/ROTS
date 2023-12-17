@@ -1,6 +1,5 @@
 use bevy::{log::LogPlugin, prelude::*};
-use message_io::{network::{Transport, NetEvent}, node::NodeEvent};
-use shared::{ConfigPlugin, EventToServer, ServerResources};
+use shared::{ConfigPlugin, netlib::EventToServer};
 
 #[derive(States, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 enum ServerState {
@@ -25,7 +24,7 @@ fn main() {
         .add_systems(
             Startup,
             (
-                setup_server,
+                shared::netlib::setup_server::<EventToServer>,
                 //on_player_connect,
                 //tick_net_server,
                 //send_shooting_to_all_players,
@@ -34,73 +33,12 @@ fn main() {
             ),
         )
         .add_systems(Update, (
-            drain_events,
+            shared::netlib::drain_events::<EventToServer>,
         ));
 
     app.run();
 }
 
-fn setup_server(mut commands: Commands, config: Res<shared::Config>) {
-    info!("Seting up the server!");
-
-    let (handler, listener) = message_io::node::split::<()>();
-
-    let res = ServerResources::<EventToServer> {
-        handler: handler.clone(),
-        event_list: Default::default(),
-    };
-
-    let con_str = (&*config.ip, config.port);
-    handler.network().listen(Transport::Udp, con_str).unwrap();
-
-    commands.insert_resource(res.clone());
-
-    std::thread::spawn(move || {
-        listener.for_each(|event| on_node_event(&res, event));
-    });
-
-    info!("Server listening");
-}
-
-/// ALL NETWORK EVENTS HERE !
-fn on_node_event(res: &ServerResources<EventToServer>, event: NodeEvent<'_, ()>) {
-    let net_event = match event {
-        NodeEvent::Network(n) => n,
-        NodeEvent::Signal(_) => {
-            panic!("MESSAGE SERVER SHUTDOWN SIGNAL RECEIVED!!!");
-            // TODO graceful shutdown
-        }
-    };
-
-    match net_event {
-        NetEvent::Connected(_, _) => unreachable!(),
-        NetEvent::Accepted(_endpoint, _listener) => println!("Client connected"),
-        NetEvent::Message(endpoint, data) => {
-            info!(data = ?data, "res");
-            let event = match postcard::from_bytes(data) {
-                Ok(e) => e,
-                Err(_) => {
-                    warn!(endpoint = ?endpoint, "Got invalid json from endpoint");
-                    return;
-                }
-            };
-            let pair = (endpoint, event);
-
-            res.event_list.lock().unwrap().push(pair);
-        },
-        NetEvent::Disconnected(_endpoint) => println!("Client disconnected"),
-    }
-}
-
-fn drain_events(
-    sr: Res<ServerResources<EventToServer>>,
-) {
-    let mut new_events = sr.event_list.lock().unwrap();
-    let new_events = std::mem::replace(new_events.as_mut(), vec![]);
-    for (endpoint, event) in new_events {
-        dbg!(event);
-    }
-}
 
 //fn start_server(config: &Config) -> ServerResources<EventToServer> {
 //let config = config.clone();

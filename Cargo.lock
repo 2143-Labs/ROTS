@@ -3603,6 +3603,7 @@ dependencies = [
  "message-io",
  "once_cell",
  "phf",
+ "postcard",
  "rand",
  "serde",
  "serde_json",
