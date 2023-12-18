@@ -10,14 +10,17 @@ use message_io::network::Endpoint;
 use rand::Rng;
 use shared::{
     event::{
-        client::{PlayerDisconnected, WorldData},
-        NetEntId, ERFE,
+        client::{PlayerDisconnected, WorldData, PlayerConnected},
+        NetEntId, ERFE, PlayerData, server::Heartbeat,
     },
     netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
     Config, ConfigPlugin,
 };
 
+/// How often to run the system
 const HEARTBEAT_MILLIS: u64 = 200;
+/// How long until disconnect
+const HEARTBEAT_TIMEOUT: u64 = 1000;
 
 #[derive(States, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 enum ServerState {
@@ -37,7 +40,9 @@ struct EndpointToNetId {
 }
 
 #[derive(Component)]
-struct ConnectedPlayer;
+struct ConnectedPlayerName {
+    pub name: String,
+}
 
 #[derive(Component)]
 struct PlayerEndpoint(Endpoint);
@@ -77,6 +82,7 @@ fn main() {
                 shared::event::server::drain_events,
                 on_player_connect,
                 on_player_disconnect,
+                on_player_heartbeat,
             )
                 .run_if(in_state(ServerState::Running)),
         )
@@ -91,6 +97,8 @@ fn main() {
 fn on_player_connect(
     mut new_players: ERFE<shared::event::server::ConnectRequest>,
     mut heartbeat_mapping: ResMut<HeartbeatList>,
+    mut endpoint_to_net_id: ResMut<EndpointToNetId>,
+    clients: Query<(Entity, &PlayerEndpoint, &NetEntId, &ConnectedPlayerName)>,
     sr: Res<ServerResources<EventToServer>>,
     _config: Res<Config>,
     mut commands: Commands,
@@ -104,26 +112,56 @@ fn on_player_connect(
             .unwrap_or_else(|| format!("Player #{}", rand::thread_rng().gen_range(1..10000)));
 
         let ent_id = NetEntId(rand::random());
+
+        let event = EventToClient::PlayerConnected(PlayerConnected {
+            data: PlayerData {
+                ent_id, name: name.clone(),
+            }
+        });
+
+        // Tell all other clients, also get their names and IDs to send
+        let mut connected_player_list = vec![];
+        for (_c_ent, c_net_client, _c_net_ent, cpn) in &clients {
+            connected_player_list.push(PlayerData {
+                name: cpn.name.clone(),
+                ent_id: *_c_net_ent,
+            });
+            send_event_to_server(&sr.handler, c_net_client.0, &event);
+        }
+
+        // Tell the client their info
         let event = EventToClient::WorldData(WorldData {
-            your_name: name,
+            your_name: name.clone(),
             your_id: ent_id,
+            players: connected_player_list,
         });
         send_event_to_server(&sr.handler, player.endpoint, &event);
 
-        commands.spawn((ConnectedPlayer, ent_id, PlayerEndpoint(player.endpoint)));
+        commands.spawn((
+            ConnectedPlayerName {
+                name
+            },
+            ent_id,
+            PlayerEndpoint(player.endpoint)
+        ));
+
         heartbeat_mapping
             .heartbeats
             .insert(ent_id, Arc::new(AtomicI16::new(0)));
+
+        endpoint_to_net_id
+            .map
+            .insert(player.endpoint, ent_id);
     }
 }
 
 fn check_heartbeats(
-    heartbeat_mapping: ResMut<HeartbeatList>,
+    heartbeat_mapping: Res<HeartbeatList>,
     mut on_disconnect: EventWriter<PlayerDisconnect>,
 ) {
     for (ent_id, beats_missed) in &heartbeat_mapping.heartbeats {
         let beats = beats_missed.fetch_add(1, std::sync::atomic::Ordering::Acquire);
-        if beats >= (5000 / HEARTBEAT_MILLIS) as i16 {
+        if beats >= (HEARTBEAT_TIMEOUT / HEARTBEAT_MILLIS) as i16 {
             warn!("Missed {beats} beats, disconnecting {ent_id:?}");
             on_disconnect.send(PlayerDisconnect { ent: *ent_id });
         }
@@ -132,7 +170,7 @@ fn check_heartbeats(
 
 fn on_player_disconnect(
     mut pd: EventReader<PlayerDisconnect>,
-    clients: Query<(Entity, &PlayerEndpoint, &NetEntId), With<ConnectedPlayer>>,
+    clients: Query<(Entity, &PlayerEndpoint, &NetEntId), With<ConnectedPlayerName>>,
     //mut commands: Commands,
     mut heartbeat_mapping: ResMut<HeartbeatList>,
     sr: Res<ServerResources<EventToServer>>,
@@ -144,17 +182,23 @@ fn on_player_disconnect(
         for (_c_ent, c_net_client, _c_net_ent) in &clients {
             send_event_to_server(&sr.handler, c_net_client.0, &event);
         }
+    }
+}
 
-        //for (c_ent, c_net_client, _c_net_ent) in &clients {
-        //event_list_res
-        //.handler
-        //.network()
-        //.send(c_net_client.endpoint, events_as_str.as_bytes());
-
-        //if _c_net_ent == ent_id {
-        //commands.entity(c_ent).despawn_recursive();
-        //}
-        //}
+fn on_player_heartbeat(
+    mut pd: ERFE<Heartbeat>,
+    //clients: Query<(Entity, &PlayerEndpoint, &NetEntId), With<ConnectedPlayerName>>,
+    //mut commands: Commands,
+    heartbeat_mapping: Res<HeartbeatList>,
+    endpoint_mapping: Res<EndpointToNetId>,
+    //sr: Res<ServerResources<EventToServer>>,
+) {
+    for hb in pd.read() {
+        let id = endpoint_mapping.map.get(&hb.endpoint).unwrap();
+        heartbeat_mapping.heartbeats
+            .get(id)
+            .unwrap()
+            .store(0, std::sync::atomic::Ordering::Release);
     }
 }
 

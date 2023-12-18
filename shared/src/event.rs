@@ -23,3 +23,9 @@ impl<E> EventFromEndpoint<E> {
         EventFromEndpoint { event: e, endpoint }
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlayerData {
+    pub name: String,
+    pub ent_id: NetEntId,
+}

@@ -8,4 +8,12 @@ pub struct ConnectRequest {
     pub name: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Event)]
+pub struct Heartbeat {}
+
+/// walking and stuff
+#[derive(Debug, Clone, Serialize, Deserialize, Event)]
+pub struct ChangeMovement {
+}
+
 include!(concat!(env!("OUT_DIR"), "/server_event.rs"));
