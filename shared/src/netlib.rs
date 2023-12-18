@@ -15,8 +15,8 @@ pub struct ServerResources<T> {
 #[derive(Resource, Clone)]
 pub struct MainServerEndpoint(pub Endpoint);
 
-pub use crate::event::server::EventToServer;
 pub use crate::event::client::EventToClient;
+pub use crate::event::server::EventToServer;
 
 pub trait NetworkingEvent:
     Clone + Serialize + for<'de> Deserialize<'de> + Send + 'static + core::fmt::Debug
@@ -43,7 +43,11 @@ pub fn setup_client<T: NetworkingEvent>(commands: Commands, config: Res<crate::C
     setup_shared::<T>(commands, config, false);
 }
 
-pub fn setup_shared<T: NetworkingEvent>(mut commands: Commands, config: Res<crate::Config>, is_listener: bool) {
+pub fn setup_shared<T: NetworkingEvent>(
+    mut commands: Commands,
+    config: Res<crate::Config>,
+    is_listener: bool,
+) {
     info!(is_listener, "Seting up networking!");
 
     let (handler, listener) = message_io::node::split::<()>();
@@ -53,7 +57,10 @@ pub fn setup_shared<T: NetworkingEvent>(mut commands: Commands, config: Res<crat
         event_list: Default::default(),
     };
     commands.insert_resource(res.clone());
-    info!("Setup server resources for {}", std::any::type_name::<ServerResources::<T>>());
+    info!(
+        "Setup server resources for {}",
+        std::any::type_name::<ServerResources::<T>>()
+    );
 
     let con_str = (&*config.ip, config.port);
     if is_listener {

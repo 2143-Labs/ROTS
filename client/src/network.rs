@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use shared::{netlib::{MainServerEndpoint, setup_client, EventToClient, ServerResources, send_event_to_server, EventToServer}, Config, event::{server::ConnectRequest, ERFE}};
+use shared::{netlib::{MainServerEndpoint, setup_client, EventToClient, ServerResources, send_event_to_server, EventToServer}, Config, event::{server::ConnectRequest, ERFE, client::WorldData}};
 use crate::states::GameState;
 
 pub struct NetworkingPlugin;
@@ -31,16 +31,13 @@ fn send_connect_packet(
     mse: Res<MainServerEndpoint>,
     config: Res<Config>,
 ) {
-    //TODO how to eliminate clone here when pulling from config?
     let event = EventToServer::ConnectRequest(ConnectRequest {name: config.name.clone() });
     send_event_to_server(&sr.handler, mse.0, &event);
     info!("Sent connection packet to {}", mse.0);
-    //let event = EventToServer::UpdatePos(Transform::from_xyz(0.0, 1.0, 2.0));
-    //send_event_to_server(&sr.handler, mse.0, &event);
 }
 
 fn receive_world_data(
-    mut world_data: ERFE<shared::event::client::WorldData>,
+    mut world_data: ERFE<WorldData>,
 ) {
     for event in world_data.read() {
         info!(?event, "Server has returned world data!");

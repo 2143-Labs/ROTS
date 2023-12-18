@@ -1,6 +1,6 @@
-use std::{fs, env, path::Path};
 use quote::{format_ident, quote};
 use regex::Regex;
+use std::{env, fs, path::Path};
 
 fn generate_code(req: &GenerateRequest) -> String {
     let contents = std::fs::read_to_string(req.source).unwrap();

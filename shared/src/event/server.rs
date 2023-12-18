@@ -1,7 +1,7 @@
+use crate::event::EventFromEndpoint;
+use crate::netlib::ServerResources;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-use crate::netlib::ServerResources;
-use crate::event::EventFromEndpoint;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
 pub struct ConnectRequest {

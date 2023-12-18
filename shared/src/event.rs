@@ -3,10 +3,8 @@ use bevy::prelude::*;
 use message_io::network::Endpoint;
 use serde::{Deserialize, Serialize};
 
-
 pub mod client;
 pub mod server;
-
 
 #[derive(Debug, Clone, Copy, Component, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct NetEntId(pub u64);
