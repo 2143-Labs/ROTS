@@ -10,8 +10,9 @@ use message_io::network::Endpoint;
 use rand::Rng;
 use shared::{
     event::{
-        client::{PlayerDisconnected, WorldData, PlayerConnected},
-        NetEntId, ERFE, PlayerData, server::Heartbeat,
+        client::{PlayerConnected, PlayerDisconnected, WorldData},
+        server::Heartbeat,
+        NetEntId, PlayerData, ERFE,
     },
     netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
     Config, ConfigPlugin,
@@ -115,8 +116,9 @@ fn on_player_connect(
 
         let event = EventToClient::PlayerConnected(PlayerConnected {
             data: PlayerData {
-                ent_id, name: name.clone(),
-            }
+                ent_id,
+                name: name.clone(),
+            },
         });
 
         // Tell all other clients, also get their names and IDs to send
@@ -138,20 +140,16 @@ fn on_player_connect(
         send_event_to_server(&sr.handler, player.endpoint, &event);
 
         commands.spawn((
-            ConnectedPlayerName {
-                name
-            },
+            ConnectedPlayerName { name },
             ent_id,
-            PlayerEndpoint(player.endpoint)
+            PlayerEndpoint(player.endpoint),
         ));
 
         heartbeat_mapping
             .heartbeats
             .insert(ent_id, Arc::new(AtomicI16::new(0)));
 
-        endpoint_to_net_id
-            .map
-            .insert(player.endpoint, ent_id);
+        endpoint_to_net_id.map.insert(player.endpoint, ent_id);
     }
 }
 
@@ -195,7 +193,8 @@ fn on_player_heartbeat(
 ) {
     for hb in pd.read() {
         let id = endpoint_mapping.map.get(&hb.endpoint).unwrap();
-        heartbeat_mapping.heartbeats
+        heartbeat_mapping
+            .heartbeats
             .get(id)
             .unwrap()
             .store(0, std::sync::atomic::Ordering::Release);

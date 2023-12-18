@@ -14,7 +14,7 @@ pub struct WorldData {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
 pub struct PlayerConnected {
-    pub data: PlayerData
+    pub data: PlayerData,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]

@@ -3,7 +3,11 @@ use std::time::Duration;
 use crate::states::GameState;
 use bevy::{prelude::*, time::common_conditions::on_timer};
 use shared::{
-    event::{client::{WorldData, PlayerDisconnected, PlayerConnected}, server::{ConnectRequest, Heartbeat}, ERFE},
+    event::{
+        client::{PlayerConnected, PlayerDisconnected, WorldData},
+        server::{ConnectRequest, Heartbeat},
+        ERFE,
+    },
     netlib::{
         send_event_to_server, setup_client, EventToClient, EventToServer, MainServerEndpoint,
         ServerResources,
@@ -27,7 +31,12 @@ impl Plugin for NetworkingPlugin {
         .add_systems(OnEnter(GameState::ClientConnected), (send_connect_packet,))
         .add_systems(
             Update,
-            (shared::event::client::drain_events, receive_world_data, on_connect, on_disconnect)
+            (
+                shared::event::client::drain_events,
+                receive_world_data,
+                on_connect,
+                on_disconnect,
+            )
                 .run_if(in_state(GameState::ClientConnected)),
         )
         .add_systems(
@@ -51,10 +60,7 @@ fn send_connect_packet(
     info!("Sent connection packet to {}", mse.0);
 }
 
-fn receive_world_data(
-    mut world_data: ERFE<WorldData>,
-    mut commands: Commands,
-) {
+fn receive_world_data(mut world_data: ERFE<WorldData>, mut commands: Commands) {
     for event in world_data.read() {
         info!(?event, "Server has returned world data!");
         let my_name = &event.event.your_name;
@@ -74,18 +80,13 @@ fn send_heartbeat(
     send_event_to_server(&sr.handler, mse.0, &event);
 }
 
-fn on_disconnect(
-    mut dc_info: ERFE<PlayerDisconnected>
-) {
+fn on_disconnect(mut dc_info: ERFE<PlayerDisconnected>) {
     for event in dc_info.read() {
         info!(?event);
     }
 }
 
-
-fn on_connect(
-    mut c_info: ERFE<PlayerConnected>
-) {
+fn on_connect(mut c_info: ERFE<PlayerConnected>) {
     for event in c_info.read() {
         info!(?event);
     }
