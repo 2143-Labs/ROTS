@@ -87,7 +87,6 @@ pub fn setup_shared<T: NetworkingEvent>(
     std::thread::spawn(move || {
         listener.for_each(|event| on_node_event(&res, event));
     });
-
 }
 
 pub fn on_node_event<T: NetworkingEvent>(res: &ServerResources<T>, event: NodeEvent<'_, ()>) {

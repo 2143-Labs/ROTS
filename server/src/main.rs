@@ -14,7 +14,10 @@ use shared::{
         server::Heartbeat,
         NetEntId, PlayerData, ERFE,
     },
-    netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources, NetworkConnectionTarget},
+    netlib::{
+        send_event_to_server, EventToClient, EventToServer, NetworkConnectionTarget,
+        ServerResources,
+    },
     Config, ConfigPlugin,
 };
 
@@ -98,10 +101,7 @@ fn main() {
     app.run();
 }
 
-fn add_network_connection_info_from_config(
-    config: Res<Config>,
-    mut commands: Commands,
-) {
+fn add_network_connection_info_from_config(config: Res<Config>, mut commands: Commands) {
     commands.insert_resource(NetworkConnectionTarget {
         ip: config.ip.clone(),
         port: config.port,

@@ -1,5 +1,5 @@
 use bevy::{ecs::query::QuerySingleError, prelude::*};
-use shared::{Config, netlib::NetworkConnectionTarget};
+use shared::{netlib::NetworkConnectionTarget, Config};
 
 use crate::{player::Player, states::GameState};
 
