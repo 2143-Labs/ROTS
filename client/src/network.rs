@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use shared::{netlib::{MainServerEndpoint, setup_client, EventToClient, ServerResources, send_event_to_server, EventToServer}, Config};
+use shared::{netlib::{MainServerEndpoint, setup_client, EventToClient, ServerResources, send_event_to_server, EventToServer}, Config, event::WorldData};
 use crate::states::GameState;
 
 pub struct NetworkingPlugin;
@@ -15,6 +15,8 @@ impl Plugin for NetworkingPlugin {
                 }
             ))
             .add_systems(OnEnter(GameState::ClientConnected), (send_connect_packet,))
+
+            // TODO
             .add_systems(Update, (
                 shared::netlib::drain_events::<EventToClient>,
             ).run_if(resource_exists::<MainServerEndpoint>()));
@@ -32,4 +34,12 @@ fn send_connect_packet(
     send_event_to_server(&sr.handler, mse.0, &event);
     //let event = EventToServer::UpdatePos(Transform::from_xyz(0.0, 1.0, 2.0));
     //send_event_to_server(&sr.handler, mse.0, &event);
+}
+
+fn receive_world_data(
+    mut world_data: EventReader<WorldData>,
+) {
+    for event in world_data.read() {
+        info!("Server has returned world data!");
+    }
 }

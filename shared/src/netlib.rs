@@ -105,11 +105,11 @@ pub fn on_node_event<T: NetworkingEvent>(res: &ServerResources<T>, event: NodeEv
         NetEvent::Connected(_, _) => info!("Network Connected"),
         NetEvent::Accepted(_endpoint, _listener) => info!("Connection Accepted"),
         NetEvent::Message(endpoint, data) => {
-            info!(data = ?data, "res");
+            info!(?data, "res");
             let event = match postcard::from_bytes(data) {
                 Ok(e) => e,
                 Err(_) => {
-                    warn!(endpoint = ?endpoint, "Got invalid json from endpoint");
+                    warn!(?endpoint, "Got invalid json from endpoint");
                     return;
                 }
             };
@@ -121,10 +121,3 @@ pub fn on_node_event<T: NetworkingEvent>(res: &ServerResources<T>, event: NodeEv
     }
 }
 
-pub fn drain_events<T: NetworkingEvent>(sr: Res<ServerResources<T>>) {
-    let mut new_events = sr.event_list.lock().unwrap();
-    let new_events = std::mem::replace(new_events.as_mut(), vec![]);
-    for (_endpoint, event) in new_events {
-        dbg!(event);
-    }
-}
