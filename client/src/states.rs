@@ -5,13 +5,10 @@ pub enum GameState {
     #[default]
     MainMenu,
 
-    /// See also `shared::netlib::NetworkConnectionTarget`
+    /// See also [shared::netlib::NetworkConnectionTarget]
     ClientConnecting,
-    ClientConnectWaitServer,
     ClientConnected,
 
-    CreateServer,
-    InGame,
     Quit,
 }
 
