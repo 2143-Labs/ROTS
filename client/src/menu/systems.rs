@@ -1,5 +1,5 @@
 use bevy::{ecs::query::QuerySingleError, prelude::*};
-use shared::Config;
+use shared::{Config, netlib::NetworkConnectionTarget};
 
 use crate::{player::Player, states::GameState};
 
@@ -11,6 +11,7 @@ pub fn menu_select(
     mut game_state: ResMut<NextState<GameState>>,
     buttons: Query<&MenuButton, With<SelectedButton>>,
     config: Res<Config>,
+    mut commands: Commands,
 ) {
     if !config.just_pressed(&keyboard_input, shared::GameAction::Use) {
         return;
@@ -32,10 +33,18 @@ pub fn menu_select(
     info!("Clicked button {button:?}");
     match button {
         MenuButton::Connect => {
+            commands.insert_resource(NetworkConnectionTarget {
+                ip: "john2143.com".into(),
+                port: 25565,
+            });
             game_state.set(GameState::ClientConnecting);
         }
-        MenuButton::CreateServer => {
-            game_state.set(GameState::CreateServer);
+        MenuButton::ConnectLocal => {
+            commands.insert_resource(NetworkConnectionTarget {
+                ip: config.ip.clone(),
+                port: config.port,
+            });
+            game_state.set(GameState::ClientConnecting);
         }
         MenuButton::Quit => {
             game_state.set(GameState::Quit);

@@ -16,7 +16,7 @@ use super::MenuItem;
 #[derive(Component, Debug)]
 pub enum MenuButton {
     Connect,
-    CreateServer,
+    ConnectLocal,
     Quit,
 }
 
@@ -119,7 +119,7 @@ pub fn spawn_menu_scene(
         &mut materials,
         &mut meshes,
     );
-    MenuButton::CreateServer.spawn(
+    MenuButton::ConnectLocal.spawn(
         Transform::from_xyz(3.0, 1.0, 0.0),
         &mut commands,
         &mut materials,

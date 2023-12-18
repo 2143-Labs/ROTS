@@ -14,7 +14,7 @@ use shared::{
         server::Heartbeat,
         NetEntId, PlayerData, ERFE,
     },
-    netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
+    netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources, NetworkConnectionTarget},
     Config, ConfigPlugin,
 };
 
@@ -26,6 +26,7 @@ const HEARTBEAT_TIMEOUT: u64 = 1000;
 #[derive(States, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 enum ServerState {
     #[default]
+    NotReady,
     Starting,
     Running,
 }
@@ -68,12 +69,14 @@ fn main() {
         .add_systems(
             Startup,
             (
+                add_network_connection_info_from_config,
+                |mut state: ResMut<NextState<ServerState>>| state.set(ServerState::Starting),
+            ),
+        )
+        .add_systems(
+            OnEnter(ServerState::Starting),
+            (
                 shared::netlib::setup_server::<EventToServer>,
-                //on_player_connect,
-                //tick_net_server,
-                //send_shooting_to_all_players,
-                //send_animations_to_all_players,
-                //send_movement_to_all_players,
                 |mut state: ResMut<NextState<ServerState>>| state.set(ServerState::Running),
             ),
         )
@@ -93,6 +96,16 @@ fn main() {
         );
 
     app.run();
+}
+
+fn add_network_connection_info_from_config(
+    config: Res<Config>,
+    mut commands: Commands,
+) {
+    commands.insert_resource(NetworkConnectionTarget {
+        ip: config.ip.clone(),
+        port: config.port,
+    });
 }
 
 fn on_player_connect(
