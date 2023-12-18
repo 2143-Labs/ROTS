@@ -35,6 +35,9 @@ pub struct EventFromEndpoint<E> {
     pub endpoint: Endpoint,
 }
 
+/// Event Reader with endpoint data.
+pub type ERFE<'w, 's, E> = EventReader<'w, 's, EventFromEndpoint<E>>;
+
 impl<E> EventFromEndpoint<E> {
     pub fn new(endpoint: Endpoint, e: E) -> Self {
         EventFromEndpoint { event: e, endpoint }

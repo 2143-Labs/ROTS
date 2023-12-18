@@ -1,5 +1,6 @@
 use bevy::{log::LogPlugin, prelude::*};
-use shared::{ConfigPlugin, netlib::EventToServer};
+use rand::Rng;
+use shared::{ConfigPlugin, netlib::{EventToServer, EventToClient, send_event_to_server, ServerResources}, Config, event::{ERFE, client::WorldData}};
 
 #[derive(States, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 enum ServerState {
@@ -15,6 +16,7 @@ fn main() {
     //let config = Config::load_from_main_dir();
     //let server = start_server(&config);
 
+    shared::event::server::register_events(&mut app);
     app.add_plugins(ConfigPlugin)
         //.insert_resource(EndpointToNetId::default())
         //.insert_resource(HeartbeatList::default())
@@ -30,14 +32,39 @@ fn main() {
                 //send_shooting_to_all_players,
                 //send_animations_to_all_players,
                 //send_movement_to_all_players,
+                |mut state: ResMut<NextState<ServerState>>| {
+                    state.set(ServerState::Running)
+                }
             ),
         )
         .add_systems(Update, (
-            shared::netlib::drain_events::<EventToServer>,
-        ));
+            shared::event::server::drain_events,
+            on_player_connect,
+        ).run_if(in_state(ServerState::Running)));
 
     app.run();
 }
+
+fn on_player_connect(
+    mut new_players: ERFE<shared::event::server::ConnectRequest>,
+    sr: Res<ServerResources<EventToServer>>,
+    _config: Res<Config>,
+) {
+
+    for player in new_players.read() {
+        info!(?player);
+        let name = player.event.name.clone().unwrap_or_else(|| {
+            format!("Player #{}", rand::thread_rng().gen_range(1..10000))
+        });
+        let event = EventToClient::WorldData(WorldData {
+            your_name: name,
+        });
+        send_event_to_server(&sr.handler, player.endpoint, &event);
+        info!(?event, ?player.endpoint, "Sent");
+    }
+}
+
+
 
 
 //fn start_server(config: &Config) -> ServerResources<EventToServer> {
