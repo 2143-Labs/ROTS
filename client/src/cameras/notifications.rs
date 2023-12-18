@@ -15,14 +15,12 @@ pub struct NotificationPlugin;
 
 impl Plugin for NotificationPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_event::<Notification>()
+        app.add_event::<Notification>()
             .insert_resource(NotificationResource::default())
             .add_systems(Startup, setup_panel)
             .add_systems(Update, notification_ui)
             .add_systems(Update, on_notification)
-            .add_systems(Update, delete_old_notifs)
-            ;
+            .add_systems(Update, delete_old_notifs);
     }
 }
 
@@ -31,15 +29,12 @@ pub struct NotificationResource {
     expired: Vec<Notification>,
 }
 
-fn notification_ui() {
-}
+fn notification_ui() {}
 
 #[derive(Component)]
 struct NotificationContainer;
 
-fn setup_panel(
-    mut commands: Commands,
-) {
+fn setup_panel(mut commands: Commands) {
     // setup a flexbox container for notifications
     commands.spawn((
         NodeBundle {
@@ -59,7 +54,6 @@ fn setup_panel(
         },
         NotificationContainer,
     ));
-
 }
 
 fn delete_old_notifs(
@@ -73,10 +67,10 @@ fn delete_old_notifs(
         if expire < &cur_time {
             // TODO: This crashes the game
             //match commands.get_entity(ent) {
-                //Some(mut e) => {
-                    //e.despawn();
-                //}
-                //None => {}
+            //Some(mut e) => {
+            //e.despawn();
+            //}
+            //None => {}
             //}
             expired.expired.push(Notification(text.clone()));
         }
@@ -88,7 +82,7 @@ fn on_notification(
     asset_server: Res<AssetServer>,
     parent: Query<Entity, With<NotificationContainer>>,
     mut er: EventReader<Notification>,
-    time: Res<Time>
+    time: Res<Time>,
 ) {
     for e in er.read() {
         info!("Got a notification... {}", e.0);
@@ -104,9 +98,7 @@ fn on_notification(
                     },
                 )
                 .with_text_alignment(TextAlignment::Right)
-                .with_style(Style {
-                    ..default()
-                }),
+                .with_style(Style { ..default() }),
                 NotificationElement(e.0.clone()),
                 NotificationExpiresAt(time.elapsed_seconds() + 0.5),
             ));

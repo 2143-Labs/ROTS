@@ -1,10 +1,10 @@
 pub mod cameras;
 pub mod menu;
+pub mod network;
 pub mod physics;
 pub mod player;
-pub mod states;
 pub mod skills;
-pub mod network;
+pub mod states;
 
 use bevy::{
     diagnostic::FrameTimeDiagnosticsPlugin,

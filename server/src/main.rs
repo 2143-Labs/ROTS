@@ -1,6 +1,10 @@
 use bevy::{log::LogPlugin, prelude::*};
 use rand::Rng;
-use shared::{ConfigPlugin, netlib::{EventToServer, EventToClient, send_event_to_server, ServerResources}, Config, event::{ERFE, client::WorldData}};
+use shared::{
+    event::{client::WorldData, ERFE},
+    netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
+    Config, ConfigPlugin,
+};
 
 #[derive(States, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 enum ServerState {
@@ -32,15 +36,14 @@ fn main() {
                 //send_shooting_to_all_players,
                 //send_animations_to_all_players,
                 //send_movement_to_all_players,
-                |mut state: ResMut<NextState<ServerState>>| {
-                    state.set(ServerState::Running)
-                }
+                |mut state: ResMut<NextState<ServerState>>| state.set(ServerState::Running),
             ),
         )
-        .add_systems(Update, (
-            shared::event::server::drain_events,
-            on_player_connect,
-        ).run_if(in_state(ServerState::Running)));
+        .add_systems(
+            Update,
+            (shared::event::server::drain_events, on_player_connect)
+                .run_if(in_state(ServerState::Running)),
+        );
 
     app.run();
 }
@@ -50,22 +53,18 @@ fn on_player_connect(
     sr: Res<ServerResources<EventToServer>>,
     _config: Res<Config>,
 ) {
-
     for player in new_players.read() {
         info!(?player);
-        let name = player.event.name.clone().unwrap_or_else(|| {
-            format!("Player #{}", rand::thread_rng().gen_range(1..10000))
-        });
-        let event = EventToClient::WorldData(WorldData {
-            your_name: name,
-        });
+        let name = player
+            .event
+            .name
+            .clone()
+            .unwrap_or_else(|| format!("Player #{}", rand::thread_rng().gen_range(1..10000)));
+        let event = EventToClient::WorldData(WorldData { your_name: name });
         send_event_to_server(&sr.handler, player.endpoint, &event);
         info!(?event, ?player.endpoint, "Sent");
     }
 }
-
-
-
 
 //fn start_server(config: &Config) -> ServerResources<EventToServer> {
 //let config = config.clone();
