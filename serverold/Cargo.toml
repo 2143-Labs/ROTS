@@ -1,0 +1,50 @@
+[package]
+name = "server"
+version = "0.1.0"
+authors = []
+edition = "2021"
+
+[dependencies.bevy]
+version = "0.12.0"
+default-features = false
+features = ["serialize"]
+
+[dependencies]
+serde_yaml = "0.9.27"
+serde_json = "1.0.108"
+serde = { version = "1.0.190", features = ["derive"] }
+rand = "0.8.5"
+message-io = "0.18.0"
+#bevy_egui = "0.2.0"
+shared = { path = "../shared" }
+
+[dev-dependencies]
+tungstenite = "0.20.1"
+
+
+# + [`LogPlugin`](https://docs.rs/bevy_log/0.10.1/bevy_log/struct.LogPlugin.html)
+# + [`TaskPoolPlugin`](https://docs.rs/bevy_core/0.10.1/bevy_core/struct.TaskPoolPlugin.html)
+# + [`TypeRegistrationPlugin`](https://docs.rs/bevy_core/0.10.1/bevy_core/struct.TypeRegistrationPlugin.html)
+# * [`FrameCountPlugin`](https://docs.rs/bevy_core/0.10.1/bevy_core/struct.FrameCountPlugin.html)
+# + [`TimePlugin`](https://docs.rs/bevy_time/0.10.1/bevy_time/struct.TimePlugin.html)
+# + [`TransformPlugin`](https://docs.rs/bevy_transform/0.10.1/bevy_transform/struct.TransformPlugin.html)
+# + [`HierarchyPlugin`](https://docs.rs/bevy_hierarchy/0.10.1/bevy_hierarchy/struct.HierarchyPlugin.html)
+# + [`DiagnosticsPlugin`](https://docs.rs/bevy_diagnostic/0.10.1/bevy_diagnostic/struct.DiagnosticsPlugin.html)
+# * [`InputPlugin`](https://docs.rs/bevy_input/0.10.1/bevy_input/struct.InputPlugin.html)
+# * [`WindowPlugin`](https://docs.rs/bevy_window/0.10.1/bevy_window/struct.WindowPlugin.html)
+# * [`AssetPlugin`](https://docs.rs/bevy_asset/0.10.1/bevy_asset/struct.AssetPlugin.html) - with feature `bevy_asset`
+# * [`DebugAssetPlugin`](crate::asset::debug_asset_server::DebugAssetServerPlugin) - with feature `debug_asset_server`
+# * [`ScenePlugin`](https://docs.rs/bevy_scene/0.10.1/bevy_scene/struct.ScenePlugin.html) - with feature `bevy_scene`
+# * [`WinitPlugin`](https://docs.rs/bevy_winit/0.10.1/bevy_winit/struct.WinitPlugin.html) - with feature `bevy_winit`
+# * [`RenderPlugin`](https://docs.rs/bevy_render/0.10.1/bevy_render/struct.RenderPlugin.html) - with feature `bevy_render`
+# * [`ImagePlugin`](https://docs.rs/bevy_render/0.10.1/bevy_render/texture/struct.ImagePlugin.html) - with feature `bevy_render`
+# * [`PipelinedRenderingPlugin`](https://docs.rs/bevy_render/0.10.1/bevy_render/pipelined_rendering/struct.PipelinedRenderingPlugin.html) - with feature `bevy_render` when not targeting `wasm32`
+# * [`CorePipelinePlugin`](https://docs.rs/bevy_core_pipeline/0.10.1/bevy_core_pipeline/struct.CorePipelinePlugin.html) - with feature `bevy_core_pipeline`
+# * [`SpritePlugin`](https://docs.rs/bevy_sprite/0.10.1/bevy_sprite/struct.SpritePlugin.html) - with feature `bevy_sprite`
+# * [`TextPlugin`](https://docs.rs/bevy_text/0.10.1/bevy_text/struct.TextPlugin.html) - with feature `bevy_text`
+# * [`UiPlugin`](https://docs.rs/bevy_ui/0.10.1/bevy_ui/struct.UiPlugin.html) - with feature `bevy_ui`
+# * [`PbrPlugin`](https://docs.rs/bevy_pbr/0.10.1/bevy_pbr/struct.PbrPlugin.html) - with feature `bevy_pbr`
+# * [`GltfPlugin`](https://docs.rs/bevy_gltf/0.10.1/bevy_gltf/struct.GltfPlugin.html) - with feature `bevy_gltf`
+# * [`AudioPlugin`](https://docs.rs/bevy_audio/0.10.1/bevy_audio/struct.AudioPlugin.html) - with feature `bevy_audio`
+# * [`GilrsPlugin`](https://docs.rs/bevy_gilrs/0.10.1/bevy_gilrs/struct.GilrsPlugin.html) - with feature `bevy_gilrs`
+# * [`AnimationPlugin`](https://docs.rs/bevy_animation/0.10.1/bevy_animation/struct.AnimationPlugin.html) - with feature `bevy_animation`

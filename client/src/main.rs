@@ -4,6 +4,7 @@ pub mod physics;
 pub mod player;
 pub mod states;
 pub mod skills;
+pub mod network;
 
 use bevy::{
     diagnostic::FrameTimeDiagnosticsPlugin,
@@ -50,6 +51,7 @@ fn main() {
             menu::MenuPlugin,
             physics::PhysPlugin,
             skills::SkillsPlugin,
+            network::NetworkingPlugin,
         ))
         .add_systems(Update, bevy::window::close_on_esc) // Close the window when you press escape
         .run();
