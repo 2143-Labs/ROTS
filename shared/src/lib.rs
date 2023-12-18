@@ -1,16 +1,11 @@
-use std::{
-    collections::HashMap,
-    env::current_dir,
-    fs::OpenOptions,
-};
+use std::{collections::HashMap, env::current_dir, fs::OpenOptions};
 
 use bevy::prelude::*;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-pub mod netlib;
 pub mod event;
-
+pub mod netlib;
 
 #[derive(Reflect, Hash, Eq, PartialEq, Clone, Deserialize, Serialize, Debug)]
 pub enum GameAction {

@@ -150,7 +150,6 @@ pub fn spawn_menu_scene(
         }),
         MenuItem,
     ));
-
 }
 
 fn _test_sub_render(
