@@ -3,15 +3,21 @@ use crate::netlib::ServerResources;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use super::NetEntId;
+
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
 pub struct WorldData {
-    // TODO
     pub your_name: String,
+    pub your_id: NetEntId,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
 pub struct PlayerConnected {
-    // TODO
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Event)]
+pub struct PlayerDisconnected {
+    pub id: NetEntId
 }
 
 include!(concat!(env!("OUT_DIR"), "/client_event.rs"));

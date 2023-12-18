@@ -90,7 +90,6 @@ pub fn on_node_event<T: NetworkingEvent>(res: &ServerResources<T>, event: NodeEv
         NetEvent::Connected(_, _) => info!("Network Connected"),
         NetEvent::Accepted(_endpoint, _listener) => info!("Connection Accepted"),
         NetEvent::Message(endpoint, data) => {
-            info!(?data, "res");
             let event = match postcard::from_bytes(data) {
                 Ok(e) => e,
                 Err(_) => {
@@ -102,6 +101,6 @@ pub fn on_node_event<T: NetworkingEvent>(res: &ServerResources<T>, event: NodeEv
 
             res.event_list.lock().unwrap().push(pair);
         }
-        NetEvent::Disconnected(_endpoint) => println!("Client disconnected"),
+        NetEvent::Disconnected(_endpoint) => warn!("Client disconnected"),
     }
 }
