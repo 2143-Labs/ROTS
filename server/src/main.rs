@@ -58,12 +58,13 @@ fn main() {
     let mut app = App::new();
 
     shared::event::server::register_events(&mut app);
-    app.add_plugins(ConfigPlugin)
+    app
         .insert_resource(EndpointToNetId::default())
         .insert_resource(HeartbeatList::default())
         .add_event::<PlayerDisconnect>()
         .add_plugins(MinimalPlugins)
         .add_plugins(LogPlugin::default())
+        .add_plugins(ConfigPlugin)
         .add_state::<ServerState>()
         .add_systems(
             Startup,
