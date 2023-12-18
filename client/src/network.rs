@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::states::GameState;
+use crate::{states::GameState, cameras::notifications::Notification};
 use bevy::{prelude::*, time::common_conditions::on_timer};
 use shared::{
     event::{
@@ -60,14 +60,19 @@ fn send_connect_packet(
     info!("Sent connection packet to {}", mse.0);
 }
 
-fn receive_world_data(mut world_data: ERFE<WorldData>, mut commands: Commands) {
+fn receive_world_data(mut world_data: ERFE<WorldData>, mut commands: Commands, mut notif: EventWriter<Notification>) {
     for event in world_data.read() {
         info!(?event, "Server has returned world data!");
+
         let my_name = &event.event.your_name;
         let my_id = event.event.your_id;
+        notif.send(Notification(format!("Connected to server as {my_name} {my_id:?}")));
+
         for other_player in &event.event.players {
+            notif.send(Notification(format!("Other Connected Players: {other_player:?}")));
             info!(?other_player);
         }
+
     }
 }
 
@@ -80,14 +85,16 @@ fn send_heartbeat(
     send_event_to_server(&sr.handler, mse.0, &event);
 }
 
-fn on_disconnect(mut dc_info: ERFE<PlayerDisconnected>) {
+fn on_disconnect(mut dc_info: ERFE<PlayerDisconnected>, mut notif: EventWriter<Notification>) {
     for event in dc_info.read() {
+        notif.send(Notification(format!("{:?}", event.event)));
         info!(?event);
     }
 }
 
-fn on_connect(mut c_info: ERFE<PlayerConnected>) {
+fn on_connect(mut c_info: ERFE<PlayerConnected>, mut notif: EventWriter<Notification>) {
     for event in c_info.read() {
+        notif.send(Notification(format!("{:?}", event.event)));
         info!(?event);
     }
 }

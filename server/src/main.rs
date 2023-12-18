@@ -182,7 +182,7 @@ fn check_heartbeats(
 fn on_player_disconnect(
     mut pd: EventReader<PlayerDisconnect>,
     clients: Query<(Entity, &PlayerEndpoint, &NetEntId), With<ConnectedPlayerName>>,
-    //mut commands: Commands,
+    mut commands: Commands,
     mut heartbeat_mapping: ResMut<HeartbeatList>,
     sr: Res<ServerResources<EventToServer>>,
 ) {
@@ -192,6 +192,9 @@ fn on_player_disconnect(
         let event = EventToClient::PlayerDisconnected(PlayerDisconnected { id: player.ent });
         for (_c_ent, c_net_client, _c_net_ent) in &clients {
             send_event_to_server(&sr.handler, c_net_client.0, &event);
+            if _c_net_ent == &player.ent {
+                commands.entity(_c_ent).despawn_recursive();
+            }
         }
     }
 }
