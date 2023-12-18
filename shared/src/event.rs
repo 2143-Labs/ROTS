@@ -2,6 +2,12 @@ use bevy::prelude::*;
 
 use message_io::network::Endpoint;
 use serde::{Deserialize, Serialize};
+
+
+pub mod client;
+pub mod server;
+
+
 #[derive(Debug, Clone, Copy, Component, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct NetEntId(pub u64);
 
@@ -28,6 +34,9 @@ pub struct EventFromEndpoint<E> {
     pub event: E,
     pub endpoint: Endpoint,
 }
+
+/// Event Reader with endpoint data.
+pub type ERFE<'w, 's, E> = EventReader<'w, 's, EventFromEndpoint<E>>;
 
 impl<E> EventFromEndpoint<E> {
     pub fn new(endpoint: Endpoint, e: E) -> Self {

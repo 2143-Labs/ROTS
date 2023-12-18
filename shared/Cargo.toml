@@ -32,3 +32,9 @@ postcard = { version = "1.0.8", features = ["use-std", "alloc"] }
 
 [dev-dependencies]
 tungstenite = "0.21.0"
+
+[build-dependencies]
+quote = "1.0.33"
+prettyplease = "0.2.15"
+regex = "1.10.2"
+syn = "2.0.41"

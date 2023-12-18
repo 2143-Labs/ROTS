@@ -15,31 +15,8 @@ pub struct ServerResources<T> {
 #[derive(Resource, Clone)]
 pub struct MainServerEndpoint(pub Endpoint);
 
-use crate::event;
-
-#[derive(Debug, Clone, Serialize, Deserialize, Event)]
-#[non_exhaustive]
-pub enum EventToClient {
-    Noop,
-    YouAre(event::PlayerInfo),
-    PlayerConnect(event::PlayerInfo),
-    PlayerList(Vec<event::PlayerInfo>),
-    UpdatePos(event::UpdatePos),
-    ShootBullet(event::ShootBullet),
-    Animation(event::Animation),
-    PlayerDisconnect(event::PlayerDisconnect),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Event)]
-#[non_exhaustive]
-pub enum EventToServer {
-    Noop,
-    Connect { name: Option<String> },
-    UpdatePos(Transform),
-    ShootBullet(event::BulletPhysics),
-    BeginAnimation(event::AnimationThing),
-    Heartbeat,
-}
+pub use crate::event::server::EventToServer;
+pub use crate::event::client::EventToClient;
 
 pub trait NetworkingEvent:
     Clone + Serialize + for<'de> Deserialize<'de> + Send + 'static + core::fmt::Debug
@@ -76,6 +53,7 @@ pub fn setup_shared<T: NetworkingEvent>(mut commands: Commands, config: Res<crat
         event_list: Default::default(),
     };
     commands.insert_resource(res.clone());
+    info!("Setup server resources for {}", std::any::type_name::<ServerResources::<T>>());
 
     let con_str = (&*config.ip, config.port);
     if is_listener {
@@ -105,11 +83,11 @@ pub fn on_node_event<T: NetworkingEvent>(res: &ServerResources<T>, event: NodeEv
         NetEvent::Connected(_, _) => info!("Network Connected"),
         NetEvent::Accepted(_endpoint, _listener) => info!("Connection Accepted"),
         NetEvent::Message(endpoint, data) => {
-            info!(data = ?data, "res");
+            info!(?data, "res");
             let event = match postcard::from_bytes(data) {
                 Ok(e) => e,
                 Err(_) => {
-                    warn!(endpoint = ?endpoint, "Got invalid json from endpoint");
+                    warn!(?endpoint, "Got invalid json from endpoint");
                     return;
                 }
             };
@@ -118,13 +96,5 @@ pub fn on_node_event<T: NetworkingEvent>(res: &ServerResources<T>, event: NodeEv
             res.event_list.lock().unwrap().push(pair);
         }
         NetEvent::Disconnected(_endpoint) => println!("Client disconnected"),
-    }
-}
-
-pub fn drain_events<T: NetworkingEvent>(sr: Res<ServerResources<T>>) {
-    let mut new_events = sr.event_list.lock().unwrap();
-    let new_events = std::mem::replace(new_events.as_mut(), vec![]);
-    for (_endpoint, event) in new_events {
-        dbg!(event);
     }
 }
