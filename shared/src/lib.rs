@@ -13,6 +13,16 @@ use message_io::{network::Endpoint, node::NodeHandler};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
+#[derive(Resource, Clone)]
+pub struct EventList<T: Clone> {
+    pub event_list: Arc<Mutex<Vec<(Endpoint, T)>>>,
+}
+
+#[derive(Resource, Clone)]
+pub struct ServerNodeHandler {
+    pub handler: NodeHandler<()>,
+}
+
 #[derive(Debug, Clone, Copy, Component, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct NetEntId(pub u64);
 

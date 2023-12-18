@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use serde::{Serialize, Deserialize};
 
+use super::NamedEvent;
+
 #[derive(Event, Serialize, Deserialize, Debug, Clone)]
 pub struct Req {
     pub name: Option<String>,

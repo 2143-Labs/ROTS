@@ -1,11 +1,11 @@
-use std::sync::{Arc, Mutex};
+use serde::{Serialize, de::DeserializeOwned};
 
 //use crate::{despawn_all_component, player::spawn_player_sprite, states::GameState};
 use bevy::prelude::*;
 
-use message_io::node::NodeHandler;
-use shared::Config;
-use shared::events::{self, init_msg_to_server, connect::ClientConnect};
+use shared::events::{NEC2S, ClientRequests};
+use shared::{Config, EventList, ServerNodeHandler};
+use shared::events::{self, connect::ClientConnect};
 
 use message_io::network::{Endpoint, NetEvent};
 
@@ -33,16 +33,6 @@ pub struct ServerEndpoints {
     pub main: Endpoint,
 }
 
-#[derive(Resource)]
-pub struct ServerHandler {
-    pub handler: NodeHandler<()>,
-}
-
-#[derive(Resource, Clone)]
-pub struct EventList<T: Clone> {
-    pub event_list: Arc<Mutex<Vec<(Endpoint, T)>>>,
-}
-
 #[derive(States, Clone, Hash, PartialEq, Eq, Debug, Default)]
 pub enum NetworkingState {
     #[default]
@@ -51,19 +41,54 @@ pub enum NetworkingState {
     Connected,
 }
 
+fn to_server_event_sender<T>(
+    mut events: EventReader<T>,
+    server_handlers: Res<ServerNodeHandler>,
+    server_endpoints: Res<ServerEndpoints>,
+) where T: Event + Serialize {
+    for _e in events.read() {
+        let event_json = serde_json::to_string(_e).unwrap();
+        server_handlers.handler.network().send(server_endpoints.main, event_json.as_bytes());
+        // serialize to json and write to socket
+    }
+}
+
+fn from_server_event_receiver<T>(
+    mut events: EventWriter<T>,
+    //
+) where T: Event + DeserializeOwned {
+    let json = "";
+    match serde_json::from_str(json) {
+        Ok(data) => events.send(data),
+        Err(_) => {}, // TODO
+    }
+}
+
+pub fn init_msg_to_server<N: NEC2S>(
+    app: &mut App,
+){
+    app.add_event::<N::ClientSend>();
+    app.add_event::<N::ServerResponse>();
+
+    app.add_systems(Update, to_server_event_sender::<N::ClientSend>.run_if(in_state(NetworkingState::Connecting)));
+    app.add_systems(Update, from_server_event_receiver::<N::ServerResponse>.run_if(in_state(NetworkingState::Connecting)));
+
+    // add to event checking loop
+}
+
 fn go_connect(
     config: Res<Config>,
     mut networking_state: ResMut<NextState<NetworkingState>>,
     mut commands: Commands,
 ) {
-    info!("trying_to_start_server");
+    info!("Trying to connect to server...");
     let (handler, listener) = message_io::node::split::<()>();
 
     let con_str = (&*config.ip, config.port);
 
     let (server, _) = handler
         .network()
-        .connect(message_io::network::Transport::Udp, con_str)
+        .connect(message_io::network::Transport::Tcp, con_str)
         .expect("Failed to connect ot server");
 
     info!("probably connected");
@@ -72,7 +97,7 @@ fn go_connect(
         event_list: Default::default(),
     };
 
-    let server_handler = ServerHandler {
+    let server_handler = ServerNodeHandler {
         handler: handler.clone(),
     };
 
@@ -101,13 +126,13 @@ fn go_connect(
 
 fn send_connect_packet(
     config: Res<Config>,
-    mut client_connect: EventWriter<events::connect::Req>,
+    mut client_connect: EventWriter<ClientRequests>,
 ) {
     let connect_event = events::connect::Req {
         name: config.name.clone(),
     };
 
-    client_connect.send(connect_event);
+    client_connect.send(ClientRequests::Connect(connect_event));
 
     info!("sent json");
 }
