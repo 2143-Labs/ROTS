@@ -3,7 +3,7 @@ use crate::netlib::ServerResources;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use super::{NetEntId, PlayerData, server::ChangeMovement};
+use super::{server::ChangeMovement, NetEntId, PlayerData};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
 pub struct WorldData {

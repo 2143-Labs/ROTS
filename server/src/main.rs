@@ -10,8 +10,8 @@ use message_io::network::Endpoint;
 use rand::Rng;
 use shared::{
     event::{
-        client::{PlayerConnected, PlayerDisconnected, WorldData, SomeoneMoved},
-        server::{Heartbeat, ChangeMovement},
+        client::{PlayerConnected, PlayerDisconnected, SomeoneMoved, WorldData},
+        server::{ChangeMovement, Heartbeat},
         NetEntId, PlayerData, ERFE,
     },
     netlib::{
