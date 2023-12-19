@@ -53,6 +53,7 @@ fn main() {
             skills::SkillsPlugin,
             network::NetworkingPlugin,
         ))
+        .add_plugins(bevy_inspector_egui::quick::WorldInspectorPlugin::new())
         .add_systems(Update, bevy::window::close_on_esc) // Close the window when you press escape
         .run();
 }

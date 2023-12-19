@@ -16,6 +16,7 @@ message-io = "0.18.0"
 shared = { path = "../shared" }
 bevy_xpbd_3d = "0.3.2"
 postcard = { version = "1.0.8", features = ["use-std", "alloc"] }
+bevy-inspector-egui = "0.21.0"
 
 #[features]
 #bevy_dynamic = ["bevy/dynamic_linking"]
