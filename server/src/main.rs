@@ -10,11 +10,14 @@ use message_io::network::Endpoint;
 use rand::Rng;
 use shared::{
     event::{
-        client::{PlayerConnected, PlayerDisconnected, WorldData},
-        server::Heartbeat,
+        client::{PlayerConnected, PlayerDisconnected, WorldData, SomeoneMoved},
+        server::{Heartbeat, ChangeMovement},
         NetEntId, PlayerData, ERFE,
     },
-    netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
+    netlib::{
+        send_event_to_server, EventToClient, EventToServer, NetworkConnectionTarget,
+        ServerResources,
+    },
     Config, ConfigPlugin,
 };
 
@@ -26,6 +29,7 @@ const HEARTBEAT_TIMEOUT: u64 = 1000;
 #[derive(States, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 enum ServerState {
     #[default]
+    NotReady,
     Starting,
     Running,
 }
@@ -58,22 +62,24 @@ fn main() {
     let mut app = App::new();
 
     shared::event::server::register_events(&mut app);
-    app.add_plugins(ConfigPlugin)
-        .insert_resource(EndpointToNetId::default())
+    app.insert_resource(EndpointToNetId::default())
         .insert_resource(HeartbeatList::default())
         .add_event::<PlayerDisconnect>()
         .add_plugins(MinimalPlugins)
         .add_plugins(LogPlugin::default())
+        .add_plugins(ConfigPlugin)
         .add_state::<ServerState>()
         .add_systems(
             Startup,
             (
+                add_network_connection_info_from_config,
+                |mut state: ResMut<NextState<ServerState>>| state.set(ServerState::Starting),
+            ),
+        )
+        .add_systems(
+            OnEnter(ServerState::Starting),
+            (
                 shared::netlib::setup_server::<EventToServer>,
-                //on_player_connect,
-                //tick_net_server,
-                //send_shooting_to_all_players,
-                //send_animations_to_all_players,
-                //send_movement_to_all_players,
                 |mut state: ResMut<NextState<ServerState>>| state.set(ServerState::Running),
             ),
         )
@@ -84,6 +90,7 @@ fn main() {
                 on_player_connect,
                 on_player_disconnect,
                 on_player_heartbeat,
+                on_movement,
             )
                 .run_if(in_state(ServerState::Running)),
         )
@@ -93,6 +100,13 @@ fn main() {
         );
 
     app.run();
+}
+
+fn add_network_connection_info_from_config(config: Res<Config>, mut commands: Commands) {
+    commands.insert_resource(NetworkConnectionTarget {
+        ip: config.ip.clone(),
+        port: config.port,
+    });
 }
 
 fn on_player_connect(
@@ -169,7 +183,7 @@ fn check_heartbeats(
 fn on_player_disconnect(
     mut pd: EventReader<PlayerDisconnect>,
     clients: Query<(Entity, &PlayerEndpoint, &NetEntId), With<ConnectedPlayerName>>,
-    //mut commands: Commands,
+    mut commands: Commands,
     mut heartbeat_mapping: ResMut<HeartbeatList>,
     sr: Res<ServerResources<EventToServer>>,
 ) {
@@ -179,6 +193,9 @@ fn on_player_disconnect(
         let event = EventToClient::PlayerDisconnected(PlayerDisconnected { id: player.ent });
         for (_c_ent, c_net_client, _c_net_ent) in &clients {
             send_event_to_server(&sr.handler, c_net_client.0, &event);
+            if _c_net_ent == &player.ent {
+                commands.entity(_c_ent).despawn_recursive();
+            }
         }
     }
 }
@@ -198,6 +215,28 @@ fn on_player_heartbeat(
             .get(id)
             .unwrap()
             .store(0, std::sync::atomic::Ordering::Release);
+    }
+}
+
+fn on_movement(
+    mut pd: ERFE<ChangeMovement>,
+    endpoint_mapping: Res<EndpointToNetId>,
+    clients: Query<(&PlayerEndpoint, &NetEntId), With<ConnectedPlayerName>>,
+    sr: Res<ServerResources<EventToServer>>,
+) {
+    for movement in pd.read() {
+        let moved_net_id = endpoint_mapping.map.get(&movement.endpoint).unwrap();
+
+        let event = EventToClient::SomeoneMoved(SomeoneMoved {
+            id: *moved_net_id,
+            movement: movement.event.clone(),
+        });
+
+        for (c_net_client, c_net_ent) in &clients {
+            if moved_net_id != c_net_ent {
+                send_event_to_server(&sr.handler, c_net_client.0, &event);
+            }
+        }
     }
 }
 

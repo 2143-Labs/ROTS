@@ -9,6 +9,9 @@ pub struct Player {
     pub lock_movement: [Option<Vec2>; 4],
 }
 
+#[derive(Reflect, Component)]
+pub struct PlayerName(pub String);
+
 impl Default for Player {
     fn default() -> Self {
         Self {

@@ -16,7 +16,7 @@ use super::MenuItem;
 #[derive(Component, Debug)]
 pub enum MenuButton {
     Connect,
-    CreateServer,
+    ConnectLocal,
     Quit,
 }
 
@@ -65,7 +65,7 @@ pub fn spawn_menu_scene(
         Name::new("Plane"),
         RigidBody::Static,
         Collider::cuboid(size, 0.002, size),
-        MenuItem,
+        //MenuItem, // TODO MenuItem
     ));
     //.with_children(|commands| {
     //commands.spawn((
@@ -92,7 +92,7 @@ pub fn spawn_menu_scene(
             ..Default::default()
         },
         Name::new("Sun"),
-        MenuItem,
+        //MenuItem, // TODO MenuItem
     ));
     // House
     commands
@@ -104,7 +104,7 @@ pub fn spawn_menu_scene(
                 ..default()
             },
             Name::new("House"),
-            MenuItem,
+            //MenuItem,
         ))
         .with_children(|commands| {
             commands.spawn((
@@ -119,7 +119,7 @@ pub fn spawn_menu_scene(
         &mut materials,
         &mut meshes,
     );
-    MenuButton::CreateServer.spawn(
+    MenuButton::ConnectLocal.spawn(
         Transform::from_xyz(3.0, 1.0, 0.0),
         &mut commands,
         &mut materials,

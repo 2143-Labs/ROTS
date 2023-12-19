@@ -15,6 +15,13 @@ pub struct ServerResources<T> {
 #[derive(Resource, Clone)]
 pub struct MainServerEndpoint(pub Endpoint);
 
+/// This type is only used for the inital connection, and then it is removed.
+#[derive(Resource)]
+pub struct NetworkConnectionTarget {
+    pub ip: String,
+    pub port: u16,
+}
+
 pub use crate::event::client::EventToClient;
 pub use crate::event::server::EventToServer;
 
@@ -35,17 +42,18 @@ pub fn send_event_to_server<T: NetworkingEvent>(
         .send(endpoint, &postcard::to_stdvec(&event).unwrap());
 }
 
-pub fn setup_server<T: NetworkingEvent>(commands: Commands, config: Res<crate::Config>) {
-    setup_shared::<T>(commands, config, true);
+pub fn setup_server<T: NetworkingEvent>(commands: Commands, config: Res<NetworkConnectionTarget>) {
+    setup_shared::<T>(commands, &config.ip, config.port, true);
 }
 
-pub fn setup_client<T: NetworkingEvent>(commands: Commands, config: Res<crate::Config>) {
-    setup_shared::<T>(commands, config, false);
+pub fn setup_client<T: NetworkingEvent>(commands: Commands, config: Res<NetworkConnectionTarget>) {
+    setup_shared::<T>(commands, &config.ip, config.port, false);
 }
 
 pub fn setup_shared<T: NetworkingEvent>(
     mut commands: Commands,
-    config: Res<crate::Config>,
+    ip: &str,
+    port: u16,
     is_listener: bool,
 ) {
     info!(is_listener, "Seting up networking!");
@@ -56,13 +64,17 @@ pub fn setup_shared<T: NetworkingEvent>(
         handler: handler.clone(),
         event_list: Default::default(),
     };
+
+    // insert the new endpoints and remove the connection data
     commands.insert_resource(res.clone());
+    commands.remove_resource::<NetworkConnectionTarget>();
+
     info!(
         "Setup server resources for {}",
         std::any::type_name::<ServerResources::<T>>()
     );
 
-    let con_str = (&*config.ip, config.port);
+    let con_str = (ip, port);
     if is_listener {
         let (_, addr) = handler.network().listen(Transport::Udp, con_str).unwrap();
         info!(?addr, "Listening")
