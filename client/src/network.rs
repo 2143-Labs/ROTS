@@ -45,7 +45,7 @@ impl Plugin for NetworkingPlugin {
         .add_systems(
             Update,
             send_movement
-                .run_if(on_timer(Duration::from_millis(100)))
+                .run_if(on_timer(Duration::from_millis(25)))
                 .run_if(in_state(GameState::ClientConnected)),
         )
         .add_systems(
@@ -110,10 +110,12 @@ fn send_heartbeat(
 fn send_movement(
     sr: Res<ServerResources<EventToClient>>,
     mse: Res<MainServerEndpoint>,
-    our_transform: Query<&Transform, With<Player>>,
+    our_transform: Query<&Transform, (With<Player>, Changed<Transform>)>,
 ) {
-    let event = EventToServer::ChangeMovement(ChangeMovement::SetTransform(our_transform.single().clone()));
-    send_event_to_server(&sr.handler, mse.0, &event);
+    if let Ok(transform) = our_transform.get_single() {
+        let event = EventToServer::ChangeMovement(ChangeMovement::SetTransform(transform.clone()));
+        send_event_to_server(&sr.handler, mse.0, &event);
+    }
 }
 
 fn on_disconnect(
