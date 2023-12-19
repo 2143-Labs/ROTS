@@ -19,8 +19,8 @@ fn main() {
     let mut app = App::new();
 
     let mut cursor = Cursor::default();
-    cursor.visible = false;
-    cursor.grab_mode = CursorGrabMode::Locked;
+    cursor.visible = true;
+    cursor.grab_mode = CursorGrabMode::None;
 
     let window = WindowPlugin {
         primary_window: Some(Window {
@@ -53,9 +53,21 @@ fn main() {
             skills::SkillsPlugin,
             network::NetworkingPlugin,
         ))
-        .add_plugins(bevy_inspector_egui::quick::WorldInspectorPlugin::new())
-        .add_systems(Update, bevy::window::close_on_esc) // Close the window when you press escape
-        .run();
+        .add_systems(Update, bevy::window::close_on_esc);// Close the window when you press escape
+
+    add_inspector(&mut app);
+
+    app.run();
+
+}
+
+#[cfg(feature = "inspector")]
+fn add_inspector(app: &mut App) {
+    app.add_plugins(bevy_inspector_egui::quick::WorldInspectorPlugin::new());
+}
+
+#[cfg(not(feature = "inspector"))]
+fn add_inspector(_: &mut App) {
 }
 
 pub fn despawn_all_component<T: Component>(items: Query<Entity, With<T>>, mut commands: Commands) {

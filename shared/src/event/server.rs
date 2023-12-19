@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
 pub struct ConnectRequest {
     pub name: Option<String>,
+    pub my_location: Transform,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]

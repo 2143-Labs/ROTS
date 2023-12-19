@@ -66,9 +66,12 @@ fn send_connect_packet(
     sr: Res<ServerResources<EventToClient>>,
     mse: Res<MainServerEndpoint>,
     config: Res<Config>,
+    local_player: Query<&Transform, With<Player>>,
 ) {
+    let my_location = *local_player.single();
     let event = EventToServer::ConnectRequest(ConnectRequest {
         name: config.name.clone(),
+        my_location,
     });
     send_event_to_server(&sr.handler, mse.0, &event);
     info!("Sent connection packet to {}", mse.0);
@@ -99,9 +102,7 @@ fn receive_world_data(
 
         for other_player_data in &event.event.players {
             notif.send(Notification(format!("Connected: {other_player_data:?}")));
-            spawn_player.send(SpawnOtherPlayer(PlayerConnected {
-                data: other_player_data.clone(),
-            }));
+            spawn_player.send(SpawnOtherPlayer(other_player_data.clone()));
             info!(?other_player_data);
         }
     }
@@ -204,7 +205,7 @@ fn spawn_player(
         let cube = PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
             material: materials.add(Color::rgb(0.4, 0.7, 0.1).into()),
-            transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
+            transform: event.initial_transform,
             ..Default::default()
         };
 
