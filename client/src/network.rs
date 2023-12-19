@@ -1,8 +1,8 @@
 use std::time::Duration;
 
 use crate::{
-    cameras::notifications::Notification,
-    player::{Player, PlayerName},
+    cameras::{notifications::Notification, thirdperson::PLAYER_SPEED},
+    player::{Player, PlayerName, MovementIntention},
     states::GameState,
 };
 use bevy::{prelude::*, time::common_conditions::on_timer};
@@ -43,13 +43,14 @@ impl Plugin for NetworkingPlugin {
                     on_disconnect,
                     on_someone_move,
                     spawn_player,
+                    go_movement_intents,
                 )
                     .run_if(in_state(GameState::ClientConnected)),
             )
             .add_systems(
                 Update,
                 send_movement
-                    .run_if(on_timer(Duration::from_millis(25)))
+                    .run_if(on_timer(Duration::from_millis(250)))
                     .run_if(in_state(GameState::ClientConnected)),
             )
             .add_systems(
@@ -114,9 +115,11 @@ fn send_heartbeat(sr: Res<ServerResources<EventToClient>>, mse: Res<MainServerEn
 fn send_movement(
     sr: Res<ServerResources<EventToClient>>,
     mse: Res<MainServerEndpoint>,
-    our_transform: Query<&Transform, (With<Player>, Changed<Transform>)>,
+    our_transform: Query<(&Transform, &MovementIntention), (With<Player>, Changed<Transform>)>,
 ) {
-    if let Ok(transform) = our_transform.get_single() {
+    if let Ok((transform, intent)) = our_transform.get_single() {
+        let event = EventToServer::ChangeMovement(ChangeMovement::Move2d(intent.0));
+        send_event_to_server(&sr.handler, mse.0, &event);
         let event = EventToServer::ChangeMovement(ChangeMovement::SetTransform(transform.clone()));
         send_event_to_server(&sr.handler, mse.0, &event);
     }
@@ -143,16 +146,32 @@ fn on_disconnect(
 
 fn on_someone_move(
     mut someone_moved: ERFE<SomeoneMoved>,
-    mut other_players: Query<(&NetEntId, &mut Transform), With<OtherPlayer>>,
+    mut other_players: Query<(&NetEntId, &mut Transform, &mut MovementIntention), With<OtherPlayer>>,
 ) {
     for movement in someone_moved.read() {
-        for (ply_net, mut ply_tfm) in &mut other_players {
+        info!(?movement);
+        for (ply_net, mut ply_tfm, mut ply_intent) in &mut other_players {
+            info!(?ply_net);
             if &movement.event.id == ply_net {
                 match movement.event.movement {
                     ChangeMovement::SetTransform(t) => *ply_tfm = t,
+                    ChangeMovement::StandStill => {
+                    },
+                    ChangeMovement::Move2d(intent) => {
+                        *ply_intent = MovementIntention(intent);
+                    },
                 }
             }
         }
+    }
+}
+
+fn go_movement_intents(
+    mut other_players: Query<(&mut Transform, &MovementIntention), With<OtherPlayer>>,
+    time: Res<Time>,
+) {
+    for (mut ply_tfm, ply_intent) in &mut other_players {
+        ply_tfm.translation += Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * PLAYER_SPEED * time.delta_seconds();
     }
 }
 
@@ -181,6 +200,7 @@ fn spawn_player(
             cube,
             OtherPlayer,
             PlayerName(event.data.name.clone()),
+            MovementIntention(Vec2::ZERO),
             Name::new(format!("Player: {}", event.data.name)),
             // their NetEntId is a component
             event.data.ent_id,

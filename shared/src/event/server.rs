@@ -14,6 +14,8 @@ pub struct Heartbeat {}
 /// walking and stuff
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
 pub enum ChangeMovement {
+    StandStill,
+    Move2d(Vec2),
     SetTransform(Transform),
 }
 

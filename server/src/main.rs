@@ -202,19 +202,16 @@ fn on_player_disconnect(
 
 fn on_player_heartbeat(
     mut pd: ERFE<Heartbeat>,
-    //clients: Query<(Entity, &PlayerEndpoint, &NetEntId), With<ConnectedPlayerName>>,
-    //mut commands: Commands,
     heartbeat_mapping: Res<HeartbeatList>,
     endpoint_mapping: Res<EndpointToNetId>,
-    //sr: Res<ServerResources<EventToServer>>,
 ) {
     for hb in pd.read() {
-        let id = endpoint_mapping.map.get(&hb.endpoint).unwrap();
-        heartbeat_mapping
-            .heartbeats
-            .get(id)
-            .unwrap()
-            .store(0, std::sync::atomic::Ordering::Release);
+        // TODO tryblocks?
+        if let Some(id) = endpoint_mapping.map.get(&hb.endpoint) {
+            if let Some(hb) = heartbeat_mapping.heartbeats.get(id) {
+                hb.store(0, std::sync::atomic::Ordering::Release);
+            }
+        }
     }
 }
 
@@ -225,16 +222,16 @@ fn on_movement(
     sr: Res<ServerResources<EventToServer>>,
 ) {
     for movement in pd.read() {
-        let moved_net_id = endpoint_mapping.map.get(&movement.endpoint).unwrap();
+        if let Some(moved_net_id) = endpoint_mapping.map.get(&movement.endpoint) {
+            let event = EventToClient::SomeoneMoved(SomeoneMoved {
+                id: *moved_net_id,
+                movement: movement.event.clone(),
+            });
 
-        let event = EventToClient::SomeoneMoved(SomeoneMoved {
-            id: *moved_net_id,
-            movement: movement.event.clone(),
-        });
-
-        for (c_net_client, c_net_ent) in &clients {
-            if moved_net_id != c_net_ent {
-                send_event_to_server(&sr.handler, c_net_client.0, &event);
+            for (c_net_client, c_net_ent) in &clients {
+                if moved_net_id != c_net_ent {
+                    send_event_to_server(&sr.handler, c_net_client.0, &event);
+                }
             }
         }
     }

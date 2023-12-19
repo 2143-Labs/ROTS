@@ -6,7 +6,7 @@ use bevy::{
 };
 use shared::{Config, GameAction};
 
-use crate::{physics::Jumper, player::Player};
+use crate::{physics::Jumper, player::{Player, MovementIntention}};
 
 use super::FreeCamState;
 
@@ -104,13 +104,13 @@ pub fn wow_camera_system(
 pub const PLAYER_SPEED: f32 = 5.;
 pub fn player_movement(
     _commands: Commands,
-    mut player_query: Query<(&mut Transform, Entity, &mut Jumper, &mut Player)>,
+    mut player_query: Query<(&mut Transform, Entity, &mut Jumper, &mut Player, &mut MovementIntention)>,
     camera_query: Query<&CameraFollow>,
     keyboard_input: Res<Input<KeyCode>>,
     config: Res<Config>,
     time: Res<Time>,
 ) {
-    for (mut transform, _player_ent, mut jumper, _player) in player_query.iter_mut() {
+    for (mut transform, _player_ent, mut jumper, _player, mut movement) in player_query.iter_mut() {
         let mut move_vector = Vec2::ZERO;
         if config.pressed(&keyboard_input, GameAction::MoveForward) {
             move_vector += Vec2::new(1.0, 0.0);
@@ -133,13 +133,16 @@ pub fn player_movement(
             }
         }
 
+        *movement = MovementIntention(move_vector);
         if move_vector.length_squared() > 0.0 {
             let camera = camera_query.single();
             let rotation = Vec2::from_angle(-camera.yaw_radians);
             let movem = move_vector.normalize().rotate(rotation);
+            *movement = MovementIntention(movem);
 
             transform.translation +=
                 Vec3::new(movem.x, 0.0, movem.y) * PLAYER_SPEED * time.delta_seconds();
         }
+
     }
 }
