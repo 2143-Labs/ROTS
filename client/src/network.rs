@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::{
     cameras::{notifications::Notification, thirdperson::PLAYER_SPEED},
-    player::{Player, PlayerName, MovementIntention},
+    player::{MovementIntention, Player, PlayerName},
     states::GameState,
 };
 use bevy::{prelude::*, time::common_conditions::on_timer};
@@ -155,7 +155,10 @@ fn on_disconnect(
 
 fn on_someone_move(
     mut someone_moved: ERFE<SomeoneMoved>,
-    mut other_players: Query<(&NetEntId, &mut Transform, &mut MovementIntention), With<OtherPlayer>>,
+    mut other_players: Query<
+        (&NetEntId, &mut Transform, &mut MovementIntention),
+        With<OtherPlayer>,
+    >,
 ) {
     for movement in someone_moved.read() {
         info!(?movement);
@@ -164,11 +167,10 @@ fn on_someone_move(
             if &movement.event.id == ply_net {
                 match movement.event.movement {
                     ChangeMovement::SetTransform(t) => *ply_tfm = t,
-                    ChangeMovement::StandStill => {
-                    },
+                    ChangeMovement::StandStill => {}
                     ChangeMovement::Move2d(intent) => {
                         *ply_intent = MovementIntention(intent);
-                    },
+                    }
                 }
             }
         }
@@ -180,7 +182,8 @@ fn go_movement_intents(
     time: Res<Time>,
 ) {
     for (mut ply_tfm, ply_intent) in &mut other_players {
-        ply_tfm.translation += Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * PLAYER_SPEED * time.delta_seconds();
+        ply_tfm.translation +=
+            Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * PLAYER_SPEED * time.delta_seconds();
     }
 }
 

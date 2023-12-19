@@ -6,7 +6,10 @@ use bevy::{
 };
 use shared::{Config, GameAction};
 
-use crate::{physics::Jumper, player::{Player, MovementIntention}};
+use crate::{
+    physics::Jumper,
+    player::{MovementIntention, Player},
+};
 
 use super::FreeCamState;
 
@@ -104,7 +107,13 @@ pub fn wow_camera_system(
 pub const PLAYER_SPEED: f32 = 5.;
 pub fn player_movement(
     _commands: Commands,
-    mut player_query: Query<(&mut Transform, Entity, &mut Jumper, &mut Player, &mut MovementIntention)>,
+    mut player_query: Query<(
+        &mut Transform,
+        Entity,
+        &mut Jumper,
+        &mut Player,
+        &mut MovementIntention,
+    )>,
     camera_query: Query<&CameraFollow>,
     keyboard_input: Res<Input<KeyCode>>,
     config: Res<Config>,
