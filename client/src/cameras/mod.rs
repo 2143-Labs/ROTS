@@ -1,5 +1,5 @@
 pub mod notifications;
-mod thirdperson;
+pub mod thirdperson;
 
 use bevy::{prelude::*, window::CursorGrabMode};
 use shared::Config;

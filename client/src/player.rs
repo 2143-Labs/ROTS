@@ -12,6 +12,9 @@ pub struct Player {
 #[derive(Reflect, Component)]
 pub struct PlayerName(pub String);
 
+#[derive(Component)]
+pub struct MovementIntention(pub Vec2);
+
 impl Default for Player {
     fn default() -> Self {
         Self {
@@ -41,6 +44,7 @@ pub fn spawn_player_sprite(
         Collider::cuboid(1., 1., 1.),
         cube,
         Name::new("Player"),
+        MovementIntention(Vec2::ZERO),
         Player::default(),
         crate::cameras::FaceCamera,
         crate::physics::Jumper {

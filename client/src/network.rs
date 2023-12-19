@@ -1,12 +1,16 @@
 use std::time::Duration;
 
-use crate::{states::GameState, cameras::notifications::Notification, player::{Player, PlayerName}};
+use crate::{
+    cameras::{notifications::Notification, thirdperson::PLAYER_SPEED},
+    player::{MovementIntention, Player, PlayerName},
+    states::GameState,
+};
 use bevy::{prelude::*, time::common_conditions::on_timer};
 use shared::{
     event::{
-        client::{PlayerConnected, PlayerDisconnected, WorldData, SomeoneMoved},
-        server::{ConnectRequest, Heartbeat, ChangeMovement},
-        ERFE, NetEntId,
+        client::{PlayerConnected, PlayerDisconnected, SomeoneMoved, WorldData},
+        server::{ChangeMovement, ConnectRequest, Heartbeat},
+        NetEntId, ERFE,
     },
     netlib::{
         send_event_to_server, setup_client, EventToClient, EventToServer, MainServerEndpoint,
@@ -21,39 +25,40 @@ impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
         shared::event::client::register_events(app);
         app.add_event::<SpawnOtherPlayer>()
-        .add_systems(
-            OnEnter(GameState::ClientConnecting),
-            (
-                // Setup the client and immediatly advance the state
-                setup_client::<EventToClient>,
-                |mut state: ResMut<NextState<GameState>>| state.set(GameState::ClientConnected),
-            ),
-        )
-        .add_systems(OnEnter(GameState::ClientConnected), (send_connect_packet,))
-        .add_systems(
-            Update,
-            (
-                shared::event::client::drain_events,
-                receive_world_data,
-                on_connect,
-                on_disconnect,
-                on_someone_move,
-                spawn_player,
+            .add_systems(
+                OnEnter(GameState::ClientConnecting),
+                (
+                    // Setup the client and immediatly advance the state
+                    setup_client::<EventToClient>,
+                    |mut state: ResMut<NextState<GameState>>| state.set(GameState::ClientConnected),
+                ),
             )
-                .run_if(in_state(GameState::ClientConnected)),
-        )
-        .add_systems(
-            Update,
-            send_movement
-                .run_if(on_timer(Duration::from_millis(25)))
-                .run_if(in_state(GameState::ClientConnected)),
-        )
-        .add_systems(
-            Update,
-            send_heartbeat
-                .run_if(on_timer(Duration::from_millis(200)))
-                .run_if(in_state(GameState::ClientConnected)),
-        );
+            .add_systems(OnEnter(GameState::ClientConnected), (send_connect_packet,))
+            .add_systems(
+                Update,
+                (
+                    shared::event::client::drain_events,
+                    receive_world_data,
+                    on_connect,
+                    on_disconnect,
+                    on_someone_move,
+                    spawn_player,
+                    go_movement_intents,
+                )
+                    .run_if(in_state(GameState::ClientConnected)),
+            )
+            .add_systems(
+                Update,
+                (send_movement, send_interp)
+                    .run_if(on_timer(Duration::from_millis(25)))
+                    .run_if(in_state(GameState::ClientConnected)),
+            )
+            .add_systems(
+                Update,
+                send_heartbeat
+                    .run_if(on_timer(Duration::from_millis(200)))
+                    .run_if(in_state(GameState::ClientConnected)),
+            );
     }
 }
 
@@ -88,23 +93,34 @@ fn receive_world_data(
             .insert(my_id)
             .insert(PlayerName(my_name.clone()));
 
-        notif.send(Notification(format!("Connected to server as {my_name} {my_id:?}")));
+        notif.send(Notification(format!(
+            "Connected to server as {my_name} {my_id:?}"
+        )));
 
         for other_player_data in &event.event.players {
             notif.send(Notification(format!("Connected: {other_player_data:?}")));
-            spawn_player.send(SpawnOtherPlayer(PlayerConnected { data: other_player_data.clone()}));
+            spawn_player.send(SpawnOtherPlayer(PlayerConnected {
+                data: other_player_data.clone(),
+            }));
             info!(?other_player_data);
         }
-
     }
 }
 
-fn send_heartbeat(
-    sr: Res<ServerResources<EventToClient>>,
-    mse: Res<MainServerEndpoint>,
-) {
+fn send_heartbeat(sr: Res<ServerResources<EventToClient>>, mse: Res<MainServerEndpoint>) {
     let event = EventToServer::Heartbeat(Heartbeat {});
     send_event_to_server(&sr.handler, mse.0, &event);
+}
+
+fn send_interp(
+    sr: Res<ServerResources<EventToClient>>,
+    mse: Res<MainServerEndpoint>,
+    our_transform: Query<&MovementIntention, (With<Player>, Changed<MovementIntention>)>,
+) {
+    if let Ok(intent) = our_transform.get_single() {
+        let event = EventToServer::ChangeMovement(ChangeMovement::Move2d(intent.0));
+        send_event_to_server(&sr.handler, mse.0, &event);
+    }
 }
 
 fn send_movement(
@@ -139,16 +155,35 @@ fn on_disconnect(
 
 fn on_someone_move(
     mut someone_moved: ERFE<SomeoneMoved>,
-    mut other_players: Query<(&NetEntId, &mut Transform), With<OtherPlayer>>,
+    mut other_players: Query<
+        (&NetEntId, &mut Transform, &mut MovementIntention),
+        With<OtherPlayer>,
+    >,
 ) {
     for movement in someone_moved.read() {
-        for (ply_net, mut ply_tfm) in &mut other_players {
+        info!(?movement);
+        for (ply_net, mut ply_tfm, mut ply_intent) in &mut other_players {
+            info!(?ply_net);
             if &movement.event.id == ply_net {
                 match movement.event.movement {
                     ChangeMovement::SetTransform(t) => *ply_tfm = t,
+                    ChangeMovement::StandStill => {}
+                    ChangeMovement::Move2d(intent) => {
+                        *ply_intent = MovementIntention(intent);
+                    }
                 }
             }
         }
+    }
+}
+
+fn go_movement_intents(
+    mut other_players: Query<(&mut Transform, &MovementIntention), With<OtherPlayer>>,
+    time: Res<Time>,
+) {
+    for (mut ply_tfm, ply_intent) in &mut other_players {
+        ply_tfm.translation +=
+            Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * PLAYER_SPEED * time.delta_seconds();
     }
 }
 
@@ -177,13 +212,13 @@ fn spawn_player(
             cube,
             OtherPlayer,
             PlayerName(event.data.name.clone()),
+            MovementIntention(Vec2::ZERO),
             Name::new(format!("Player: {}", event.data.name)),
             // their NetEntId is a component
             event.data.ent_id,
         ));
     }
 }
-
 
 fn on_connect(
     mut c_info: ERFE<PlayerConnected>,
