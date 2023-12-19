@@ -17,6 +17,8 @@ shared = { path = "../shared" }
 bevy_xpbd_3d = "0.3.2"
 postcard = { version = "1.0.8", features = ["use-std", "alloc"] }
 
-#[features]
-#bevy_dynamic = ["bevy/dynamic_linking"]
-#default = ["bevy_dynamic"]
+bevy-inspector-egui = { version = "0.21.0", optional = true }
+
+[features]
+inspector = ["dep:bevy-inspector-egui"]
+default = []

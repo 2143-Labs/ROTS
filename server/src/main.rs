@@ -113,7 +113,7 @@ fn on_player_connect(
     mut new_players: ERFE<shared::event::server::ConnectRequest>,
     mut heartbeat_mapping: ResMut<HeartbeatList>,
     mut endpoint_to_net_id: ResMut<EndpointToNetId>,
-    clients: Query<(Entity, &PlayerEndpoint, &NetEntId, &ConnectedPlayerName)>,
+    clients: Query<(&Transform, &PlayerEndpoint, &NetEntId, &ConnectedPlayerName)>,
     sr: Res<ServerResources<EventToServer>>,
     _config: Res<Config>,
     mut commands: Commands,
@@ -133,14 +133,18 @@ fn on_player_connect(
                 ent_id,
                 name: name.clone(),
             },
+            initial_transform: Transform::from_xyz(0.0, -20.0, 0.0),
         });
 
         // Tell all other clients, also get their names and IDs to send
         let mut connected_player_list = vec![];
-        for (_c_ent, c_net_client, _c_net_ent, cpn) in &clients {
-            connected_player_list.push(PlayerData {
-                name: cpn.name.clone(),
-                ent_id: *_c_net_ent,
+        for (c_tfm, c_net_client, c_net_ent, ConnectedPlayerName { name: c_name }) in &clients {
+            connected_player_list.push(PlayerConnected {
+                data: PlayerData {
+                    name: c_name.clone(),
+                    ent_id: *c_net_ent,
+                },
+                initial_transform: *c_tfm,
             });
             send_event_to_server(&sr.handler, c_net_client.0, &event);
         }
@@ -157,6 +161,8 @@ fn on_player_connect(
             ConnectedPlayerName { name },
             ent_id,
             PlayerEndpoint(player.endpoint),
+            // Transform component used for movement
+            player.event.my_location,
         ));
 
         heartbeat_mapping
@@ -218,7 +224,7 @@ fn on_player_heartbeat(
 fn on_movement(
     mut pd: ERFE<ChangeMovement>,
     endpoint_mapping: Res<EndpointToNetId>,
-    clients: Query<(&PlayerEndpoint, &NetEntId), With<ConnectedPlayerName>>,
+    mut clients: Query<(&PlayerEndpoint, &NetEntId, &mut Transform), With<ConnectedPlayerName>>,
     sr: Res<ServerResources<EventToServer>>,
 ) {
     for movement in pd.read() {
@@ -228,8 +234,15 @@ fn on_movement(
                 movement: movement.event.clone(),
             });
 
-            for (c_net_client, c_net_ent) in &clients {
-                if moved_net_id != c_net_ent {
+            for (c_net_client, c_net_ent, mut c_tfm) in &mut clients {
+                if moved_net_id == c_net_ent {
+                    // If this person moved, update their transform serverside
+                    match movement.event {
+                        ChangeMovement::SetTransform(new_tfm) => *c_tfm = new_tfm,
+                        _ => {}
+                    }
+                } else {
+                    // Else, just rebroadcast the packet to everyone else
                     send_event_to_server(&sr.handler, c_net_client.0, &event);
                 }
             }
