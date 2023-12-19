@@ -49,8 +49,8 @@ impl Plugin for NetworkingPlugin {
             )
             .add_systems(
                 Update,
-                send_movement
-                    .run_if(on_timer(Duration::from_millis(250)))
+                (send_movement, send_interp)
+                    .run_if(on_timer(Duration::from_millis(25)))
                     .run_if(in_state(GameState::ClientConnected)),
             )
             .add_systems(
@@ -112,14 +112,23 @@ fn send_heartbeat(sr: Res<ServerResources<EventToClient>>, mse: Res<MainServerEn
     send_event_to_server(&sr.handler, mse.0, &event);
 }
 
+fn send_interp(
+    sr: Res<ServerResources<EventToClient>>,
+    mse: Res<MainServerEndpoint>,
+    our_transform: Query<&MovementIntention, (With<Player>, Changed<MovementIntention>)>,
+) {
+    if let Ok(intent) = our_transform.get_single() {
+        let event = EventToServer::ChangeMovement(ChangeMovement::Move2d(intent.0));
+        send_event_to_server(&sr.handler, mse.0, &event);
+    }
+}
+
 fn send_movement(
     sr: Res<ServerResources<EventToClient>>,
     mse: Res<MainServerEndpoint>,
-    our_transform: Query<(&Transform, &MovementIntention), (With<Player>, Changed<Transform>)>,
+    our_transform: Query<&Transform, (With<Player>, Changed<Transform>)>,
 ) {
-    if let Ok((transform, intent)) = our_transform.get_single() {
-        let event = EventToServer::ChangeMovement(ChangeMovement::Move2d(intent.0));
-        send_event_to_server(&sr.handler, mse.0, &event);
+    if let Ok(transform) = our_transform.get_single() {
         let event = EventToServer::ChangeMovement(ChangeMovement::SetTransform(transform.clone()));
         send_event_to_server(&sr.handler, mse.0, &event);
     }

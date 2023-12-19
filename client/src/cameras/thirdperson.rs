@@ -133,16 +133,22 @@ pub fn player_movement(
             }
         }
 
-        *movement = MovementIntention(move_vector);
-        if move_vector.length_squared() > 0.0 {
+        let final_move = if move_vector.length_squared() > 0.0 {
             let camera = camera_query.single();
             let rotation = Vec2::from_angle(-camera.yaw_radians);
             let movem = move_vector.normalize().rotate(rotation);
-            *movement = MovementIntention(movem);
 
             transform.translation +=
                 Vec3::new(movem.x, 0.0, movem.y) * PLAYER_SPEED * time.delta_seconds();
-        }
 
+            movem
+        } else {
+            move_vector
+        };
+
+        // only change this if we have to. This will trigger a packet to be sent
+        if movement.0 != final_move {
+            movement.0 = final_move;
+        }
     }
 }
