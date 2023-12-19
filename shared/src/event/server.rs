@@ -13,6 +13,8 @@ pub struct Heartbeat {}
 
 /// walking and stuff
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
-pub struct ChangeMovement {}
+pub enum ChangeMovement {
+    SetTransform(Transform),
+}
 
 include!(concat!(env!("OUT_DIR"), "/server_event.rs"));

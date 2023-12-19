@@ -74,7 +74,7 @@ struct GenerateRequest<'a> {
 }
 
 fn main() {
-    let r = Regex::new(r#"struct (\w+?) \{"#).unwrap();
+    let r = Regex::new(r#"(?:struct|enum) (\w+?) \{"#).unwrap();
     generate_systems(GenerateRequest {
         source: "src/event/client.rs",
         output_filename: "./client_event.rs",

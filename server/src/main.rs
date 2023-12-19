@@ -10,8 +10,8 @@ use message_io::network::Endpoint;
 use rand::Rng;
 use shared::{
     event::{
-        client::{PlayerConnected, PlayerDisconnected, WorldData},
-        server::Heartbeat,
+        client::{PlayerConnected, PlayerDisconnected, WorldData, SomeoneMoved},
+        server::{Heartbeat, ChangeMovement},
         NetEntId, PlayerData, ERFE,
     },
     netlib::{
@@ -90,6 +90,7 @@ fn main() {
                 on_player_connect,
                 on_player_disconnect,
                 on_player_heartbeat,
+                on_movement,
             )
                 .run_if(in_state(ServerState::Running)),
         )
@@ -214,6 +215,28 @@ fn on_player_heartbeat(
             .get(id)
             .unwrap()
             .store(0, std::sync::atomic::Ordering::Release);
+    }
+}
+
+fn on_movement(
+    mut pd: ERFE<ChangeMovement>,
+    endpoint_mapping: Res<EndpointToNetId>,
+    clients: Query<(&PlayerEndpoint, &NetEntId), With<ConnectedPlayerName>>,
+    sr: Res<ServerResources<EventToServer>>,
+) {
+    for movement in pd.read() {
+        let moved_net_id = endpoint_mapping.map.get(&movement.endpoint).unwrap();
+
+        let event = EventToClient::SomeoneMoved(SomeoneMoved {
+            id: *moved_net_id,
+            movement: movement.event.clone(),
+        });
+
+        for (c_net_client, c_net_ent) in &clients {
+            if moved_net_id != c_net_ent {
+                send_event_to_server(&sr.handler, c_net_client.0, &event);
+            }
+        }
     }
 }
 

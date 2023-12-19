@@ -4,8 +4,8 @@ use crate::{states::GameState, cameras::notifications::Notification, player::{Pl
 use bevy::{prelude::*, time::common_conditions::on_timer};
 use shared::{
     event::{
-        client::{PlayerConnected, PlayerDisconnected, WorldData},
-        server::{ConnectRequest, Heartbeat},
+        client::{PlayerConnected, PlayerDisconnected, WorldData, SomeoneMoved},
+        server::{ConnectRequest, Heartbeat, ChangeMovement},
         ERFE, NetEntId,
     },
     netlib::{
@@ -37,8 +37,15 @@ impl Plugin for NetworkingPlugin {
                 receive_world_data,
                 on_connect,
                 on_disconnect,
+                on_someone_move,
                 spawn_player,
             )
+                .run_if(in_state(GameState::ClientConnected)),
+        )
+        .add_systems(
+            Update,
+            send_movement
+                .run_if(on_timer(Duration::from_millis(100)))
                 .run_if(in_state(GameState::ClientConnected)),
         )
         .add_systems(
@@ -100,6 +107,15 @@ fn send_heartbeat(
     send_event_to_server(&sr.handler, mse.0, &event);
 }
 
+fn send_movement(
+    sr: Res<ServerResources<EventToClient>>,
+    mse: Res<MainServerEndpoint>,
+    our_transform: Query<&Transform, With<Player>>,
+) {
+    let event = EventToServer::ChangeMovement(ChangeMovement::SetTransform(our_transform.single().clone()));
+    send_event_to_server(&sr.handler, mse.0, &event);
+}
+
 fn on_disconnect(
     mut dc_info: ERFE<PlayerDisconnected>,
     mut notif: EventWriter<Notification>,
@@ -116,6 +132,21 @@ fn on_disconnect(
             }
         }
         info!(?disconnected_ent_id);
+    }
+}
+
+fn on_someone_move(
+    mut someone_moved: ERFE<SomeoneMoved>,
+    mut other_players: Query<(&NetEntId, &mut Transform), With<OtherPlayer>>,
+) {
+    for movement in someone_moved.read() {
+        for (ply_net, mut ply_tfm) in &mut other_players {
+            if &movement.event.id == ply_net {
+                match movement.event.movement {
+                    ChangeMovement::SetTransform(t) => *ply_tfm = t,
+                }
+            }
+        }
     }
 }
 
