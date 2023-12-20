@@ -60,12 +60,11 @@ fn main() {
             skills::SkillsPlugin,
             network::NetworkingPlugin,
         ))
-        .add_systems(Update, bevy::window::close_on_esc);// Close the window when you press escape
+        .add_systems(Update, bevy::window::close_on_esc); // Close the window when you press escape
 
     add_inspector(&mut app);
 
     app.run();
-
 }
 
 #[cfg(feature = "inspector")]
@@ -74,8 +73,7 @@ fn add_inspector(app: &mut App) {
 }
 
 #[cfg(not(feature = "inspector"))]
-fn add_inspector(_: &mut App) {
-}
+fn add_inspector(_: &mut App) {}
 
 pub fn despawn_all_component<T: Component>(items: Query<Entity, With<T>>, mut commands: Commands) {
     for item in &items {

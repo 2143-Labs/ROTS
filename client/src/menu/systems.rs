@@ -1,9 +1,9 @@
-use std::{net::{SocketAddr}};
+use std::net::SocketAddr;
 
 use bevy::{ecs::query::QuerySingleError, prelude::*};
 use shared::{netlib::NetworkConnectionTarget, Config};
 
-use crate::{player::Player, states::GameState, cli::CliArgs};
+use crate::{cli::CliArgs, player::Player, states::GameState};
 
 use super::scene::{MenuButton, SelectedButton};
 
@@ -15,21 +15,19 @@ pub fn check_autoconnect_cli(
 ) {
     let target = match &*args.autoconnect {
         "" => return,
-        "main" => {
-            NetworkConnectionTarget {
-                ip: "john2143.com".into(),
-                port: 25565,
-            }
+        "main" => NetworkConnectionTarget {
+            ip: "john2143.com".into(),
+            port: 25565,
         },
-        "local" => {
-            NetworkConnectionTarget {
-                ip: config.ip.clone(),
-                port: config.port,
-            }
+        "local" => NetworkConnectionTarget {
+            ip: config.ip.clone(),
+            port: config.port,
         },
         other => {
             // Split this into ip and port and then connect
-            let addr: SocketAddr = other.parse().expect("--autoconnect was given an invalid ip and port to connect to");
+            let addr: SocketAddr = other
+                .parse()
+                .expect("--autoconnect was given an invalid ip and port to connect to");
 
             NetworkConnectionTarget {
                 ip: addr.ip().to_string(),
@@ -38,7 +36,10 @@ pub fn check_autoconnect_cli(
         }
     };
 
-    info!(?target, "Using --autoconnect command line argument to setup connection.");
+    info!(
+        ?target,
+        "Using --autoconnect command line argument to setup connection."
+    );
 
     commands.insert_resource(target);
     game_state.set(GameState::ClientConnecting);
