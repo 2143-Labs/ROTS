@@ -1,9 +1,48 @@
+use std::{ops::Yeet, net::{IpAddr, SocketAddr}};
+
 use bevy::{ecs::query::QuerySingleError, prelude::*};
 use shared::{netlib::NetworkConnectionTarget, Config};
 
-use crate::{player::Player, states::GameState};
+use crate::{player::Player, states::GameState, cli::CliArgs};
 
 use super::scene::{MenuButton, SelectedButton};
+
+pub fn check_autoconnect_cli(
+    args: Res<CliArgs>,
+    config: Res<Config>,
+    mut commands: Commands,
+    mut game_state: ResMut<NextState<GameState>>,
+) {
+    let target = match &*args.autoconnect {
+        "" => return,
+        "main" => {
+            NetworkConnectionTarget {
+                ip: "john2143.com".into(),
+                port: 25565,
+            }
+        },
+        "local" => {
+            NetworkConnectionTarget {
+                ip: config.ip.clone(),
+                port: config.port,
+            }
+        },
+        other => {
+            // Split this into ip and port and then connect
+            let addr: SocketAddr = other.parse().expect("--autoconnect was given an invalid ip and port to connect to");
+
+            NetworkConnectionTarget {
+                ip: addr.ip().to_string(),
+                port: addr.port(),
+            }
+        }
+    };
+
+    info!(?target, "Using --autoconnect command line argument to setup connection.");
+
+    commands.insert_resource(target);
+    game_state.set(GameState::ClientConnecting);
+}
 
 pub fn menu_select(
     keyboard_input: Res<Input<KeyCode>>,

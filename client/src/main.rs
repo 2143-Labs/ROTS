@@ -1,3 +1,4 @@
+#![feature(try_trait_v2_yeet)]
 pub mod cameras;
 pub mod menu;
 pub mod network;
@@ -6,11 +7,14 @@ pub mod player;
 pub mod skills;
 pub mod states;
 
+mod cli;
+
 use bevy::{
     diagnostic::FrameTimeDiagnosticsPlugin,
     prelude::*,
     window::{Cursor, CursorGrabMode},
 };
+use clap::Parser;
 
 pub const HEIGHT: f32 = 720.0;
 pub const WIDTH: f32 = 1280.0;
@@ -21,6 +25,8 @@ fn main() {
     let mut cursor = Cursor::default();
     cursor.visible = true;
     cursor.grab_mode = CursorGrabMode::None;
+
+    let args = cli::CliArgs::parse();
 
     let window = WindowPlugin {
         primary_window: Some(Window {
@@ -37,7 +43,8 @@ fn main() {
         ..default()
     };
 
-    app.insert_resource(ClearColor(Color::hex("212121").unwrap()))
+    app.insert_resource(args)
+        .insert_resource(ClearColor(Color::hex("212121").unwrap()))
         .add_plugins((FrameTimeDiagnosticsPlugin,))
         // .add_plugin(RapierDebugRenderPlugin::default())
         .add_plugins((
