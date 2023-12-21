@@ -58,9 +58,19 @@ fn main() {
         .add_systems(Update, bevy::window::close_on_esc); // Close the window when you press escape
 
     add_inspector(&mut app);
+    dump_schedules(&mut app);
 
     app.run();
 }
+
+#[cfg(feature = "debug_map")]
+fn dump_schedules(app: &mut App) {
+    bevy_mod_debugdump::print_schedule_graph(&mut app, Startup);
+    bevy_mod_debugdump::print_schedule_graph(&mut app, Update);
+}
+
+#[cfg(not(feature = "debug_map"))]
+fn dump_schedules(_: &mut App) {}
 
 #[cfg(feature = "inspector")]
 fn add_inspector(app: &mut App) {
