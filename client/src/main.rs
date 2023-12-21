@@ -5,6 +5,7 @@ pub mod physics;
 pub mod player;
 pub mod skills;
 pub mod states;
+pub mod worldgen;
 
 use bevy::{
     diagnostic::FrameTimeDiagnosticsPlugin,
@@ -49,16 +50,16 @@ fn main() {
             shared::ConfigPlugin,
             states::StatePlugin,
             menu::MenuPlugin,
-            physics::PhysPlugin,
+            // physics::PhysPlugin,
             skills::SkillsPlugin,
             network::NetworkingPlugin,
+            worldgen::WorldGenPlugin,
         ))
-        .add_systems(Update, bevy::window::close_on_esc);// Close the window when you press escape
+        .add_systems(Update, bevy::window::close_on_esc); // Close the window when you press escape
 
     add_inspector(&mut app);
 
     app.run();
-
 }
 
 #[cfg(feature = "inspector")]
@@ -67,8 +68,7 @@ fn add_inspector(app: &mut App) {
 }
 
 #[cfg(not(feature = "inspector"))]
-fn add_inspector(_: &mut App) {
-}
+fn add_inspector(_: &mut App) {}
 
 pub fn despawn_all_component<T: Component>(items: Query<Entity, With<T>>, mut commands: Commands) {
     for item in &items {

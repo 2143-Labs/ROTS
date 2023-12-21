@@ -9,7 +9,7 @@ use bevy::{
         },
     },
 };
-use bevy_xpbd_3d::prelude::{Collider, RigidBody};
+use bevy_xpbd_3d::prelude::RigidBody;
 
 use super::MenuItem;
 
@@ -52,25 +52,23 @@ pub fn spawn_menu_scene(
 ) {
     let size = 30.;
     // Ground
-    commands.spawn((
-        PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane {
-                size: size * 2.0,
-                subdivisions: 10,
-            })),
-            material: materials.add(Color::hex("#1f7840").unwrap().into()),
-            transform: Transform::from_xyz(0.0, -0.01, 0.0),
-            ..default()
-        },
-        Name::new("Plane"),
-        RigidBody::Static,
-        Collider::cuboid(size, 0.002, size),
-        //MenuItem, // TODO MenuItem
-    ));
+    // commands.spawn((
+    //     PbrBundle {
+    //         mesh: meshes.add(Mesh::from(shape::Plane {
+    //             size: size * 2.0,
+    //             subdivisions: 10,
+    //         })),
+    //         material: materials.add(Color::hex("#1f7840").unwrap().into()),
+    //         transform: Transform::from_xyz(0.0, -0.01, 0.0),
+    //         ..default()
+    //     },
+    //     Name::new("Plane"),
+    //     RigidBody::Static,
+    //     //MenuItem, // TODO MenuItem
+    // ));
     //.with_children(|commands| {
     //commands.spawn((
     //Collider::cuboid(size, 1., size),
-    //Name::new("PlaneCollider"),
     //TransformBundle::from(Transform::from_xyz(0., -1., 0.)),
     //));
     //});

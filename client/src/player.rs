@@ -1,12 +1,15 @@
 use bevy::prelude::*;
 use bevy_xpbd_3d::prelude::{Collider, RigidBody};
 
+use crate::worldgen::ChunkPos;
+
 #[derive(Reflect, Component)]
 pub struct Player {
     pub looking_at: Vec3,
     pub facing_vel: f32,
     pub velocity: Vec3,
     pub lock_movement: [Option<Vec2>; 4],
+    pub current_chunk: ChunkPos,
 }
 
 #[derive(Reflect, Component)]
@@ -23,6 +26,7 @@ impl Default for Player {
             facing_vel: 0.,
             velocity: Vec3::ZERO,
             lock_movement: [None; 4],
+            current_chunk: ChunkPos(0, 0, 0),
         }
     }
 }
