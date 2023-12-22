@@ -13,17 +13,18 @@ pub fn check_autoconnect_cli(
     mut commands: Commands,
     mut game_state: ResMut<NextState<GameState>>,
 ) {
-    let target = match &*args.autoconnect {
-        "" => return,
-        "main" => NetworkConnectionTarget {
+    let target = match args.autoconnect.as_deref() {
+        None => return,
+        Some("") => return,
+        Some("main") => NetworkConnectionTarget {
             ip: "john2143.com".into(),
             port: 25565,
         },
-        "local" => NetworkConnectionTarget {
+        Some("local") => NetworkConnectionTarget {
             ip: config.ip.clone(),
             port: config.port,
         },
-        other => {
+        Some(other) => {
             // Split this into ip and port and then connect
             let addr: SocketAddr = other
                 .parse()
