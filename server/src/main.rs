@@ -24,7 +24,7 @@ use shared::{
 /// How often to run the system
 const HEARTBEAT_MILLIS: u64 = 200;
 /// How long until disconnect
-const HEARTBEAT_TIMEOUT: u64 = 1000;
+const HEARTBEAT_TIMEOUT: u64 = 3000;
 
 #[derive(States, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 enum ServerState {
@@ -44,18 +44,21 @@ struct EndpointToNetId {
     map: HashMap<Endpoint, NetEntId>,
 }
 
-#[derive(Component)]
+#[derive(Debug, Component)]
 struct ConnectedPlayerName {
     pub name: String,
 }
 
-#[derive(Component)]
+#[derive(Debug, Component)]
 struct PlayerEndpoint(Endpoint);
 
 #[derive(Event)]
 struct PlayerDisconnect {
     ent: NetEntId,
 }
+
+pub mod casting_spells;
+pub mod player_stats;
 
 fn main() {
     info!("Main Start");
@@ -67,7 +70,11 @@ fn main() {
         .add_event::<PlayerDisconnect>()
         .add_plugins(MinimalPlugins)
         .add_plugins(LogPlugin::default())
-        .add_plugins(ConfigPlugin)
+        .add_plugins((
+            ConfigPlugin,
+            casting_spells::CastingPlugin,
+            //StatusPlugin,
+        ))
         .add_state::<ServerState>()
         .add_systems(
             Startup,

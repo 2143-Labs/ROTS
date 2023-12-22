@@ -14,6 +14,7 @@ pub struct ChunkPos(pub i32, pub i32, pub i32);
 
 #[derive(Resource)]
 pub struct World {
+    // TODO make these entities with a ChunkPos component
     chunks: HashMap<ChunkPos, Entity>,
 }
 
@@ -49,12 +50,13 @@ fn init_mats(
     world.material_purp = materials.add(Color::rgb(0.5, 0.0, 0.5).into());
     world.mesh = meshes.add(Mesh::from(shape::Plane {
         size: CHUNK_SIZE as f32,
-        subdivisions: 10,
+        subdivisions: 0,
     }));
 }
+
 fn update_chunks(
     mut commands: Commands,
-    mut player_query: Query<(&mut Transform, Entity, &mut Player)>,
+    mut player_query: Query<(&Transform, Entity, &mut Player), Changed<Transform>>,
     mut world: ResMut<World>,
     world_assets: Res<WorldMaterialAssets>,
 ) {
@@ -69,6 +71,7 @@ fn update_chunks(
         if _player.current_chunk == player_chunk_pos {
             continue;
         };
+        //info!("Recalculating chunks");
         _player.current_chunk = player_chunk_pos;
         // let player_chunk_pos = transform.translation().truncate() / CHUNK_SIZE;
         let player_chunk_pos = Vec3::new(

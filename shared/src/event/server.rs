@@ -12,6 +12,9 @@ pub struct ConnectRequest {
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
 pub struct Heartbeat {}
 
+#[derive(Debug, Clone, Serialize, Deserialize, Event)]
+pub struct Cast {}
+
 /// walking and stuff
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
 pub enum ChangeMovement {

@@ -1,6 +1,14 @@
 use bevy::prelude::*;
-use shared::Config;
+use shared::event::server::ChangeMovement;
+use shared::netlib::EventToClient;
+use shared::netlib::EventToServer;
+use shared::{
+    event::server::Cast,
+    netlib::{send_event_to_server, MainServerEndpoint, ServerResources},
+    Config,
+};
 
+use crate::states::GameState;
 use crate::{cameras::notifications::Notification, player::Player};
 
 pub struct SkillsPlugin;
@@ -13,14 +21,16 @@ impl Plugin for SkillsPlugin {
         )
         .add_systems(
             Update,
-            (start_local_skill_cast_animation, send_network_packet),
+            (start_local_skill_cast_animation,),
+        )
+        .add_systems(
+            Update,
+            (send_network_packet)
+                    .run_if(in_state(GameState::ClientConnected)),
         )
         .add_event::<StartAnimation>();
     }
 }
-
-#[derive(Debug, Clone)]
-struct SkillData;
 
 pub type GameTime = f64;
 
@@ -37,7 +47,7 @@ impl Actions {
 }
 
 #[derive(Event, Debug)]
-struct StartAnimation(SkillData);
+struct StartAnimation(Cast);
 
 /// Run condition that returns true if this keycode was just pressed
 const fn just_pressed(ga: shared::GameAction) -> impl Fn(Res<Input<KeyCode>>, Res<Config>) -> bool {
@@ -66,22 +76,33 @@ fn cast_skills(
         }
     }
 
-    ev_sa.send(StartAnimation(SkillData));
+    ev_sa.send(StartAnimation(Cast {}));
 }
 
-fn start_local_skill_cast_animation(mut ev_sa: EventReader<StartAnimation>) {
-    for _ev in ev_sa.read() {}
+fn start_local_skill_cast_animation(
+    mut ev_sa: EventReader<StartAnimation>,
+    //our_transform: Query<Entity, With<Player>>,
+    //mut commands: Commands,
+) {
+    for _ev in ev_sa.read() {
+        //commands.entity(our_transform.single()).insert(bundle);
+    }
 }
 
 fn send_network_packet(
     mut ev_sa: EventReader<StartAnimation>,
     mut ev_notif: EventWriter<Notification>,
+    sr: Res<ServerResources<EventToClient>>,
+    mse: Res<MainServerEndpoint>,
 ) {
+    // TODO NETWORK PACKET ACTUALLY SENT IN START_LOCAL_SKILL_CAST_ANIMATION
     for ev in ev_sa.read() {
         ev_notif.send(Notification(format!(
             "This is a test notification {:?}",
             ev
         )));
+        let event = EventToServer::Cast(ev.0.clone());
+        send_event_to_server(&sr.handler, mse.0, &event);
         // TODO send netowrk packet to say that we are casting a skill
     }
 }
