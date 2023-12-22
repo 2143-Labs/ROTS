@@ -21,9 +21,9 @@ pub struct CastingNetworkPlugin;
 
 impl Plugin for CastingNetworkPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(SharedCastingPlugin).add_systems(
+        app.add_plugins(SharedCastingPlugin).insert_resource(HP(3)).add_event::<Die>().add_systems(
             Update,
-            (on_someone_cast, on_someone_hit).run_if(in_state(GameState::ClientConnected)),
+            (on_someone_cast, on_someone_hit, on_die).run_if(in_state(GameState::ClientConnected)),
         );
     }
 }
@@ -66,11 +66,28 @@ fn on_someone_cast(
     }
 }
 
+#[derive(Resource, Clone)]
+struct HP(i32);
+
+#[derive(Event)]
+struct Die;
+
+fn on_die(
+    mut die: EventReader<Die>,
+    mut me: Query<&mut Transform, With<Player>>,
+) {
+    for _death in die.read() {
+        me.single_mut().translation = Vec3::new(0.0, 1.0, 0.0)
+    }
+}
+
 fn on_someone_hit(
     mut someone_hit: ERFE<BulletHit>,
-    all_plys: Query<(&NetEntId, &PlayerName), With<AnyPlayer>>,
+    all_plys: Query<(&NetEntId, &PlayerName, Has<Player>), With<AnyPlayer>>,
     mut notifs: EventWriter<Notification>,
     bullets: Query<(Entity, &NetEntId, &CasterNetId)>,
+    mut temp_hp: ResMut<HP>,
+    mut die: EventWriter<Die>,
     //mut commands: Commands,
 ) {
     for hit in someone_hit.read() {
@@ -90,9 +107,20 @@ fn on_someone_hit(
         let mut attacker_name = None;
         let mut defender_name = None;
 
-        for (ply_id, PlayerName(name)) in &all_plys {
+        for (ply_id, PlayerName(name), is_us) in &all_plys {
             if ply_id == &hit.event.player {
                 defender_name = Some(name);
+                if is_us {
+                    // TODO clientside damage!
+                    temp_hp.0 -= 1;
+                    if temp_hp.0 <= 0 {
+                        notifs.send(Notification(format!("We died!")));
+                        temp_hp.0 = 3;
+                        die.send(Die);
+                    } else {
+                        notifs.send(Notification(format!("HP: {}", temp_hp.0)));
+                    }
+                }
             }
 
             if ply_id == &bullet_caster_id {
