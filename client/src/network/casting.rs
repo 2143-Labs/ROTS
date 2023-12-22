@@ -49,7 +49,7 @@ fn on_someone_cast(
                     shared::event::server::Cast::Shoot(ref dat) => {
                         let cube = PbrBundle {
                             mesh: meshes.add(Mesh::from(shape::Cube { size: 0.3 })),
-                            material: materials.add(Color::rgb(0.0, 0.0, 0.0).into()),
+                            material: materials.add(Color::rgb(0.0, 0.3, 0.7).into()),
                             transform: Transform::from_translation(ply_tfm.translation),
                             ..Default::default()
                         };

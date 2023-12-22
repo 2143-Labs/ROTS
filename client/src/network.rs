@@ -197,17 +197,17 @@ pub struct SpawnOtherPlayer(PlayerConnected);
 
 fn spawn_player(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: ResMut<AssetServer>,
 
     mut er: EventReader<SpawnOtherPlayer>,
 ) {
     for SpawnOtherPlayer(event) in er.read() {
-        let cube = PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::rgb(0.4, 0.7, 0.1).into()),
-            transform: event.initial_transform,
-            ..Default::default()
+        let cube = SceneBundle {
+            scene: asset_server.load("tadpole.gltf#Scene0"),
+            transform: Transform::from_xyz(0., 1.0, 0.)
+                .with_rotation(Quat::from_rotation_y(std::f32::consts::PI))
+                .with_scale(Vec3::new(4., 4., 4.)),
+            ..default()
         };
 
         commands.spawn((
