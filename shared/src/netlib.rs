@@ -16,7 +16,7 @@ pub struct ServerResources<T> {
 pub struct MainServerEndpoint(pub Endpoint);
 
 /// This type is only used for the inital connection, and then it is removed.
-#[derive(Resource)]
+#[derive(Resource, Debug)]
 pub struct NetworkConnectionTarget {
     pub ip: String,
     pub port: u16,
