@@ -91,18 +91,11 @@ fn start_local_skill_cast_animation(
 
 fn send_network_packet(
     mut ev_sa: EventReader<StartAnimation>,
-    mut ev_notif: EventWriter<Notification>,
     sr: Res<ServerResources<EventToClient>>,
     mse: Res<MainServerEndpoint>,
 ) {
-    // TODO NETWORK PACKET ACTUALLY SENT IN START_LOCAL_SKILL_CAST_ANIMATION
     for ev in ev_sa.read() {
-        ev_notif.send(Notification(format!(
-            "This is a test notification {:?}",
-            ev
-        )));
         let event = EventToServer::Cast(ev.0.clone());
         send_event_to_server(&sr.handler, mse.0, &event);
-        // TODO send netowrk packet to say that we are casting a skill
     }
 }

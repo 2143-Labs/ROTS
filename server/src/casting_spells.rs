@@ -25,7 +25,6 @@ fn on_player_try_cast(
     //info!(huh = ?clients.get_single());
     for cast in casts.read() {
         if let Some(caster_net_id) = endpoint_mapping.map.get(&cast.endpoint) {
-            info!(?cast, "Player Cast!");
             // if we can cast, then send to all endpoints including us.
             let event = EventToClient::SomeoneCast(SomeoneCast {
                 id: *caster_net_id,
