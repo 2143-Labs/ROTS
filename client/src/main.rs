@@ -1,4 +1,3 @@
-#![feature(try_trait_v2_yeet)]
 pub mod cameras;
 pub mod menu;
 pub mod network;
