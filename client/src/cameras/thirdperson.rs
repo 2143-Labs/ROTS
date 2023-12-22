@@ -11,7 +11,7 @@ use crate::{
     player::{MovementIntention, Player},
 };
 
-use super::FreeCamState;
+use super::{ClientAimDirection, FreeCamState};
 
 #[derive(Reflect, Component)]
 pub struct CameraFollow {
@@ -60,6 +60,7 @@ pub fn wow_camera_system(
     mut mouse_events: EventReader<MouseMotion>,
     mouse_input: Res<Input<MouseButton>>,
     mut camera_query: Query<(&mut Transform, &mut CameraFollow), With<Camera3d>>,
+    mut client_aim_direction: Query<&mut ClientAimDirection>,
     player_query: Query<&Transform, (With<Player>, Without<CameraFollow>)>,
     _keyboard_input: Res<Input<KeyCode>>,
     camera_type: Res<State<FreeCamState>>,
@@ -71,6 +72,9 @@ pub fn wow_camera_system(
     };
 
     for (mut camera_transform, mut camera_follow) in camera_query.iter_mut() {
+        // Update the direction we will shoot in.
+        client_aim_direction.single_mut().0 = camera_follow.yaw_radians;
+
         for event in mouse_wheel_events.read() {
             camera_follow.distance -= event.y;
             camera_follow.distance = camera_follow

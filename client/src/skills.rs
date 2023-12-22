@@ -1,7 +1,17 @@
 use bevy::prelude::*;
-use shared::Config;
 
-use crate::{cameras::notifications::Notification, player::Player};
+use shared::event::spells::ShootingData;
+use shared::netlib::EventToClient;
+use shared::netlib::EventToServer;
+use shared::{
+    event::server::Cast,
+    netlib::{send_event_to_server, MainServerEndpoint, ServerResources},
+    Config,
+};
+
+use crate::cameras::ClientAimDirection;
+use crate::player::Player;
+use crate::states::GameState;
 
 pub struct SkillsPlugin;
 
@@ -11,16 +21,14 @@ impl Plugin for SkillsPlugin {
             Update,
             cast_skills.run_if(just_pressed(shared::GameAction::Fire1)),
         )
+        .add_systems(Update, (start_local_skill_cast_animation,))
         .add_systems(
             Update,
-            (start_local_skill_cast_animation, send_network_packet),
+            (send_network_packet).run_if(in_state(GameState::ClientConnected)),
         )
         .add_event::<StartAnimation>();
     }
 }
-
-#[derive(Debug, Clone)]
-struct SkillData;
 
 pub type GameTime = f64;
 
@@ -37,7 +45,7 @@ impl Actions {
 }
 
 #[derive(Event, Debug)]
-struct StartAnimation(SkillData);
+struct StartAnimation(Cast);
 
 /// Run condition that returns true if this keycode was just pressed
 const fn just_pressed(ga: shared::GameAction) -> impl Fn(Res<Input<KeyCode>>, Res<Config>) -> bool {
@@ -46,6 +54,7 @@ const fn just_pressed(ga: shared::GameAction) -> impl Fn(Res<Input<KeyCode>>, Re
 
 fn cast_skills(
     player: Query<(Entity, &Player, &Transform, Option<&Actions>)>,
+    aim_dir: Query<&ClientAimDirection>,
     mut ev_sa: EventWriter<StartAnimation>,
 ) {
     let (_ent, _ply_face, _transform, actions) = player.single();
@@ -66,22 +75,40 @@ fn cast_skills(
         }
     }
 
-    ev_sa.send(StartAnimation(SkillData));
+    let aim_dir = aim_dir.single().0;
+    let target = _transform.translation
+        + Vec3 {
+            x: aim_dir.cos(),
+            y: 0.0,
+            z: -aim_dir.sin(),
+        };
+
+    let shooting_data = ShootingData {
+        shot_from: _transform.translation,
+        target,
+    };
+    let event = Cast::Shoot(shooting_data);
+    info!(?event);
+    ev_sa.send(StartAnimation(event));
 }
 
-fn start_local_skill_cast_animation(mut ev_sa: EventReader<StartAnimation>) {
-    for _ev in ev_sa.read() {}
+fn start_local_skill_cast_animation(
+    mut ev_sa: EventReader<StartAnimation>,
+    //our_transform: Query<Entity, With<Player>>,
+    //mut commands: Commands,
+) {
+    for _ev in ev_sa.read() {
+        //commands.entity(our_transform.single()).insert(bundle);
+    }
 }
 
 fn send_network_packet(
     mut ev_sa: EventReader<StartAnimation>,
-    mut ev_notif: EventWriter<Notification>,
+    sr: Res<ServerResources<EventToClient>>,
+    mse: Res<MainServerEndpoint>,
 ) {
     for ev in ev_sa.read() {
-        ev_notif.send(Notification(format!(
-            "This is a test notification {:?}",
-            ev
-        )));
-        // TODO send netowrk packet to say that we are casting a skill
+        let event = EventToServer::Cast(ev.0.clone());
+        send_event_to_server(&sr.handler, mse.0, &event);
     }
 }

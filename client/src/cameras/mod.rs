@@ -7,6 +7,9 @@ use shared::Config;
 #[derive(Component)]
 pub struct FaceCamera; // tag entity to make it always face the camera
 
+#[derive(Component)]
+pub struct ClientAimDirection(pub f32);
+
 pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
@@ -43,6 +46,9 @@ pub fn spawn_camera(mut commands: Commands) {
         Name::new("Camera"),
         PrimaryCamera,
     ));
+
+    //Aiming straight north
+    commands.spawn(ClientAimDirection(0.0));
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, States, Default)]

@@ -16,15 +16,18 @@ use shared::{
         send_event_to_server, setup_client, EventToClient, EventToServer, MainServerEndpoint,
         ServerResources,
     },
-    Config,
+    AnyPlayer, Config,
 };
+
+mod casting;
 
 pub struct NetworkingPlugin;
 
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
         shared::event::client::register_events(app);
-        app.add_event::<SpawnOtherPlayer>()
+        app.add_plugins(casting::CastingNetworkPlugin)
+            .add_event::<SpawnOtherPlayer>()
             .add_systems(
                 OnEnter(GameState::ClientConnecting),
                 (
@@ -162,9 +165,7 @@ fn on_someone_move(
     >,
 ) {
     for movement in someone_moved.read() {
-        info!(?movement);
         for (ply_net, mut ply_tfm, mut ply_intent) in &mut other_players {
-            info!(?ply_net);
             if &movement.event.id == ply_net {
                 match movement.event.movement {
                     ChangeMovement::SetTransform(t) => *ply_tfm = t,
@@ -217,6 +218,7 @@ fn spawn_player(
             Name::new(format!("Player: {}", event.data.name)),
             // their NetEntId is a component
             event.data.ent_id,
+            AnyPlayer,
         ));
     }
 }

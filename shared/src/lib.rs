@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
+pub mod casting;
 pub mod event;
 pub mod netlib;
 
@@ -23,6 +24,10 @@ pub enum GameAction {
     Fire1,
     Special1,
 }
+
+/// Just a tag we have in the shared library for any controlled character
+#[derive(Component)]
+pub struct AnyPlayer;
 
 #[derive(Reflect, Clone, Resource, Deserialize, Serialize, Debug)]
 pub struct Config {

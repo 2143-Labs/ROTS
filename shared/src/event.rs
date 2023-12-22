@@ -5,9 +5,15 @@ use serde::{Deserialize, Serialize};
 
 pub mod client;
 pub mod server;
+pub mod spells;
 
 #[derive(Debug, Clone, Copy, Component, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct NetEntId(pub u64);
+impl NetEntId {
+    pub fn random() -> Self {
+        Self(rand::random())
+    }
+}
 
 #[derive(Debug, Clone, Event)]
 pub struct EventFromEndpoint<E> {
