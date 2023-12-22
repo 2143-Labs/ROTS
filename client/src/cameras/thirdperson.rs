@@ -149,6 +149,8 @@ pub fn player_movement(
 
             transform.translation +=
                 Vec3::new(movem.x, 0.0, movem.y) * PLAYER_SPEED * time.delta_seconds();
+            // point in the direction you are moving
+            transform.rotation = Quat::from_rotation_y(movem.x.atan2(movem.y));
 
             movem
         } else {

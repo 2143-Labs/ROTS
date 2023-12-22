@@ -54,7 +54,7 @@ fn init_mats(
 }
 fn update_chunks(
     mut commands: Commands,
-    mut player_query: Query<(&mut Transform, Entity, &mut Player)>,
+    mut player_query: Query<(&Transform, Entity, &mut Player)>,
     mut world: ResMut<World>,
     world_assets: Res<WorldMaterialAssets>,
 ) {
