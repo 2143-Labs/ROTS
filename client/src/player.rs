@@ -48,7 +48,8 @@ pub fn spawn_player_sprite(
         SceneBundle {
             scene: asset_server.load("tadpole.gltf#Scene0"),
             transform: Transform::from_xyz(0., 1.0, 0.)
-                .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
+                .with_rotation(Quat::from_rotation_y(std::f32::consts::PI))
+                .with_scale(Vec3::new(4., 4., 4.)),
             ..default()
         },
         RigidBody::Dynamic,
