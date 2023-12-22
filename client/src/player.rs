@@ -46,12 +46,11 @@ pub fn spawn_player_sprite(
 
     commands.spawn((
         SceneBundle {
-            scene: asset_server.load("tadpole.gltf#Scene1"),
-            transform: Transform::from_xyz(-5.2, -1.0, -20.0)
+            scene: asset_server.load("tadpole.gltf#Scene0"),
+            transform: Transform::from_xyz(-5.2, 1.0, -20.0)
                 .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
             ..default()
         },
-        Name::new("Player"),
         RigidBody::Dynamic,
         Collider::cuboid(1., 1., 1.),
         Name::new("Player"),
