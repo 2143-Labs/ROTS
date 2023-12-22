@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use shared::event::server::ChangeMovement;
+use shared::event::spells::ShootingData;
 use shared::netlib::EventToClient;
 use shared::netlib::EventToServer;
 use shared::{
@@ -8,6 +9,7 @@ use shared::{
     Config,
 };
 
+use crate::cameras::ClientAimDirection;
 use crate::states::GameState;
 use crate::{cameras::notifications::Notification, player::Player};
 
@@ -56,6 +58,7 @@ const fn just_pressed(ga: shared::GameAction) -> impl Fn(Res<Input<KeyCode>>, Re
 
 fn cast_skills(
     player: Query<(Entity, &Player, &Transform, Option<&Actions>)>,
+    aim_dir: Query<&ClientAimDirection>,
     mut ev_sa: EventWriter<StartAnimation>,
 ) {
     let (_ent, _ply_face, _transform, actions) = player.single();
@@ -76,7 +79,16 @@ fn cast_skills(
         }
     }
 
-    ev_sa.send(StartAnimation(Cast {}));
+    let aim_dir = aim_dir.single().0;
+    let target = _transform.translation + Vec3 { x: aim_dir.sin(), y: 0.0, z: aim_dir.cos() };
+
+    let shooting_data = ShootingData {
+        shot_from: _transform.translation,
+        target,
+    };
+    let event = Cast::Shoot(shooting_data);
+    info!(?event);
+    ev_sa.send(StartAnimation(event));
 }
 
 fn start_local_skill_cast_animation(

@@ -3,6 +3,8 @@ use crate::netlib::ServerResources;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use super::spells::ShootingData;
+
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
 pub struct ConnectRequest {
     pub name: Option<String>,
@@ -13,7 +15,10 @@ pub struct ConnectRequest {
 pub struct Heartbeat {}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
-pub struct Cast {}
+pub enum Cast {
+    Teleport(Vec3),
+    Shoot(ShootingData),
+}
 
 /// walking and stuff
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
