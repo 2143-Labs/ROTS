@@ -133,7 +133,7 @@ fn on_player_connect(
             .clone()
             .unwrap_or_else(|| format!("Player #{}", rand::thread_rng().gen_range(1..10000)));
 
-        let ent_id = NetEntId(rand::random());
+        let ent_id = NetEntId::random();
 
         let event = EventToClient::PlayerConnected(PlayerConnected {
             data: PlayerData {
@@ -170,6 +170,7 @@ fn on_player_connect(
             PlayerEndpoint(player.endpoint),
             // Transform component used for movement
             player.event.my_location,
+            shared::AnyPlayer,
         ));
 
         heartbeat_mapping

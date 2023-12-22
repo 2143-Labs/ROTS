@@ -1,8 +1,23 @@
 use bevy::prelude::*;
+use crate::{AnyPlayer, event::NetEntId};
+
 use super::event::{spells::ShootingData};
 
 #[derive(Component)]
 pub struct DespawnTime(pub Timer);
+
+pub struct SharedCastingPlugin;
+
+impl Plugin for SharedCastingPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_event::<BulletHit>()
+            .add_systems(Update, (
+                update_casts,
+                update_despawns,
+                hit,
+            ));
+    }
+}
 
 pub fn update_despawns(
     mut commands: Commands,
@@ -29,5 +44,33 @@ pub fn update_casts(
 
         let new_bullet_loc = shot_data.shot_from + offset;
         bullet_tfm.translation = new_bullet_loc;
+    }
+}
+
+#[derive(Event, Debug)]
+struct BulletHit {
+    bullet: NetEntId,
+    player: NetEntId,
+}
+
+pub fn check_collision(
+    bullets: Query<&Transform, (With<ShootingData>, Without<AnyPlayer>)>,
+    players: Query<&Transform, With<AnyPlayer>>,
+    mut ev_w: EventWriter<BulletHit>
+) {
+    for bullet in &bullets {
+        for player in &players {
+            if bullet.translation.distance_squared(player.translation) < 1.0 {
+                ev_w.send(BulletHit);
+            }
+        }
+    }
+}
+
+pub fn hit(
+    mut ev_r: EventReader<BulletHit>
+) {
+    for e in ev_r.read() {
+        info!(?e);
     }
 }

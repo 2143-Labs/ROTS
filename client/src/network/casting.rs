@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
-use shared::{event::{ERFE, client::SomeoneCast, NetEntId, spells::ShootingData}, casting::DespawnTime};
+use shared::{event::{ERFE, client::SomeoneCast, NetEntId, spells::ShootingData}, casting::{DespawnTime, SharedCastingPlugin}};
 
 use crate::states::GameState;
 
@@ -10,13 +10,7 @@ pub struct CastingNetworkPlugin;
 impl Plugin for CastingNetworkPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_systems(
-                Update,
-                (
-                    shared::casting::update_casts,
-                    shared::casting::update_despawns,
-                )
-            )
+            .add_plugins(SharedCastingPlugin)
             .add_systems(
                 Update,
                 (

@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
-use shared::{event::{ERFE, NetEntId, client::SomeoneCast}, netlib::{ServerResources, EventToServer, send_event_to_server, EventToClient}, Config, casting::DespawnTime};
+use shared::{event::{ERFE, NetEntId, client::SomeoneCast}, netlib::{ServerResources, EventToServer, send_event_to_server, EventToClient}, Config, casting::{DespawnTime, SharedCastingPlugin}};
 
 use crate::{EndpointToNetId, PlayerEndpoint, ServerState, ConnectedPlayerName};
 
@@ -10,10 +10,9 @@ pub struct CastingPlugin;
 impl Plugin for CastingPlugin {
     fn build(&self, app: &mut App) {
         app
+            .add_plugins(SharedCastingPlugin)
             .add_systems(Update, (
                 on_player_try_cast,
-                shared::casting::update_casts,
-                shared::casting::update_despawns,
             ).run_if(in_state(ServerState::Running)))
                 ;
     }
@@ -44,6 +43,7 @@ fn on_player_try_cast(
                     commands.spawn((
                         Transform::from_translation(shot_data.shot_from),
                         shot_data.clone(),
+                        NetEntId::random(),
                         DespawnTime(Timer::new(Duration::from_secs(5), TimerMode::Once)),
                         // TODO Add a netentid for referencing this item later
                     ));

@@ -25,6 +25,11 @@ pub enum GameAction {
     Special1,
 }
 
+
+/// Just a tag we have in the shared library for any controlled character
+#[derive(Component)]
+pub struct AnyPlayer;
+
 #[derive(Reflect, Clone, Resource, Deserialize, Serialize, Debug)]
 pub struct Config {
     pub ip: String,

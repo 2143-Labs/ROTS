@@ -16,7 +16,7 @@ use shared::{
         send_event_to_server, setup_client, EventToClient, EventToServer, MainServerEndpoint,
         ServerResources,
     },
-    Config,
+    Config, AnyPlayer,
 };
 
 mod casting;
@@ -219,6 +219,7 @@ fn spawn_player(
             Name::new(format!("Player: {}", event.data.name)),
             // their NetEntId is a component
             event.data.ent_id,
+            AnyPlayer,
         ));
     }
 }

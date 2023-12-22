@@ -2,6 +2,7 @@ use std::f32::consts::PI;
 
 use bevy::{prelude::*, render::mesh::skinning::SkinnedMesh};
 use bevy_xpbd_3d::prelude::{Collider, RigidBody};
+use shared::AnyPlayer;
 
 use crate::worldgen::ChunkPos;
 
@@ -63,5 +64,6 @@ pub fn spawn_player_sprite(
         crate::physics::Jumper {
             timer: Timer::from_seconds(1.0, TimerMode::Once),
         },
+        AnyPlayer,
     ));
 }
