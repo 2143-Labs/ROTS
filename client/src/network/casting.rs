@@ -1,31 +1,34 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
-use shared::{
-    casting::{CasterNetId, DespawnTime, SharedCastingPlugin},
-    event::{
-        client::{BulletHit, SomeoneCast},
-        NetEntId, ERFE,
-    },
-    AnyPlayer,
-};
+use shared::{event::{ERFE, client::{SomeoneCast, BulletHit}, NetEntId, spells::ShootingData}, casting::{DespawnTime, SharedCastingPlugin, CasterNetId}, AnyPlayer};
 
-use crate::{cameras::notifications::Notification, player::PlayerName, states::GameState};
+use crate::{states::GameState, cameras::notifications::Notification, player::{Player, PlayerName}};
 
 pub struct CastingNetworkPlugin;
 
 impl Plugin for CastingNetworkPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(SharedCastingPlugin).add_systems(
-            Update,
-            (on_someone_cast, on_someone_hit).run_if(in_state(GameState::ClientConnected)),
-        );
+        app
+            .add_plugins(SharedCastingPlugin)
+            .add_systems(
+                Update,
+                (
+                    on_someone_cast,
+                    on_someone_hit,
+                )
+                    .run_if(in_state(GameState::ClientConnected)),
+            )
+
+            ;
     }
 }
 
 fn on_someone_cast(
     mut someone_cast: ERFE<SomeoneCast>,
-    other_players: Query<(Entity, &NetEntId, &Transform)>,
+    other_players: Query<
+        (Entity, &NetEntId, &Transform),
+    >,
     mut commands: Commands,
     //TODO dont actually spawn a cube on cast
     mut meshes: ResMut<Assets<Mesh>>,
@@ -33,11 +36,12 @@ fn on_someone_cast(
 ) {
     for cast in someone_cast.read() {
         for (_ply_ent, ply_net_ent, ply_tfm) in &other_players {
+
             if &cast.event.caster_id == ply_net_ent {
                 match cast.event.cast {
                     shared::event::server::Cast::Teleport(target) => {
                         info!(?target, "Someone teleported")
-                    }
+                    },
                     shared::event::server::Cast::Shoot(ref dat) => {
                         let cube = PbrBundle {
                             mesh: meshes.add(Mesh::from(shape::Cube { size: 0.3 })),
@@ -54,7 +58,7 @@ fn on_someone_cast(
                             DespawnTime(Timer::new(Duration::from_secs(5), TimerMode::Once)),
                             // TODO Add a netentid for referencing this item later
                         ));
-                    }
+                    },
                 }
             }
         }
@@ -69,7 +73,6 @@ fn on_someone_hit(
     //mut commands: Commands,
 ) {
     for hit in someone_hit.read() {
-        //info!(?hit, "Someone got hit!");
         let mut bullet_caster_id = None;
         for (_bullet_ent, bullet_ent_id, attacker_net_id) in &bullets {
             if bullet_ent_id == &hit.event.bullet {
@@ -98,17 +101,18 @@ fn on_someone_hit(
 
         match (attacker_name, defender_name) {
             (Some(atk), Some(def)) => {
+                info!(?atk, ?def, "Hit!");
                 notifs.send(Notification(format!("{atk} hit {def}")));
-            }
+            },
             (Some(atk), None) => {
                 warn!(?atk, "Unknown defender");
-            }
+            },
             (None, Some(def)) => {
                 warn!(?def, "Unknown attacker");
-            }
+            },
             (None, None) => {
                 warn!("Unknown bullet");
-            }
+            },
         }
     }
 }
