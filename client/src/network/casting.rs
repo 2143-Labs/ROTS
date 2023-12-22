@@ -20,10 +20,14 @@ pub struct CastingNetworkPlugin;
 
 impl Plugin for CastingNetworkPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(SharedCastingPlugin).insert_resource(HP(3)).add_event::<Die>().add_systems(
-            Update,
-            (on_someone_cast, on_someone_hit, on_die).run_if(in_state(GameState::ClientConnected)),
-        );
+        app.add_plugins(SharedCastingPlugin)
+            .insert_resource(HP(3))
+            .add_event::<Die>()
+            .add_systems(
+                Update,
+                (on_someone_cast, on_someone_hit, on_die)
+                    .run_if(in_state(GameState::ClientConnected)),
+            );
     }
 }
 
@@ -71,10 +75,7 @@ struct HP(i32);
 #[derive(Event)]
 struct Die;
 
-fn on_die(
-    mut die: EventReader<Die>,
-    mut me: Query<&mut Transform, With<Player>>,
-) {
+fn on_die(mut die: EventReader<Die>, mut me: Query<&mut Transform, With<Player>>) {
     for _death in die.read() {
         me.single_mut().translation = Vec3::new(0.0, 1.0, 0.0)
     }
