@@ -31,6 +31,8 @@ impl Default for Player {
         }
     }
 }
+#[derive(Resource)]
+pub struct Animation(Handle<AnimationClip>);
 
 pub fn spawn_player_sprite(
     mut commands: Commands,
@@ -44,6 +46,8 @@ pub fn spawn_player_sprite(
     // transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
     // ..Default::default()
     // };
+
+    commands.insert_resource(Animation(asset_server.load("tadpole.gltf#Animation0")));
 
     commands.spawn((
         SceneBundle {
@@ -64,4 +68,14 @@ pub fn spawn_player_sprite(
         },
         AnyPlayer,
     ));
+}
+
+// Once the scene is loaded, start the animation
+pub fn animate_sprites(
+    animations: Res<Animation>,
+    mut players: Query<&mut AnimationPlayer, Added<AnimationPlayer>>,
+) {
+    for mut player in &mut players {
+        player.play(animations.0.clone_weak()).repeat();
+    }
 }
