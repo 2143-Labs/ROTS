@@ -36,7 +36,7 @@ fn on_someone_cast(
     for cast in someone_cast.read() {
         for (_ply_ent, ply_net_ent, ply_tfm) in &other_players {
 
-            if &cast.event.id == ply_net_ent {
+            if &cast.event.caster_id == ply_net_ent {
                 match cast.event.cast {
                     shared::event::server::Cast::Teleport(target) => {
                         info!(?target, "Someone teleported")

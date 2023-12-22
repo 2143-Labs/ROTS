@@ -34,7 +34,7 @@ pub struct SomeoneMoved {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
 pub struct SomeoneCast {
-    pub id: NetEntId,
+    pub caster_id: NetEntId,
     pub cast: Cast,
 }
 
