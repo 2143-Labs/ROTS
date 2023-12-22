@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod event;
 pub mod netlib;
+pub mod casting;
 
 #[derive(Reflect, Hash, Eq, PartialEq, Clone, Deserialize, Serialize, Debug)]
 pub enum GameAction {

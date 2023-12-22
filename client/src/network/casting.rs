@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
-use shared::event::{ERFE, client::SomeoneCast, NetEntId, spells::ShootingData};
+use shared::{event::{ERFE, client::SomeoneCast, NetEntId, spells::ShootingData}, casting::DespawnTime};
 
 use crate::states::GameState;
 
@@ -13,7 +13,8 @@ impl Plugin for CastingNetworkPlugin {
             .add_systems(
                 Update,
                 (
-                    update_casts,
+                    shared::casting::update_casts,
+                    shared::casting::update_despawns,
                 )
             )
             .add_systems(
@@ -27,9 +28,6 @@ impl Plugin for CastingNetworkPlugin {
             ;
     }
 }
-
-#[derive(Component)]
-pub struct DespawnTime(pub Timer);
 
 fn on_someone_cast(
     mut someone_cast: ERFE<SomeoneCast>,
@@ -67,23 +65,5 @@ fn on_someone_cast(
                 }
             }
         }
-    }
-}
-
-
-fn update_casts(
-    mut commands: Commands,
-    mut bullets: Query<(Entity, &mut Transform, &ShootingData, &mut DespawnTime)>,
-    time: Res<Time<Virtual>>,
-) {
-    for (bullet_ent, mut bullet_tfm, shot_data, mut despawn_timer) in &mut bullets {
-        if despawn_timer.0.tick(time.delta()).finished() {
-            commands.entity(bullet_ent).despawn_recursive();
-            return;
-        }
-
-        let offset = (shot_data.target - shot_data.shot_from) * despawn_timer.0.elapsed_secs();
-        let new_bullet_loc = shot_data.shot_from + offset;
-        bullet_tfm.translation = new_bullet_loc;
     }
 }
