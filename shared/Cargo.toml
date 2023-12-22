@@ -11,7 +11,6 @@ default-features = false
 features = ["serialize"]
 
 [dependencies]
-message-io = "0.18.0"
 serde_yaml = "0.9.27"
 serde_json = "1.0.108"
 serde = { version = "1.0.193", features = ["derive"] }
@@ -30,6 +29,13 @@ bevy_diagnostic = "0.12.1"
 phf = { version = "0.11.2", features = ["macros"] }
 postcard = { version = "1.0.8", features = ["use-std", "alloc"] }
 clap = { version = "4.4.11" }
+
+message-io = { version = "0.18.0", optional = true }
+# clap = { version = "4.4.11", features = ["derive"] }
+
+[features]
+mio-net = ["dep:message-io"]
+default = ["mio-net"]
 
 [dev-dependencies]
 tungstenite = "0.21.0"
