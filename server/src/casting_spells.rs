@@ -22,7 +22,6 @@ fn on_player_try_cast(
     sr: Res<ServerResources<EventToServer>>,
     //mut commands: Commands,
 ) {
-    //info!(huh = ?clients.get_single());
     for cast in casts.read() {
         if let Some(caster_net_id) = endpoint_mapping.map.get(&cast.endpoint) {
             // if we can cast, then send to all endpoints including us.
@@ -31,7 +30,6 @@ fn on_player_try_cast(
                 cast: cast.event.clone(),
             });
             for (c_net_client, _c_net_ent) in &clients {
-                info!(?c_net_client, "Sending event data to");
                 send_event_to_server(&sr.handler, c_net_client.0, &event);
             }
         }
