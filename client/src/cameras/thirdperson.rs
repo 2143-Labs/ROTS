@@ -11,7 +11,7 @@ use crate::{
     player::{MovementIntention, Player},
 };
 
-use super::{FreeCamState, ClientAimDirection};
+use super::{ClientAimDirection, FreeCamState};
 
 #[derive(Reflect, Component)]
 pub struct CameraFollow {

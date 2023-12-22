@@ -10,7 +10,6 @@ use bevy::{
     },
 };
 
-
 use super::MenuItem;
 
 #[derive(Component, Debug)]

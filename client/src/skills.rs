@@ -10,8 +10,8 @@ use shared::{
 };
 
 use crate::cameras::ClientAimDirection;
+use crate::player::Player;
 use crate::states::GameState;
-use crate::{player::Player};
 
 pub struct SkillsPlugin;
 
@@ -21,14 +21,10 @@ impl Plugin for SkillsPlugin {
             Update,
             cast_skills.run_if(just_pressed(shared::GameAction::Fire1)),
         )
+        .add_systems(Update, (start_local_skill_cast_animation,))
         .add_systems(
             Update,
-            (start_local_skill_cast_animation,),
-        )
-        .add_systems(
-            Update,
-            (send_network_packet)
-                    .run_if(in_state(GameState::ClientConnected)),
+            (send_network_packet).run_if(in_state(GameState::ClientConnected)),
         )
         .add_event::<StartAnimation>();
     }
@@ -80,7 +76,12 @@ fn cast_skills(
     }
 
     let aim_dir = aim_dir.single().0;
-    let target = _transform.translation + Vec3 { x: aim_dir.cos(), y: 0.0, z: -aim_dir.sin() };
+    let target = _transform.translation
+        + Vec3 {
+            x: aim_dir.cos(),
+            y: 0.0,
+            z: -aim_dir.sin(),
+        };
 
     let shooting_data = ShootingData {
         shot_from: _transform.translation,

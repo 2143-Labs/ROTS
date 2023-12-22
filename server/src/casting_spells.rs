@@ -1,7 +1,16 @@
 use std::time::Duration;
 
 use bevy::{prelude::*, utils::HashSet};
-use shared::{event::{ERFE, NetEntId, client::{SomeoneCast, BulletHit}, spells::ShootingData}, netlib::{ServerResources, EventToServer, send_event_to_server, EventToClient}, casting::{DespawnTime, SharedCastingPlugin, CasterNetId}, AnyPlayer};
+use shared::{
+    casting::{CasterNetId, DespawnTime, SharedCastingPlugin},
+    event::{
+        client::{BulletHit, SomeoneCast},
+        spells::ShootingData,
+        NetEntId, ERFE,
+    },
+    netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
+    AnyPlayer,
+};
 
 use crate::{EndpointToNetId, PlayerEndpoint, ServerState};
 
@@ -9,16 +18,13 @@ pub struct CastingPlugin;
 
 impl Plugin for CastingPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_plugins(SharedCastingPlugin)
+        app.add_plugins(SharedCastingPlugin)
             .add_event::<BulletHit>()
             .insert_resource(HitList::default())
-            .add_systems(Update, (
-                on_player_try_cast,
-                hit,
-                check_collision,
-            ).run_if(in_state(ServerState::Running)))
-                ;
+            .add_systems(
+                Update,
+                (on_player_try_cast, hit, check_collision).run_if(in_state(ServerState::Running)),
+            );
     }
 }
 
@@ -43,7 +49,7 @@ fn on_player_try_cast(
             }
 
             match cast.event {
-                shared::event::server::Cast::Teleport(_) => {}, // TODO
+                shared::event::server::Cast::Teleport(_) => {} // TODO
                 shared::event::server::Cast::Shoot(ref shot_data) => {
                     commands.spawn((
                         Transform::from_translation(shot_data.shot_from),
@@ -63,7 +69,7 @@ fn on_player_try_cast(
 fn check_collision(
     bullets: Query<(&NetEntId, &CasterNetId, &Transform), (With<ShootingData>, Without<AnyPlayer>)>,
     players: Query<(&NetEntId, &Transform), With<AnyPlayer>>,
-    mut ev_w: EventWriter<BulletHit>
+    mut ev_w: EventWriter<BulletHit>,
 ) {
     for (b_id, CasterNetId(caster), bullet) in &bullets {
         for (p_id, player) in &players {
@@ -97,7 +103,11 @@ fn hit(
         }
         hit_list.0.insert(e.clone());
         for c_net_client in &clients {
-            send_event_to_server(&sr.handler, c_net_client.0, &EventToClient::BulletHit(e.clone()));
+            send_event_to_server(
+                &sr.handler,
+                c_net_client.0,
+                &EventToClient::BulletHit(e.clone()),
+            );
         }
     }
 }

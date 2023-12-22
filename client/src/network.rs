@@ -16,7 +16,7 @@ use shared::{
         send_event_to_server, setup_client, EventToClient, EventToServer, MainServerEndpoint,
         ServerResources,
     },
-    Config, AnyPlayer,
+    AnyPlayer, Config,
 };
 
 mod casting;
@@ -26,7 +26,7 @@ pub struct NetworkingPlugin;
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
         shared::event::client::register_events(app);
-        app .add_plugins(casting::CastingNetworkPlugin)
+        app.add_plugins(casting::CastingNetworkPlugin)
             .add_event::<SpawnOtherPlayer>()
             .add_systems(
                 OnEnter(GameState::ClientConnecting),
@@ -64,7 +64,6 @@ impl Plugin for NetworkingPlugin {
             );
     }
 }
-
 
 fn send_connect_packet(
     sr: Res<ServerResources<EventToClient>>,

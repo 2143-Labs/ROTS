@@ -1,1 +1,1 @@
-pub struct Health{}
+pub struct Health {}

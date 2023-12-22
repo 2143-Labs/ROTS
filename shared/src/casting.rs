@@ -1,5 +1,5 @@
+use super::event::{spells::ShootingData, NetEntId};
 use bevy::prelude::*;
-use super::event::{NetEntId, spells::ShootingData};
 
 #[derive(Component, Debug)]
 pub struct DespawnTime(pub Timer);
@@ -11,11 +11,7 @@ pub struct SharedCastingPlugin;
 
 impl Plugin for SharedCastingPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_systems(Update, (
-                update_casts,
-                update_despawns,
-            ));
+        app.add_systems(Update, (update_casts, update_despawns));
     }
 }
 
@@ -32,11 +28,8 @@ fn update_despawns(
     }
 }
 
-fn update_casts(
-    mut bullets: Query<(&mut Transform, &ShootingData, &DespawnTime)>,
-) {
+fn update_casts(mut bullets: Query<(&mut Transform, &ShootingData, &DespawnTime)>) {
     for (mut bullet_tfm, shot_data, despawn_timer) in &mut bullets {
-
         // normalized direction
         let offset = (shot_data.target - shot_data.shot_from).normalize();
         // speed up the bullets

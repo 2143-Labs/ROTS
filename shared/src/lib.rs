@@ -4,9 +4,9 @@ use bevy::prelude::*;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
+pub mod casting;
 pub mod event;
 pub mod netlib;
-pub mod casting;
 
 #[derive(Reflect, Hash, Eq, PartialEq, Clone, Deserialize, Serialize, Debug)]
 pub enum GameAction {
@@ -24,7 +24,6 @@ pub enum GameAction {
     Fire1,
     Special1,
 }
-
 
 /// Just a tag we have in the shared library for any controlled character
 #[derive(Component)]
