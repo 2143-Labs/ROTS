@@ -73,7 +73,7 @@ fn on_someone_hit(
     //mut commands: Commands,
 ) {
     for hit in someone_hit.read() {
-        info!(?hit, "Someone got hit!");
+        //info!(?hit, "Someone got hit!");
         let mut bullet_caster_id = None;
         for (_bullet_ent, bullet_ent_id, attacker_net_id) in &bullets {
             if bullet_ent_id == &hit.event.bullet {

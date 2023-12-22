@@ -96,7 +96,6 @@ fn hit(
             continue;
         }
         hit_list.0.insert(e.clone());
-        info!(?e);
         for c_net_client in &clients {
             send_event_to_server(&sr.handler, c_net_client.0, &EventToClient::BulletHit(e.clone()));
         }
