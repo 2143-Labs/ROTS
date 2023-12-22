@@ -80,7 +80,7 @@ fn cast_skills(
     }
 
     let aim_dir = aim_dir.single().0;
-    let target = _transform.translation + Vec3 { x: aim_dir.sin(), y: 0.0, z: aim_dir.cos() };
+    let target = _transform.translation + Vec3 { x: aim_dir.cos(), y: 0.0, z: -aim_dir.sin() };
 
     let shooting_data = ShootingData {
         shot_from: _transform.translation,
