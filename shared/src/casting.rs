@@ -1,10 +1,11 @@
 use bevy::prelude::*;
-use crate::{AnyPlayer, event::NetEntId};
+use super::event::{NetEntId, spells::ShootingData};
 
-use super::event::{spells::ShootingData};
-
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct DespawnTime(pub Timer);
+
+#[derive(Component, Debug)]
+pub struct CasterNetId(pub NetEntId);
 
 pub struct SharedCastingPlugin;
 

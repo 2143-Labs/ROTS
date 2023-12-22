@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use bevy::prelude::*;
-use shared::{event::{ERFE, NetEntId, client::SomeoneCast, spells::ShootingData}, netlib::{ServerResources, EventToServer, send_event_to_server, EventToClient}, Config, casting::{DespawnTime, SharedCastingPlugin}, AnyPlayer};
+use bevy::{prelude::*, utils::HashSet};
+use shared::{event::{ERFE, NetEntId, client::{SomeoneCast, BulletHit}, spells::ShootingData}, netlib::{ServerResources, EventToServer, send_event_to_server, EventToClient}, Config, casting::{DespawnTime, SharedCastingPlugin, CasterNetId}, AnyPlayer};
 
 use crate::{EndpointToNetId, PlayerEndpoint, ServerState, ConnectedPlayerName};
 
@@ -12,6 +12,7 @@ impl Plugin for CastingPlugin {
         app
             .add_plugins(SharedCastingPlugin)
             .add_event::<BulletHit>()
+            .insert_resource(HitList::default())
             .add_systems(Update, (
                 on_player_try_cast,
                 hit,
@@ -20,9 +21,6 @@ impl Plugin for CastingPlugin {
                 ;
     }
 }
-
-#[derive(Component, Debug)]
-pub struct CasterNetId(pub NetEntId);
 
 fn on_player_try_cast(
     mut casts: ERFE<shared::event::server::Cast>,
@@ -62,12 +60,6 @@ fn on_player_try_cast(
     }
 }
 
-#[derive(Event, Debug)]
-struct BulletHit {
-    bullet: NetEntId,
-    player: NetEntId,
-}
-
 fn check_collision(
     bullets: Query<(&NetEntId, &CasterNetId, &Transform), (With<ShootingData>, Without<AnyPlayer>)>,
     players: Query<(&NetEntId, &Transform), With<AnyPlayer>>,
@@ -90,10 +82,23 @@ fn check_collision(
     }
 }
 
+#[derive(Resource, Default)]
+struct HitList(HashSet<BulletHit>);
+
 fn hit(
-    mut ev_r: EventReader<BulletHit>
+    mut ev_r: EventReader<BulletHit>,
+    clients: Query<&PlayerEndpoint>,
+    sr: Res<ServerResources<EventToServer>>,
+    mut hit_list: ResMut<HitList>,
 ) {
     for e in ev_r.read() {
+        if hit_list.0.contains(e) {
+            continue;
+        }
+        hit_list.0.insert(e.clone());
         info!(?e);
+        for c_net_client in &clients {
+            send_event_to_server(&sr.handler, c_net_client.0, &EventToClient::BulletHit(e.clone()));
+        }
     }
 }

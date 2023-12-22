@@ -1,9 +1,9 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
-use shared::{event::{ERFE, client::SomeoneCast, NetEntId, spells::ShootingData}, casting::{DespawnTime, SharedCastingPlugin}};
+use shared::{event::{ERFE, client::{SomeoneCast, BulletHit}, NetEntId, spells::ShootingData}, casting::{DespawnTime, SharedCastingPlugin, CasterNetId}, AnyPlayer};
 
-use crate::states::GameState;
+use crate::{states::GameState, cameras::notifications::Notification, player::{Player, PlayerName}};
 
 pub struct CastingNetworkPlugin;
 
@@ -15,6 +15,7 @@ impl Plugin for CastingNetworkPlugin {
                 Update,
                 (
                     on_someone_cast,
+                    on_someone_hit,
                 )
                     .run_if(in_state(GameState::ClientConnected)),
             )
@@ -52,12 +53,66 @@ fn on_someone_cast(
                         commands.spawn((
                             cube,
                             dat.clone(),
+                            cast.event.cast_id,
+                            CasterNetId(cast.event.caster_id),
                             DespawnTime(Timer::new(Duration::from_secs(5), TimerMode::Once)),
                             // TODO Add a netentid for referencing this item later
                         ));
                     },
                 }
             }
+        }
+    }
+}
+
+fn on_someone_hit(
+    mut someone_hit: ERFE<BulletHit>,
+    all_plys: Query<(&NetEntId, &PlayerName), With<AnyPlayer>>,
+    mut notifs: EventWriter<Notification>,
+    bullets: Query<(Entity, &NetEntId, &CasterNetId)>,
+    //mut commands: Commands,
+) {
+    for hit in someone_hit.read() {
+        info!(?hit, "Someone got hit!");
+        let mut bullet_caster_id = None;
+        for (_bullet_ent, bullet_ent_id, attacker_net_id) in &bullets {
+            if bullet_ent_id == &hit.event.bullet {
+                bullet_caster_id = Some(attacker_net_id);
+            }
+        }
+
+        // if we dont know about the bullet, return
+        let bullet_caster_id = match bullet_caster_id {
+            Some(s) => s.0,
+            None => return warn!("Unknown bullet"),
+        };
+
+        let mut attacker_name = None;
+        let mut defender_name = None;
+
+        for (ply_id, PlayerName(name)) in &all_plys {
+            if ply_id == &hit.event.player {
+                defender_name = Some(name);
+            }
+
+            if ply_id == &bullet_caster_id {
+                attacker_name = Some(name);
+            }
+        }
+
+        match (attacker_name, defender_name) {
+            (Some(atk), Some(def)) => {
+                notifs.send(Notification(format!("{atk} hit {def}")));
+            },
+            (Some(atk), None) => {
+                warn!(?atk, "Unknown defender");
+            },
+            (None, Some(def)) => {
+                warn!(?def, "Unknown attacker");
+            },
+            (None, None) => {
+                warn!("Unknown bullet");
+            },
         }
     }
 }

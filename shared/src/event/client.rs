@@ -39,4 +39,10 @@ pub struct SomeoneCast {
     pub cast: Cast,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Event, Hash, PartialEq, Eq)]
+pub struct BulletHit {
+    pub bullet: NetEntId,
+    pub player: NetEntId,
+}
+
 include!(concat!(env!("OUT_DIR"), "/client_event.rs"));
