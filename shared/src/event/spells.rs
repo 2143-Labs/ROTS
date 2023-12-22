@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use super::NetEntId;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Component)]
 pub struct ShootingData {
