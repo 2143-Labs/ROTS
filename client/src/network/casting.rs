@@ -5,7 +5,6 @@ use shared::{
     casting::{CasterNetId, DespawnTime, SharedCastingPlugin},
     event::{
         client::{BulletHit, SomeoneCast},
-        spells::ShootingData,
         NetEntId, ERFE,
     },
     AnyPlayer,
