@@ -48,9 +48,7 @@ pub fn spawn_camera(mut commands: Commands) {
     ));
 
     //Aiming straight north
-    commands.spawn((
-        ClientAimDirection(0.0)
-    ));
+    commands.spawn(ClientAimDirection(0.0));
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, States, Default)]

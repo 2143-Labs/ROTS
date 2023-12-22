@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use shared::event::server::ChangeMovement;
+
 use shared::event::spells::ShootingData;
 use shared::netlib::EventToClient;
 use shared::netlib::EventToServer;
@@ -11,7 +11,7 @@ use shared::{
 
 use crate::cameras::ClientAimDirection;
 use crate::states::GameState;
-use crate::{cameras::notifications::Notification, player::Player};
+use crate::{player::Player};
 
 pub struct SkillsPlugin;
 

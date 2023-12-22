@@ -9,7 +9,7 @@ use bevy::{
         },
     },
 };
-use bevy_xpbd_3d::prelude::RigidBody;
+
 
 use super::MenuItem;
 

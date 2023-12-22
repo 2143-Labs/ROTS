@@ -1,9 +1,9 @@
 use std::time::Duration;
 
 use bevy::{prelude::*, utils::HashSet};
-use shared::{event::{ERFE, NetEntId, client::{SomeoneCast, BulletHit}, spells::ShootingData}, netlib::{ServerResources, EventToServer, send_event_to_server, EventToClient}, Config, casting::{DespawnTime, SharedCastingPlugin, CasterNetId}, AnyPlayer};
+use shared::{event::{ERFE, NetEntId, client::{SomeoneCast, BulletHit}, spells::ShootingData}, netlib::{ServerResources, EventToServer, send_event_to_server, EventToClient}, casting::{DespawnTime, SharedCastingPlugin, CasterNetId}, AnyPlayer};
 
-use crate::{EndpointToNetId, PlayerEndpoint, ServerState, ConnectedPlayerName};
+use crate::{EndpointToNetId, PlayerEndpoint, ServerState};
 
 pub struct CastingPlugin;
 

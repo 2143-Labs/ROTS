@@ -1,9 +1,9 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
-use shared::{event::{ERFE, client::{SomeoneCast, BulletHit}, NetEntId, spells::ShootingData}, casting::{DespawnTime, SharedCastingPlugin, CasterNetId}, AnyPlayer};
+use shared::{event::{ERFE, client::{SomeoneCast, BulletHit}, NetEntId}, casting::{DespawnTime, SharedCastingPlugin, CasterNetId}, AnyPlayer};
 
-use crate::{states::GameState, cameras::notifications::Notification, player::{Player, PlayerName}};
+use crate::{states::GameState, cameras::notifications::Notification, player::{PlayerName}};
 
 pub struct CastingNetworkPlugin;
 
