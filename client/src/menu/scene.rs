@@ -50,7 +50,7 @@ pub fn spawn_menu_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: ResMut<AssetServer>,
 ) {
-    let size = 30.;
+    // let size = 30.;
     // Ground
     // commands.spawn((
     //     PbrBundle {

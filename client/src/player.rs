@@ -1,4 +1,6 @@
-use bevy::prelude::*;
+use std::f32::consts::PI;
+
+use bevy::{prelude::*, render::mesh::skinning::SkinnedMesh};
 use bevy_xpbd_3d::prelude::{Collider, RigidBody};
 
 use crate::worldgen::ChunkPos;
@@ -33,20 +35,27 @@ impl Default for Player {
 
 pub fn spawn_player_sprite(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    // mut meshes: ResMut<Assets<Mesh>>,
+    // mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: ResMut<AssetServer>,
 ) {
-    let cube = PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-        material: materials.add(Color::rgb(0.5, 0.5, 1.0).into()),
-        transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
-        ..Default::default()
-    };
+    // let cube = PbrBundle {
+    // mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+    // material: materials.add(Color::rgb(0.5, 0.5, 1.0).into()),
+    // transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
+    // ..Default::default()
+    // };
 
     commands.spawn((
+        SceneBundle {
+            scene: asset_server.load("tadpole.gltf#Scene0"),
+            transform: Transform::from_xyz(0., 1.0, 0.)
+                .with_rotation(Quat::from_rotation_y(std::f32::consts::PI))
+                .with_scale(Vec3::new(4., 4., 4.)),
+            ..default()
+        },
         RigidBody::Dynamic,
         Collider::cuboid(1., 1., 1.),
-        cube,
         Name::new("Player"),
         MovementIntention(Vec2::ZERO),
         Player::default(),
