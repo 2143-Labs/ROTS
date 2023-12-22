@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use message_io::{
-    network::{Endpoint, NetEvent, Transport},
+    network::{NetEvent, Transport},
     node::{NodeEvent, NodeHandler},
 };
 use serde::{Deserialize, Serialize};
@@ -11,6 +11,8 @@ pub struct ServerResources<T> {
     pub event_list: Arc<Mutex<Vec<(Endpoint, T)>>>,
     pub handler: NodeHandler<()>,
 }
+
+pub use message_io::network::Endpoint;
 
 #[derive(Resource, Clone)]
 pub struct MainServerEndpoint(pub Endpoint);

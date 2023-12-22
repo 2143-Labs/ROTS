@@ -7,10 +7,19 @@ use serde::{Deserialize, Serialize};
 pub mod animations;
 pub mod casting;
 pub mod event;
+
+#[cfg(feature = "mio-net")]
 pub mod netlib;
 pub mod stats;
 pub mod unit;
 pub mod interactable;
+
+#[cfg(not(feature = "mio-net"))]
+mod fakenetlib;
+#[cfg(not(feature = "mio-net"))]
+pub mod netlib {
+    pub use super::fakenetlib::*;
+}
 
 #[derive(Reflect, Hash, Eq, PartialEq, Clone, Deserialize, Serialize, Debug)]
 pub enum GameAction {

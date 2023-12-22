@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
-use message_io::network::Endpoint;
 use serde::{Deserialize, Serialize};
+use crate::netlib::Endpoint;
 
 use crate::stats::Health;
 
