@@ -23,29 +23,48 @@ impl Plugin for CastingNetworkPlugin {
         app.add_plugins(SharedCastingPlugin)
             .insert_resource(HP(3))
             .add_event::<Die>()
+            .add_event::<WeTeleported>()
             .add_systems(
                 Update,
-                (on_someone_cast, on_someone_hit, on_die)
+                (on_someone_cast, on_someone_hit, on_die, on_us_tp)
                     .run_if(in_state(GameState::ClientConnected)),
             );
     }
 }
 
+#[derive(Event)]
+struct WeTeleported(Vec3);
+
+fn on_us_tp(
+    mut local_player: Query<&mut Transform, With<Player>>,
+    mut ev_r: EventReader<WeTeleported>,
+) {
+    for ev in ev_r.read() {
+        local_player.single_mut().translation = ev.0;
+    }
+}
+
 fn on_someone_cast(
     mut someone_cast: ERFE<SomeoneCast>,
-    other_players: Query<(Entity, &NetEntId, &Transform)>,
+    other_players: Query<(Entity, &NetEntId, &Transform, Has<Player>), With<AnyPlayer>>,
     mut commands: Commands,
     //TODO dont actually spawn a cube on cast
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut ev_w: EventWriter<WeTeleported>,
 ) {
     for cast in someone_cast.read() {
-        for (_ply_ent, ply_net_ent, ply_tfm) in &other_players {
+        for (_ply_ent, ply_net_ent, ply_tfm, is_us) in &other_players {
             if &cast.event.caster_id == ply_net_ent {
                 match cast.event.cast {
                     shared::event::server::Cast::Teleport(target) => {
-                        info!(?target, "Someone teleported")
-                    }
+                        match is_us {
+                            true => {
+                                ev_w.send(WeTeleported(target));
+                            },
+                            false => info!("Someone else teleported"),
+                        }
+                    },
                     shared::event::server::Cast::Shoot(ref dat) => {
                         let cube = PbrBundle {
                             mesh: meshes.add(Mesh::from(shape::Cube { size: 0.3 })),
