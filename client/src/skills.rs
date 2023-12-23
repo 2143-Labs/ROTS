@@ -53,6 +53,8 @@ const fn just_pressed(ga: shared::GameAction) -> impl Fn(Res<Input<KeyCode>>, Re
 }
 
 fn cast_skills(
+    keyboard_input: Res<Input<KeyCode>>,
+    config: Res<Config>,
     player: Query<(Entity, &Player, &Transform, Option<&Actions>)>,
     aim_dir: Query<&ClientAimDirection>,
     mut ev_sa: EventWriter<StartAnimation>,
@@ -74,22 +76,36 @@ fn cast_skills(
             //Ok
         }
     }
-
     let aim_dir = aim_dir.single().0;
-    let target = _transform.translation
-        + Vec3 {
-            x: aim_dir.cos(),
-            y: 0.0,
-            z: -aim_dir.sin(),
-        };
 
-    let shooting_data = ShootingData {
-        shot_from: _transform.translation,
-        target,
-    };
-    let event = Cast::Shoot(shooting_data);
-    info!(?event);
-    ev_sa.send(StartAnimation(event));
+    if config.pressed(&keyboard_input, shared::GameAction::MoveBackward) {
+        let target = _transform.translation
+            + Vec3 {
+                x: aim_dir.cos(),
+                y: 0.0,
+                z: -aim_dir.sin(),
+            } * 100.0;
+
+        let event = Cast::Teleport(target);
+        ev_sa.send(StartAnimation(event));
+
+    } else {
+        let target = _transform.translation
+            + Vec3 {
+                x: aim_dir.cos(),
+                y: 0.0,
+                z: -aim_dir.sin(),
+            };
+
+        let shooting_data = ShootingData {
+            shot_from: _transform.translation,
+            target,
+        };
+        let event = Cast::Shoot(shooting_data);
+        info!(?event);
+        ev_sa.send(StartAnimation(event));
+    }
+
 }
 
 fn start_local_skill_cast_animation(

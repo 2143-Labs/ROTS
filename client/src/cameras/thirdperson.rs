@@ -44,6 +44,7 @@ pub fn q_e_rotate_cam(
     config: Res<Config>,
 ) {
     let mut rotation = 0.0;
+
     if config.pressed(&keyboard_input, GameAction::RotateLeft) {
         rotation += 1.0;
     }
