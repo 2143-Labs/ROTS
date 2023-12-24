@@ -29,7 +29,7 @@ jobs:
 
   build:
     needs: [ setup ]
-    if: steps.setup.outputs.status == 'ok'
+    if: needs.setup.outputs.status == 'ok'
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -70,7 +70,7 @@ jobs:
 
   upload_assets_as_artifact:
     needs: [ setup ]
-    if: steps.setup.outputs.status == 'ok'
+    if: needs.setup.outputs.status == 'ok'
     permissions:
       contents: write
     runs-on: ubuntu-latest
