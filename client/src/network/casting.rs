@@ -16,7 +16,6 @@ use crate::{
     states::GameState,
 };
 
-
 pub struct CastingNetworkPlugin;
 
 impl Plugin for CastingNetworkPlugin {

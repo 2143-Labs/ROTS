@@ -82,25 +82,22 @@ fn on_die(
                     HPIndicator::HP => {
                         *text_section = format!("{} HP", hp.0);
                     }
-                    HPIndicator::Deaths => {
-                        match *total_deaths {
-                            0 => {}
-                            deaths => {
-                                *text_section = format!("Deaths: {deaths}");
-                            },
+                    HPIndicator::Deaths => match *total_deaths {
+                        0 => {}
+                        deaths => {
+                            *text_section = format!("Deaths: {deaths}");
                         }
-                    }
+                    },
                 }
             }
             //match *total_deaths {
-                //0 => {
-                    //*text_section = format!("HP: {}", hp.0);
-                //},
-                //deaths => {
-                    //*text_section = format!("(D {deaths}) HP: {}", hp.0);
-                //},
+            //0 => {
+            //*text_section = format!("HP: {}", hp.0);
+            //},
+            //deaths => {
+            //*text_section = format!("(D {deaths}) HP: {}", hp.0);
+            //},
             //}
         }
     }
 }
-

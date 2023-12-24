@@ -3,8 +3,9 @@ use std::time::Duration;
 use crate::{
     cameras::{notifications::Notification, thirdperson::PLAYER_SPEED},
     cli::CliArgs,
+    network::stats::HPIndicator,
     player::{MovementIntention, Player, PlayerName},
-    states::GameState, network::stats::HPIndicator,
+    states::GameState,
 };
 use bevy::{prelude::*, time::common_conditions::on_timer};
 use shared::{
@@ -111,7 +112,6 @@ fn receive_world_data(
             .insert(my_id)
             .insert(PlayerName(my_name.clone()))
             .insert(our_player_data.health);
-
 
         notif.send(Notification(format!(
             "Connected to server as {my_name} {my_id:?}"
