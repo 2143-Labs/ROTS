@@ -18,7 +18,8 @@ use shared::{
         send_event_to_server, EventToClient, EventToServer, NetworkConnectionTarget,
         ServerResources,
     },
-    Config, ConfigPlugin, stats::Health,
+    stats::Health,
+    Config, ConfigPlugin,
 };
 
 /// How often to run the system
@@ -122,7 +123,13 @@ fn on_player_connect(
     mut new_players: ERFE<shared::event::server::ConnectRequest>,
     mut heartbeat_mapping: ResMut<HeartbeatList>,
     mut endpoint_to_net_id: ResMut<EndpointToNetId>,
-    clients: Query<(&Transform, &PlayerEndpoint, &NetEntId, &ConnectedPlayerName, &Health)>,
+    clients: Query<(
+        &Transform,
+        &PlayerEndpoint,
+        &NetEntId,
+        &ConnectedPlayerName,
+        &Health,
+    )>,
     sr: Res<ServerResources<EventToServer>>,
     _config: Res<Config>,
     mut commands: Commands,
@@ -137,10 +144,15 @@ fn on_player_connect(
             .clone()
             .unwrap_or_else(|| format!("Player #{}", rand::thread_rng().gen_range(1..10000)));
 
-
         //if they are too far, just put them at the spawn
         let default_spawn = Transform::from_xyz(0.0, 2.0, 0.0);
-        let spawn_location = if player.event.my_location.translation.distance_squared(default_spawn.translation) > 10.0 {
+        let spawn_location = if player
+            .event
+            .my_location
+            .translation
+            .distance_squared(default_spawn.translation)
+            > 10.0
+        {
             default_spawn
         } else {
             player.event.my_location
@@ -159,7 +171,9 @@ fn on_player_connect(
 
         // Tell all other clients, also collect their player data to send
         let mut connected_player_list = vec![];
-        for (c_tfm, c_net_client, &ent_id, ConnectedPlayerName { name: c_name }, &health) in &clients {
+        for (c_tfm, c_net_client, &ent_id, ConnectedPlayerName { name: c_name }, &health) in
+            &clients
+        {
             connected_player_list.push(PlayerConnected {
                 data: PlayerData {
                     name: c_name.clone(),
@@ -176,7 +190,6 @@ fn on_player_connect(
             new_player_data.ent_id.clone(),
             new_player_data.health.clone(),
             new_player_data.transform.clone(),
-
             PlayerEndpoint(player.endpoint),
             // Transform component used for generic systems
             shared::AnyPlayer,
@@ -185,13 +198,17 @@ fn on_player_connect(
         // Each time we miss a heartbeat, we increment the Atomic counter.
         // So, we initially set this to negative number to give extra time for the initial
         // connection.
-        let hb_grace_period = (HEARTBEAT_CONNECTION_GRACE_PERIOD - 1) * (HEARTBEAT_TIMEOUT / HEARTBEAT_MILLIS);
+        let hb_grace_period =
+            (HEARTBEAT_CONNECTION_GRACE_PERIOD - 1) * (HEARTBEAT_TIMEOUT / HEARTBEAT_MILLIS);
 
-        heartbeat_mapping
-            .heartbeats
-            .insert(new_player_data.ent_id, Arc::new(AtomicI16::new(-(hb_grace_period as i16))));
+        heartbeat_mapping.heartbeats.insert(
+            new_player_data.ent_id,
+            Arc::new(AtomicI16::new(-(hb_grace_period as i16))),
+        );
 
-        endpoint_to_net_id.map.insert(player.endpoint, new_player_data.ent_id);
+        endpoint_to_net_id
+            .map
+            .insert(player.endpoint, new_player_data.ent_id);
 
         // Finally, tell the client their info
         let event = EventToClient::WorldData(WorldData {
@@ -199,7 +216,6 @@ fn on_player_connect(
             players: connected_player_list,
         });
         send_event_to_server(&sr.handler, player.endpoint, &event);
-
     }
 }
 

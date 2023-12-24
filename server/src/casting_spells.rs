@@ -9,7 +9,8 @@ use shared::{
         NetEntId, ERFE,
     },
     netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
-    AnyPlayer, stats::Health,
+    stats::Health,
+    AnyPlayer,
 };
 
 use crate::{EndpointToNetId, PlayerEndpoint, ServerState};
@@ -109,24 +110,22 @@ fn hit(
         for (ent_id, mut ply_hp) in &mut players {
             if ent_id == &e.player {
                 ply_hp.0 = ply_hp.0.saturating_sub(1);
-                hp_event = Some(EventToClient::SomeoneUpdateComponent(SomeoneUpdateComponent {
-                    id: *ent_id,
-                    update: shared::event::spells::UpdateSharedComponent::Health(*ply_hp),
-                }));
+                hp_event = Some(EventToClient::SomeoneUpdateComponent(
+                    SomeoneUpdateComponent {
+                        id: *ent_id,
+                        update: shared::event::spells::UpdateSharedComponent::Health(*ply_hp),
+                    },
+                ));
 
                 if ply_hp.0 <= 0 {
                     *ply_hp = Health::default();
                 }
             }
-        };
+        }
 
         for c_net_client in &clients {
             if let Some(e) = &hp_event {
-                send_event_to_server(
-                    &sr.handler,
-                    c_net_client.0,
-                    e,
-                );
+                send_event_to_server(&sr.handler, c_net_client.0, e);
             }
             send_event_to_server(
                 &sr.handler,

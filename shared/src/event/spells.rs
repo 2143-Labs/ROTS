@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::{event::EventFromEndpoint, stats::Health};
+use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Component)]

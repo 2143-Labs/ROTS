@@ -2,8 +2,9 @@ use std::time::Duration;
 
 use crate::{
     cameras::{notifications::Notification, thirdperson::PLAYER_SPEED},
+    cli::CliArgs,
     player::{MovementIntention, Player, PlayerName},
-    states::GameState, cli::CliArgs,
+    states::GameState,
 };
 use bevy::{prelude::*, time::common_conditions::on_timer};
 use shared::{

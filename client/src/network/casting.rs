@@ -7,7 +7,8 @@ use shared::{
         client::{BulletHit, SomeoneCast},
         NetEntId, ERFE,
     },
-    AnyPlayer, stats::Health,
+    stats::Health,
+    AnyPlayer,
 };
 
 use crate::{
@@ -58,13 +59,11 @@ fn on_someone_cast(
         for (_ply_ent, ply_net_ent, ply_tfm, is_us) in &other_players {
             if &cast.event.caster_id == ply_net_ent {
                 match cast.event.cast {
-                    shared::event::server::Cast::Teleport(target) => {
-                        match is_us {
-                            true => {
-                                ev_w.send(WeTeleported(target));
-                            },
-                            false => info!("Someone else teleported"),
+                    shared::event::server::Cast::Teleport(target) => match is_us {
+                        true => {
+                            ev_w.send(WeTeleported(target));
                         }
+                        false => info!("Someone else teleported"),
                     },
                     shared::event::server::Cast::Shoot(ref dat) => {
                         let cube = PbrBundle {
@@ -94,7 +93,10 @@ struct Die;
 
 fn on_die(
     mut notifs: EventWriter<Notification>,
-    mut me: Query<(&mut Transform, &mut Health, Has<Player>, &PlayerName), (With<AnyPlayer>, Changed<Health>)>,
+    mut me: Query<
+        (&mut Transform, &mut Health, Has<Player>, &PlayerName),
+        (With<AnyPlayer>, Changed<Health>),
+    >,
     mut total_deaths: Local<u32>,
 ) {
     for (mut tfm, mut hp, is_us, PlayerName(name)) in &mut me {
@@ -107,7 +109,10 @@ fn on_die(
             info!(?name);
             if is_us {
                 *total_deaths += 1;
-                notifs.send(Notification(format!("We died! Total Deaths: {}", *total_deaths)));
+                notifs.send(Notification(format!(
+                    "We died! Total Deaths: {}",
+                    *total_deaths
+                )));
             } else {
                 notifs.send(Notification(format!("{name} died!")));
             }
