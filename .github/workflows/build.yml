@@ -14,11 +14,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Disable action if label is present
-        if: contains(github.event.pull_request.labels.*.name, 'WIP')
-        run: exit 0
+        if: 
+        run: |
+          echo Our labels: ${{ github.event.pull_request.labels.*.name }}
+          exit $( ${{ contains(github.event.pull_request.labels.*.name, 'WIP') }} )
 
   build:
     needs: [ setup ]
+    if: needs.setup.outcome == "success"
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -59,6 +62,7 @@ jobs:
 
   upload_assets_as_artifact:
     needs: [ setup ]
+    if: needs.setup.outcome == "success"
     permissions:
       contents: write
     runs-on: ubuntu-latest
