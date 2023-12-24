@@ -164,7 +164,7 @@ pub fn player_movement(
             move_vector
         };
 
-        let new_y = jumper.get_y();
+        let new_y = jumper.get_y() + 1.0;
         if new_y != transform.translation.y {
             transform.translation.y = new_y;
         }

@@ -14,7 +14,7 @@ impl Jumper {
         }
 
         let delta = self.timer.elapsed_secs();
-        let x = delta * delta * 9.8 + 10.0;
+        let x = -delta * delta * 9.8 + 10.0 * delta;
         x.max(0.0)
     }
 }
