@@ -187,9 +187,9 @@ fn on_player_connect(
 
         commands.spawn((
             ConnectedPlayerName { name },
-            new_player_data.ent_id.clone(),
-            new_player_data.health.clone(),
-            new_player_data.transform.clone(),
+            new_player_data.ent_id,
+            new_player_data.health,
+            new_player_data.transform,
             PlayerEndpoint(player.endpoint),
             // Transform component used for generic systems
             shared::AnyPlayer,
