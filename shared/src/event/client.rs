@@ -1,5 +1,5 @@
+use crate::event::EventFromEndpoint;
 use crate::netlib::ServerResources;
-use crate::{event::EventFromEndpoint};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
