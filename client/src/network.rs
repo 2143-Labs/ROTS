@@ -94,7 +94,7 @@ fn receive_world_data(
         let my_id = event.event.your_id;
 
         // Add our netentid + name
-        commands
+        let cmd_ptr = commands
             .entity(local_player.single())
             .insert(my_id)
             .insert(PlayerName(my_name.clone()));
