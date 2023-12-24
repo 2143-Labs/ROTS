@@ -40,7 +40,7 @@ pub enum Actions {
 
 impl Actions {
     fn is_cancellable(&self) -> bool {
-        return true;
+        true
     }
 }
 
