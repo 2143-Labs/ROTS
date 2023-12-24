@@ -21,7 +21,7 @@ jobs:
 
   build:
     needs: [ setup ]
-    if: needs.setup.outcome == "success"
+    if: needs.setup.outcome == 'success'
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -62,7 +62,7 @@ jobs:
 
   upload_assets_as_artifact:
     needs: [ setup ]
-    if: needs.setup.outcome == "success"
+    if: needs.setup.outcome == 'success'
     permissions:
       contents: write
     runs-on: ubuntu-latest
