@@ -11,21 +11,25 @@ env:
 
 jobs:
   setup:
+    outputs:
+      status: ${{ steps.check.outputs.status }}
     runs-on: ubuntu-latest
     steps:
       - name: Disable action if label is present
+        id: check
         run: |
           # TODO fix this
           EXITCODE="${{ !contains(github.event.pull_request.labels.*.name, 'WIP') }}"
           true
           if [ "$EXITCODE" = "true" ]; then
-            echo '## Cancelling job because of WIP tag' >> $GITHUB_STEP_SUMMARY
-            exit 0
+            echo 'wip' >> $GITHUB_OUTPUT
+          else
+            echo 'ok' >> $GITHUB_OUTPUT
           fi
 
   build:
     needs: [ setup ]
-    if: needs.setup.outcome == 'success'
+    if: steps.setup.outputs.status == 'ok'
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -66,7 +70,7 @@ jobs:
 
   upload_assets_as_artifact:
     needs: [ setup ]
-    if: needs.setup.outcome == 'success'
+    if: steps.setup.outputs.status == 'ok'
     permissions:
       contents: write
     runs-on: ubuntu-latest
