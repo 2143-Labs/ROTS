@@ -4,7 +4,7 @@ use crate::{
     cameras::{notifications::Notification, thirdperson::PLAYER_SPEED},
     cli::CliArgs,
     player::{MovementIntention, Player, PlayerName},
-    states::GameState,
+    states::GameState, network::stats::HPIndicator,
 };
 use bevy::{prelude::*, time::common_conditions::on_timer};
 use shared::{
@@ -90,6 +90,7 @@ fn receive_world_data(
     mut notif: EventWriter<Notification>,
     mut local_player: Query<(Entity, &mut Transform), With<Player>>,
     mut spawn_player: EventWriter<SpawnOtherPlayer>,
+    asset_server: ResMut<AssetServer>,
 ) {
     for event in world_data.read() {
         info!(?event, "Server has returned world data!");
@@ -105,11 +106,12 @@ fn receive_world_data(
         *p_tfm = our_player_data.transform;
 
         // Add our netentid + name
-        let cmd_ptr = commands
+        commands
             .entity(p_ent)
             .insert(my_id)
             .insert(PlayerName(my_name.clone()))
             .insert(our_player_data.health);
+
 
         notif.send(Notification(format!(
             "Connected to server as {my_name} {my_id:?}"
@@ -120,6 +122,43 @@ fn receive_world_data(
             spawn_player.send(SpawnOtherPlayer(other_player_data.clone()));
             info!(?other_player_data);
         }
+
+        commands.spawn((
+            HPIndicator::HP,
+            TextBundle::from_section(
+                "HP: #",
+                TextStyle {
+                    font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
+                    font_size: 45.0,
+                    color: Color::rgb(0.4, 0.5, 0.75),
+                },
+            )
+            .with_text_alignment(TextAlignment::Center)
+            .with_style(Style {
+                position_type: PositionType::Absolute,
+                right: Val::Px(10.0),
+                bottom: Val::Px(10.0),
+                ..default()
+            }),
+        ));
+        commands.spawn((
+            HPIndicator::Deaths,
+            TextBundle::from_section(
+                "",
+                TextStyle {
+                    font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
+                    font_size: 45.0,
+                    color: Color::rgb(0.9, 0.2, 0.2),
+                },
+            )
+            .with_text_alignment(TextAlignment::Center)
+            .with_style(Style {
+                position_type: PositionType::Absolute,
+                right: Val::Px(10.0),
+                bottom: Val::Px(50.0),
+                ..default()
+            }),
+        ));
     }
 }
 

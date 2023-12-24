@@ -7,7 +7,6 @@ use shared::{
         client::{BulletHit, SomeoneCast},
         NetEntId, ERFE,
     },
-    stats::Health,
     AnyPlayer,
 };
 
@@ -17,18 +16,16 @@ use crate::{
     states::GameState,
 };
 
-use super::OtherPlayer;
 
 pub struct CastingNetworkPlugin;
 
 impl Plugin for CastingNetworkPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(SharedCastingPlugin)
-            .add_event::<Die>()
             .add_event::<WeTeleported>()
             .add_systems(
                 Update,
-                (on_someone_cast, on_someone_hit, on_die, on_us_tp)
+                (on_someone_cast, on_someone_hit, on_us_tp)
                     .run_if(in_state(GameState::ClientConnected)),
             );
     }
@@ -83,38 +80,6 @@ fn on_someone_cast(
                         ));
                     }
                 }
-            }
-        }
-    }
-}
-
-#[derive(Event)]
-struct Die;
-
-fn on_die(
-    mut notifs: EventWriter<Notification>,
-    mut me: Query<
-        (&mut Transform, &mut Health, Has<Player>, &PlayerName),
-        (With<AnyPlayer>, Changed<Health>),
-    >,
-    mut total_deaths: Local<u32>,
-) {
-    for (mut tfm, mut hp, is_us, PlayerName(name)) in &mut me {
-        warn!("Someone changed hp");
-        if hp.0 == 0 {
-            // Log a death and reset
-            *hp = Health::default();
-            tfm.translation = Vec3::new(0.0, 1.0, 0.0);
-
-            info!(?name);
-            if is_us {
-                *total_deaths += 1;
-                notifs.send(Notification(format!(
-                    "We died! Total Deaths: {}",
-                    *total_deaths
-                )));
-            } else {
-                notifs.send(Notification(format!("{name} died!")));
             }
         }
     }
