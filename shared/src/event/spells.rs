@@ -1,4 +1,4 @@
-use crate::{event::EventFromEndpoint, stats::Health};
+use crate::{stats::Health};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
