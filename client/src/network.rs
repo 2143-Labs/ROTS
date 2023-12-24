@@ -3,7 +3,7 @@ use std::time::Duration;
 use crate::{
     cameras::{notifications::Notification, thirdperson::PLAYER_SPEED},
     player::{MovementIntention, Player, PlayerName},
-    states::GameState,
+    states::GameState, cli::CliArgs,
 };
 use bevy::{prelude::*, time::common_conditions::on_timer};
 use shared::{
@@ -69,13 +69,14 @@ impl Plugin for NetworkingPlugin {
 
 fn send_connect_packet(
     sr: Res<ServerResources<EventToClient>>,
+    args: Res<CliArgs>,
     mse: Res<MainServerEndpoint>,
     config: Res<Config>,
     local_player: Query<&Transform, With<Player>>,
 ) {
     let my_location = *local_player.single();
     let event = EventToServer::ConnectRequest(ConnectRequest {
-        name: config.name.clone(),
+        name: args.name_override.clone().or(config.name.clone()),
         my_location,
     });
     send_event_to_server(&sr.handler, mse.0, &event);

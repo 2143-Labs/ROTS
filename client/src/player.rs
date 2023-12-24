@@ -13,7 +13,7 @@ pub struct Player {
     pub current_chunk: ChunkPos,
 }
 
-#[derive(Reflect, Component)]
+#[derive(Reflect, Component, Debug)]
 pub struct PlayerName(pub String);
 
 #[derive(Component)]

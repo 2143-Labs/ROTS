@@ -28,12 +28,13 @@ impl Plugin for StatsNetworkPlugin {
 
 fn on_someone_update_stats(
     mut stat_update: ERFE<SomeoneUpdateComponent>,
-    mut players: Query<(&NetEntId, &mut Health), With<AnyPlayer>>,
+    mut players: Query<(&NetEntId, &mut Health, &PlayerName), With<AnyPlayer>>,
 ){
     for update in stat_update.read() {
-        for (ply_ent, mut ply_hp) in &mut players {
+        for (ply_ent, mut ply_hp, name) in &mut players {
+            warn!(?name, "Someone changed hp??");
             if ply_ent == &update.event.id {
-                info!(?update.event);
+                warn!(?update.event);
                 match update.event.update {
                     shared::event::spells::UpdateSharedComponent::Health(hp) => {
                         *ply_hp = hp;

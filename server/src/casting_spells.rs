@@ -108,11 +108,15 @@ fn hit(
         let mut hp_event = None;
         for (ent_id, mut ply_hp) in &mut players {
             if ent_id == &e.player {
-                ply_hp.0 -= 1;
+                ply_hp.0 = ply_hp.0.saturating_sub(1);
                 hp_event = Some(EventToClient::SomeoneUpdateComponent(SomeoneUpdateComponent {
                     id: *ent_id,
                     update: shared::event::spells::UpdateSharedComponent::Health(*ply_hp),
                 }));
+
+                if ply_hp.0 <= 0 {
+                    *ply_hp = Health::default();
+                }
             }
         };
 

@@ -7,7 +7,7 @@ use shared::{
         client::{BulletHit, SomeoneCast},
         NetEntId, ERFE,
     },
-    AnyPlayer,
+    AnyPlayer, stats::Health,
 };
 
 use crate::{
@@ -15,6 +15,8 @@ use crate::{
     player::{Player, PlayerName},
     states::GameState,
 };
+
+use super::OtherPlayer;
 
 pub struct CastingNetworkPlugin;
 
@@ -90,9 +92,26 @@ fn on_someone_cast(
 #[derive(Event)]
 struct Die;
 
-fn on_die(mut die: EventReader<Die>, mut me: Query<&mut Transform, With<Player>>) {
-    for _death in die.read() {
-        me.single_mut().translation = Vec3::new(0.0, 1.0, 0.0)
+fn on_die(
+    mut notifs: EventWriter<Notification>,
+    mut me: Query<(&mut Transform, &mut Health, Has<Player>, &PlayerName), (With<AnyPlayer>, Changed<Health>)>,
+    mut total_deaths: Local<u32>,
+) {
+    for (mut tfm, mut hp, is_us, PlayerName(name)) in &mut me {
+        warn!("Someone changed hp");
+        if hp.0 == 0 {
+            // Log a death and reset
+            *hp = Health::default();
+            tfm.translation = Vec3::new(0.0, 1.0, 0.0);
+
+            info!(?name);
+            if is_us {
+                *total_deaths += 1;
+                notifs.send(Notification(format!("We died! Total Deaths: {}", *total_deaths)));
+            } else {
+                notifs.send(Notification(format!("{name} died!")));
+            }
+        }
     }
 }
 
@@ -101,7 +120,6 @@ fn on_someone_hit(
     all_plys: Query<(&NetEntId, &PlayerName, Has<Player>), With<AnyPlayer>>,
     mut notifs: EventWriter<Notification>,
     bullets: Query<(Entity, &NetEntId, &CasterNetId)>,
-    mut die: EventWriter<Die>,
     //mut commands: Commands,
 ) {
     for hit in someone_hit.read() {

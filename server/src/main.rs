@@ -149,7 +149,7 @@ fn on_player_connect(
         let new_player_data = PlayerData {
             name: name.clone(),
             ent_id: NetEntId::random(),
-            health: Health(3),
+            health: Health::default(),
             transform: spawn_location,
         };
 
