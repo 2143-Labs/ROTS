@@ -142,6 +142,7 @@ pub fn player_movement(
         jumper.timer.tick(time.delta());
         if config.pressed(&keyboard_input, GameAction::Jump) {
             if jumper.timer.finished() {
+                info!("jump");
                 // TODO jump
                 jumper.timer.reset();
             }
