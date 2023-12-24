@@ -17,7 +17,8 @@ impl Plugin for StatsNetworkPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (on_someone_update_stats, on_hp_change, update_hp_bar).run_if(in_state(GameState::ClientConnected)),
+            (on_someone_update_stats, on_hp_change, update_hp_bar)
+                .run_if(in_state(GameState::ClientConnected)),
         );
     }
 }

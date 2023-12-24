@@ -53,7 +53,7 @@ fn generate_code(req: &GenerateRequest) -> String {
     );
 
     let code = syn::parse_file(&code.to_string()).unwrap();
-    
+
     prettyplease::unparse(&code)
     //code.to_string()
 }

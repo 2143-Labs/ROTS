@@ -34,10 +34,7 @@ impl Default for Player {
 #[derive(Resource)]
 pub struct Animation(Handle<AnimationClip>);
 
-pub fn spawn_player_sprite(
-    mut commands: Commands,
-    asset_server: ResMut<AssetServer>,
-) {
+pub fn spawn_player_sprite(mut commands: Commands, asset_server: ResMut<AssetServer>) {
     commands.insert_resource(Animation(asset_server.load("tadpole.gltf#Animation0")));
 
     commands.spawn((

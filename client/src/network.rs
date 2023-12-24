@@ -102,10 +102,7 @@ fn build_healthbar(
     // make it invisible until it's updated
     hp_bar.transform.scale = Vec3::ZERO;
 
-    s.spawn((
-        hp_bar,
-        crate::network::stats::HPBar(player_id),
-    ));
+    s.spawn((hp_bar, crate::network::stats::HPBar(player_id)));
 }
 
 fn receive_world_data(
@@ -272,7 +269,6 @@ pub struct OtherPlayer;
 #[derive(Event)]
 pub struct SpawnOtherPlayer(PlayerConnected);
 
-
 fn spawn_player(
     mut commands: Commands,
     asset_server: ResMut<AssetServer>,
@@ -290,17 +286,19 @@ fn spawn_player(
             ..default()
         };
 
-        commands.spawn((
-            cube,
-            OtherPlayer,
-            PlayerName(event.data.name.clone()),
-            MovementIntention(Vec2::ZERO),
-            Name::new(format!("Player: {}", event.data.name)),
-            // their NetEntId is a component
-            event.data.ent_id,
-            event.data.health,
-            AnyPlayer,
-        )).with_children(|s| build_healthbar(s, &mut meshes, &mut materials));
+        commands
+            .spawn((
+                cube,
+                OtherPlayer,
+                PlayerName(event.data.name.clone()),
+                MovementIntention(Vec2::ZERO),
+                Name::new(format!("Player: {}", event.data.name)),
+                // their NetEntId is a component
+                event.data.ent_id,
+                event.data.health,
+                AnyPlayer,
+            ))
+            .with_children(|s| build_healthbar(s, &mut meshes, &mut materials));
     }
 }
 
