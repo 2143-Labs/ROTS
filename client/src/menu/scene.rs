@@ -96,7 +96,7 @@ pub fn spawn_menu_scene(
         .spawn((
             SceneBundle {
                 scene: asset_server.load("sprytilebrickhouse.gltf#Scene0"),
-                transform: Transform::from_xyz(-5.2, -1.0, -20.0)
+                transform: Transform::from_xyz(-5., -0.9, -20.0)
                     .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
                 ..default()
             },

@@ -56,6 +56,8 @@ fn on_hp_change(
     >,
     mut hp_text: Query<(&mut Text, &HPIndicator)>,
     mut total_deaths: Local<u32>,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
 ) {
     for (mut tfm, mut hp, is_us, PlayerName(name)) in &mut players {
         // die
@@ -64,6 +66,10 @@ fn on_hp_change(
             tfm.translation = Vec3::new(0.0, 1.0, 0.0);
 
             if is_us {
+                commands.spawn(AudioBundle {
+                    source: asset_server.load("sounds/death.ogg"),
+                    ..default()
+                });
                 *total_deaths += 1;
             } else {
                 notifs.send(Notification(format!("{name} died!")));
