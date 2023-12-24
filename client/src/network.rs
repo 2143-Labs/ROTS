@@ -229,6 +229,7 @@ fn spawn_player(
             Name::new(format!("Player: {}", event.data.name)),
             // their NetEntId is a component
             event.data.ent_id,
+            event.data.health,
             AnyPlayer,
         ));
     }
