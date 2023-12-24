@@ -14,9 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Disable action if label is present
-        if: 
         run: |
-          echo Our labels: ${{ toJSON(github.event.pull_request.labels.*.name) }}
           EXITCODE=$( ${{ !contains(github.event.pull_request.labels.*.name, 'WIP') }} )
           if [ $EXITCODE -gt 0 ]; then
             echo '## Cancelling job because of WIP tag' >> $GITHUB_STEP_SUMMARY
