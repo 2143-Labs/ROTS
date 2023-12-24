@@ -17,7 +17,7 @@ impl Plugin for StatsNetworkPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (on_someone_update_stats, on_die).run_if(in_state(GameState::ClientConnected)),
+            (on_someone_update_stats, on_hp_change, update_hp_bar).run_if(in_state(GameState::ClientConnected)),
         );
     }
 }
@@ -47,40 +47,37 @@ pub enum HPIndicator {
     Deaths,
 }
 
-fn on_die(
+fn on_hp_change(
     mut notifs: EventWriter<Notification>,
-    mut me: Query<
+    mut players: Query<
         (&mut Transform, &mut Health, Has<Player>, &PlayerName),
         (With<AnyPlayer>, Changed<Health>),
     >,
     mut hp_text: Query<(&mut Text, &HPIndicator)>,
     mut total_deaths: Local<u32>,
 ) {
-    for (mut tfm, mut hp, is_us, PlayerName(name)) in &mut me {
-        warn!("Someone changed hp");
+    for (mut tfm, mut hp, is_us, PlayerName(name)) in &mut players {
+        // die
         if hp.0 == 0 {
-            // Log a death and reset
             *hp = Health::default();
             tfm.translation = Vec3::new(0.0, 1.0, 0.0);
 
-            info!(?name);
             if is_us {
                 *total_deaths += 1;
-                notifs.send(Notification(format!(
-                    "We died! Total Deaths: {}",
-                    *total_deaths
-                )));
             } else {
                 notifs.send(Notification(format!("{name} died!")));
             }
         }
 
+        // Update the UI Components
         if is_us {
             for (mut text, ind_type) in &mut hp_text {
                 let text_section = &mut text.sections[0].value;
                 match ind_type {
                     HPIndicator::HP => {
-                        *text_section = format!("{} HP", hp.0);
+                        // TODO no hp indication hud for now
+                        *text_section = format!("");
+                        //*text_section = format!("{} HP", hp.0);
                     }
                     HPIndicator::Deaths => match *total_deaths {
                         0 => {}
@@ -90,14 +87,25 @@ fn on_die(
                     },
                 }
             }
-            //match *total_deaths {
-            //0 => {
-            //*text_section = format!("HP: {}", hp.0);
-            //},
-            //deaths => {
-            //*text_section = format!("(D {deaths}) HP: {}", hp.0);
-            //},
-            //}
+        }
+    }
+}
+
+#[derive(Component)]
+pub struct HPBar(pub Entity);
+
+// TODO make this a child component of players and only run this on update health
+fn update_hp_bar(
+    players: Query<(Entity, &Transform, &Health),>,
+    mut hp_bars: Query<(&mut Transform, &HPBar), Without<Health>>,
+) {
+    for (ply_ent, tfm, hp) in &players {
+        for (mut hp_bar_tfm, HPBar(owner_ent)) in hp_bars.iter_mut() {
+            if &ply_ent == owner_ent {
+                hp_bar_tfm.translation = tfm.translation + Vec3::new(0.0, 1.5, 0.0);
+                let health_pct = hp.0 as f32 / Health::default().0 as f32;
+                hp_bar_tfm.scale = Vec3::new(0.1, health_pct, 0.1);
+            }
         }
     }
 }

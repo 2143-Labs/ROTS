@@ -22,7 +22,7 @@ use shared::{
 };
 
 mod casting;
-mod stats;
+pub mod stats;
 
 pub struct NetworkingPlugin;
 

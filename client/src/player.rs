@@ -36,20 +36,13 @@ pub struct Animation(Handle<AnimationClip>);
 
 pub fn spawn_player_sprite(
     mut commands: Commands,
-    // mut meshes: ResMut<Assets<Mesh>>,
-    // mut materials: ResMut<Assets<StandardMaterial>>,
+     mut meshes: ResMut<Assets<Mesh>>,
+     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: ResMut<AssetServer>,
 ) {
-    // let cube = PbrBundle {
-    // mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-    // material: materials.add(Color::rgb(0.5, 0.5, 1.0).into()),
-    // transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
-    // ..Default::default()
-    // };
-
     commands.insert_resource(Animation(asset_server.load("tadpole.gltf#Animation0")));
 
-    commands.spawn((
+    let player = commands.spawn((
         SceneBundle {
             scene: asset_server.load("tadpole.gltf#Scene0"),
             transform: Transform::from_xyz(0., 1.0, 0.)
@@ -67,6 +60,19 @@ pub fn spawn_player_sprite(
             timer: Timer::from_seconds(1.0, TimerMode::Once),
         },
         AnyPlayer,
+    ));
+    let player = player.id();
+
+    let hp_bar = PbrBundle {
+        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+        material: materials.add(Color::rgb(0.9, 0.3, 0.0).into()),
+        transform: Transform::from_translation(Vec3::new(0.0, -10.0, 0.0)),
+        ..Default::default()
+    };
+
+    commands.spawn((
+        hp_bar,
+        crate::network::stats::HPBar(player),
     ));
 }
 
