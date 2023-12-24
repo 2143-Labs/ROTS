@@ -155,6 +155,7 @@ pub fn player_movement(
 
             transform.translation +=
                 Vec3::new(movem.x, 0.0, movem.y) * PLAYER_SPEED * time.delta_seconds();
+
             // point in the direction you are moving
             transform.rotation = Quat::from_rotation_y(movem.x.atan2(movem.y));
 
@@ -162,6 +163,11 @@ pub fn player_movement(
         } else {
             move_vector
         };
+
+        let new_y = jumper.get_y();
+        if new_y != transform.translation.y {
+            transform.translation.y = new_y;
+        }
 
         // only change this if we have to. This will trigger a packet to be sent
         if movement.0 != final_move {

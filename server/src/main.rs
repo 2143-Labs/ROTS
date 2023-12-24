@@ -145,7 +145,7 @@ fn on_player_connect(
             .unwrap_or_else(|| format!("Player #{}", rand::thread_rng().gen_range(1..10000)));
 
         //if they are too far, just put them at the spawn
-        let default_spawn = Transform::from_xyz(0.0, 2.0, 0.0);
+        let default_spawn = player.event.my_location.with_translation(Vec3::new(0.0, 0.0, 0.0));
         let spawn_location = if player
             .event
             .my_location
