@@ -19,12 +19,12 @@ jobs:
         id: check
         run: |
           # TODO fix this
-          EXITCODE="${{ !contains(github.event.pull_request.labels.*.name, 'WIP') }}"
+          IS_WIP="${{ !contains(github.event.pull_request.labels.*.name, 'WIP') }}"
           true
-          if [ "$EXITCODE" = "true" ]; then
-            echo 'wip' >> $GITHUB_OUTPUT
+          if [ "$IS_WIP" = "true" ]; then
+            echo 'status=wip' >> $GITHUB_OUTPUT
           else
-            echo 'ok' >> $GITHUB_OUTPUT
+            echo 'status=ok' >> $GITHUB_OUTPUT
           fi
 
   build:
