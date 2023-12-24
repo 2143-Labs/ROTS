@@ -16,12 +16,11 @@ jobs:
       - name: Disable action if label is present
         run: |
           # TODO fix this
-          exit 0
           EXITCODE=$( ${{ !contains(github.event.pull_request.labels.*.name, 'WIP') }} )
           if [ $EXITCODE -gt 0 ]; then
             echo '## Cancelling job because of WIP tag' >> $GITHUB_STEP_SUMMARY
-          end
-          exit $EXITCODE
+            exit 0
+          fi
 
   build:
     needs: [ setup ]
