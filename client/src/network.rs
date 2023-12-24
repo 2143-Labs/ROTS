@@ -85,12 +85,37 @@ fn send_connect_packet(
     info!("Sent connection packet to {}", mse.0);
 }
 
+fn build_healthbar(
+    s: &mut ChildBuilder,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+) {
+    let player_id = s.parent_entity();
+    // spawn their hp bar
+    let mut hp_bar = PbrBundle {
+        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+        material: materials.add(Color::rgb(0.9, 0.3, 0.0).into()),
+        transform: Transform::from_translation(Vec3::new(0.0, 0.4, 0.0)),
+        ..Default::default()
+    };
+
+    // make it invisible until it's updated
+    hp_bar.transform.scale = Vec3::ZERO;
+
+    s.spawn((
+        hp_bar,
+        crate::network::stats::HPBar(player_id),
+    ));
+}
+
 fn receive_world_data(
     mut world_data: ERFE<WorldData>,
     mut commands: Commands,
     mut notif: EventWriter<Notification>,
     mut local_player: Query<(Entity, &mut Transform), With<Player>>,
     mut spawn_player: EventWriter<SpawnOtherPlayer>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: ResMut<AssetServer>,
 ) {
     for event in world_data.read() {
@@ -111,7 +136,8 @@ fn receive_world_data(
             .entity(p_ent)
             .insert(my_id)
             .insert(PlayerName(my_name.clone()))
-            .insert(our_player_data.health);
+            .insert(our_player_data.health)
+            .with_children(|s| build_healthbar(s, &mut meshes, &mut materials));
 
         notif.send(Notification(format!(
             "Connected to server as {my_name} {my_id:?}"
@@ -246,9 +272,12 @@ pub struct OtherPlayer;
 #[derive(Event)]
 pub struct SpawnOtherPlayer(PlayerConnected);
 
+
 fn spawn_player(
     mut commands: Commands,
     asset_server: ResMut<AssetServer>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
 
     mut er: EventReader<SpawnOtherPlayer>,
 ) {
@@ -271,7 +300,7 @@ fn spawn_player(
             event.data.ent_id,
             event.data.health,
             AnyPlayer,
-        ));
+        )).with_children(|s| build_healthbar(s, &mut meshes, &mut materials));
     }
 }
 

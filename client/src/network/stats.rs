@@ -96,15 +96,15 @@ pub struct HPBar(pub Entity);
 
 // TODO make this a child component of players and only run this on update health
 fn update_hp_bar(
-    players: Query<(Entity, &Transform, &Health),>,
+    players: Query<(Entity, &Health), Changed<Health>>,
     mut hp_bars: Query<(&mut Transform, &HPBar), Without<Health>>,
 ) {
-    for (ply_ent, tfm, hp) in &players {
+    for (ply_ent, hp) in &players {
+        info!(?hp);
         for (mut hp_bar_tfm, HPBar(owner_ent)) in hp_bars.iter_mut() {
             if &ply_ent == owner_ent {
-                hp_bar_tfm.translation = tfm.translation + Vec3::new(0.0, 1.5, 0.0);
                 let health_pct = hp.0 as f32 / Health::default().0 as f32;
-                hp_bar_tfm.scale = Vec3::new(0.1, health_pct, 0.1);
+                hp_bar_tfm.scale = Vec3::new(0.025, health_pct / 4.0, 0.025);
             }
         }
     }
