@@ -280,9 +280,7 @@ fn spawn_player(
     for SpawnOtherPlayer(event) in er.read() {
         let cube = SceneBundle {
             scene: asset_server.load("tadpole.gltf#Scene0"),
-            transform: Transform::from_xyz(0., 1.0, 0.)
-                .with_rotation(Quat::from_rotation_y(std::f32::consts::PI))
-                .with_scale(Vec3::new(4., 4., 4.)),
+            transform: event.data.transform,
             ..default()
         };
 
