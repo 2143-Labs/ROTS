@@ -84,7 +84,7 @@ fn cast_skills(
                 x: aim_dir.cos(),
                 y: 0.0,
                 z: -aim_dir.sin(),
-            } * 100.0;
+            } * 10.0;
 
         let event = Cast::Teleport(target);
         ev_sa.send(StartAnimation(event));

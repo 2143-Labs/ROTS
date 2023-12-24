@@ -52,7 +52,7 @@ pub fn spawn_player_sprite(mut commands: Commands, asset_server: ResMut<AssetSer
         Player::default(),
         crate::cameras::FaceCamera,
         crate::physics::Jumper {
-            timer: Timer::from_seconds(1.0, TimerMode::Once),
+            timer: Timer::from_seconds(1.05, TimerMode::Once),
         },
         AnyPlayer,
     ));
