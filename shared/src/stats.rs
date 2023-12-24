@@ -1,5 +1,5 @@
+use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 
-
-#[derive(Component, Debug, Eq)]
-pub struct Health(u32);
-
+#[derive(Serialize, Deserialize, Component, Debug, Eq, PartialEq, Clone, Copy)]
+pub struct Health(pub u32);

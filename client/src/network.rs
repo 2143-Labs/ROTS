@@ -84,20 +84,28 @@ fn receive_world_data(
     mut world_data: ERFE<WorldData>,
     mut commands: Commands,
     mut notif: EventWriter<Notification>,
-    local_player: Query<Entity, With<Player>>,
+    mut local_player: Query<(Entity, &mut Transform), With<Player>>,
     mut spawn_player: EventWriter<SpawnOtherPlayer>,
 ) {
     for event in world_data.read() {
         info!(?event, "Server has returned world data!");
 
-        let my_name = &event.event.your_name;
-        let my_id = event.event.your_id;
+        let our_player_data = &event.event.your_player_data;
+
+        let my_name = &our_player_data.name;
+        let my_id = our_player_data.ent_id;
+
+        let (p_ent, mut p_tfm) = local_player.single_mut();
+
+        // Move to the given location
+        *p_tfm = our_player_data.transform;
 
         // Add our netentid + name
         let cmd_ptr = commands
-            .entity(local_player.single())
+            .entity(p_ent)
             .insert(my_id)
-            .insert(PlayerName(my_name.clone()));
+            .insert(PlayerName(my_name.clone()))
+            .insert(our_player_data.health);
 
         notif.send(Notification(format!(
             "Connected to server as {my_name} {my_id:?}"

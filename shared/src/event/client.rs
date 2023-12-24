@@ -10,14 +10,12 @@ use super::{
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
 pub struct WorldData {
-    pub your_name: String,
-    pub your_id: NetEntId,
+    pub your_player_data: PlayerData,
     pub players: Vec<PlayerConnected>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
 pub struct PlayerConnected {
-    pub initial_transform: Transform,
     pub data: PlayerData,
 }
 

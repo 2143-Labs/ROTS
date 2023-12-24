@@ -18,13 +18,16 @@ use shared::{
         send_event_to_server, EventToClient, EventToServer, NetworkConnectionTarget,
         ServerResources,
     },
-    Config, ConfigPlugin,
+    Config, ConfigPlugin, stats::Health,
 };
 
 /// How often to run the system
 const HEARTBEAT_MILLIS: u64 = 200;
 /// How long until disconnect
-const HEARTBEAT_TIMEOUT: u64 = 3000;
+const HEARTBEAT_TIMEOUT: u64 = 1000;
+/// How long do you have to connect, as a multipler of the heartbeart timeout.
+/// If the timeout is 1000 ms, then `5` would mean you have `5000ms` to connect.
+const HEARTBEAT_CONNECTION_GRACE_PERIOD: u64 = 5;
 
 #[derive(States, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 enum ServerState {
@@ -58,7 +61,6 @@ struct PlayerDisconnect {
 }
 
 pub mod casting_spells;
-pub mod player_stats;
 
 fn main() {
     info!("Main Start");
@@ -120,64 +122,84 @@ fn on_player_connect(
     mut new_players: ERFE<shared::event::server::ConnectRequest>,
     mut heartbeat_mapping: ResMut<HeartbeatList>,
     mut endpoint_to_net_id: ResMut<EndpointToNetId>,
-    clients: Query<(&Transform, &PlayerEndpoint, &NetEntId, &ConnectedPlayerName)>,
+    clients: Query<(&Transform, &PlayerEndpoint, &NetEntId, &ConnectedPlayerName, &Health)>,
     sr: Res<ServerResources<EventToServer>>,
     _config: Res<Config>,
     mut commands: Commands,
 ) {
     for player in new_players.read() {
         info!(?player);
+
+        // Generate their name
         let name = player
             .event
             .name
             .clone()
             .unwrap_or_else(|| format!("Player #{}", rand::thread_rng().gen_range(1..10000)));
 
-        let ent_id = NetEntId::random();
+
+        //if they are too far, just put them at the spawn
+        let default_spawn = Transform::from_xyz(0.0, 2.0, 0.0);
+        let spawn_location = if player.event.my_location.translation.distance_squared(default_spawn.translation) > 10.0 {
+            default_spawn
+        } else {
+            player.event.my_location
+        };
+
+        let new_player_data = PlayerData {
+            name: name.clone(),
+            ent_id: NetEntId::random(),
+            health: Health(3),
+            transform: spawn_location,
+        };
 
         let event = EventToClient::PlayerConnected(PlayerConnected {
-            data: PlayerData {
-                ent_id,
-                name: name.clone(),
-            },
-            initial_transform: Transform::from_xyz(0.0, -20.0, 0.0),
+            data: new_player_data.clone(),
         });
 
         // Tell all other clients, also get their names and IDs to send
         let mut connected_player_list = vec![];
-        for (c_tfm, c_net_client, c_net_ent, ConnectedPlayerName { name: c_name }) in &clients {
+        for (c_tfm, c_net_client, &ent_id, ConnectedPlayerName { name: c_name }, &health) in &clients {
             connected_player_list.push(PlayerConnected {
                 data: PlayerData {
                     name: c_name.clone(),
-                    ent_id: *c_net_ent,
+                    ent_id,
+                    health,
+                    transform: *c_tfm,
                 },
-                initial_transform: *c_tfm,
             });
             send_event_to_server(&sr.handler, c_net_client.0, &event);
         }
 
-        // Tell the client their info
+        commands.spawn((
+            ConnectedPlayerName { name },
+            new_player_data.ent_id.clone(),
+            new_player_data.health.clone(),
+            new_player_data.transform.clone(),
+            // Their connection
+            PlayerEndpoint(player.endpoint),
+            // Transform component used for movement
+            shared::AnyPlayer,
+        ));
+
+        // Each time we miss a heartbeat, we increment the Atomic counter.
+        // So, we initially set this to negative number to give extra time for the initial
+        // connection.
+        let hb_grace_period = (HEARTBEAT_CONNECTION_GRACE_PERIOD - 1) * (HEARTBEAT_TIMEOUT / HEARTBEAT_MILLIS);
+
+        heartbeat_mapping
+            .heartbeats
+            .insert(new_player_data.ent_id, Arc::new(AtomicI16::new(-(hb_grace_period as i16))));
+
+        endpoint_to_net_id.map.insert(player.endpoint, new_player_data.ent_id);
+
+        // Finally, tell the client their info
         let event = EventToClient::WorldData(WorldData {
-            your_name: name.clone(),
-            your_id: ent_id,
+            your_player_data: new_player_data,
             players: connected_player_list,
         });
         send_event_to_server(&sr.handler, player.endpoint, &event);
 
-        commands.spawn((
-            ConnectedPlayerName { name },
-            ent_id,
-            PlayerEndpoint(player.endpoint),
-            // Transform component used for movement
-            player.event.my_location,
-            shared::AnyPlayer,
-        ));
-
-        heartbeat_mapping
-            .heartbeats
-            .insert(ent_id, Arc::new(AtomicI16::new(0)));
-
-        endpoint_to_net_id.map.insert(player.endpoint, ent_id);
     }
 }
 
