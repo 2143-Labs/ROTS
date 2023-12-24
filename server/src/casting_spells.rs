@@ -108,20 +108,20 @@ fn hit(
         let mut hp_event = None;
         for (ent_id, mut ply_hp) in &mut players {
             if ent_id == &e.player {
-                ply_hp -= 1;
+                ply_hp.0 -= 1;
                 hp_event = Some(EventToClient::SomeoneUpdateComponent(SomeoneUpdateComponent {
-                    id: ent_id,
+                    id: *ent_id,
                     update: shared::event::spells::UpdateSharedComponent::Health(*ply_hp),
                 }));
             }
         };
 
         for c_net_client in &clients {
-            if let Some(e) = hp_event {
+            if let Some(e) = &hp_event {
                 send_event_to_server(
                     &sr.handler,
                     c_net_client.0,
-                    &e,
+                    e,
                 );
             }
             send_event_to_server(
