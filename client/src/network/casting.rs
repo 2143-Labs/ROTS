@@ -21,7 +21,6 @@ pub struct CastingNetworkPlugin;
 impl Plugin for CastingNetworkPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(SharedCastingPlugin)
-            .insert_resource(HP(3))
             .add_event::<Die>()
             .add_event::<WeTeleported>()
             .add_systems(
@@ -88,9 +87,6 @@ fn on_someone_cast(
     }
 }
 
-#[derive(Resource, Clone)]
-struct HP(i32);
-
 #[derive(Event)]
 struct Die;
 
@@ -105,7 +101,6 @@ fn on_someone_hit(
     all_plys: Query<(&NetEntId, &PlayerName, Has<Player>), With<AnyPlayer>>,
     mut notifs: EventWriter<Notification>,
     bullets: Query<(Entity, &NetEntId, &CasterNetId)>,
-    mut temp_hp: ResMut<HP>,
     mut die: EventWriter<Die>,
     //mut commands: Commands,
 ) {
@@ -130,15 +125,7 @@ fn on_someone_hit(
             if ply_id == &hit.event.player {
                 defender_name = Some(name);
                 if is_us {
-                    // TODO clientside damage!
-                    temp_hp.0 -= 1;
-                    if temp_hp.0 <= 0 {
-                        notifs.send(Notification(format!("We died!")));
-                        temp_hp.0 = 3;
-                        die.send(Die);
-                    } else {
-                        notifs.send(Notification(format!("HP: {}", temp_hp.0)));
-                    }
+                    info!("We got hit!");
                 }
             }
 

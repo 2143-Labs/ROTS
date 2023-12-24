@@ -1,8 +1,9 @@
-use crate::event::EventFromEndpoint;
+use crate::{event::EventFromEndpoint, stats::Health};
 use crate::netlib::ServerResources;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use super::spells::UpdateSharedComponent;
 use super::{
     server::{Cast, ChangeMovement},
     NetEntId, PlayerData,
@@ -41,6 +42,12 @@ pub struct SomeoneCast {
 pub struct BulletHit {
     pub bullet: NetEntId,
     pub player: NetEntId,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Event)]
+pub struct SomeoneUpdateComponent {
+    pub id: NetEntId,
+    pub update: UpdateSharedComponent,
 }
 
 include!(concat!(env!("OUT_DIR"), "/client_event.rs"));

@@ -4,12 +4,12 @@ use bevy::{prelude::*, utils::HashSet};
 use shared::{
     casting::{CasterNetId, DespawnTime, SharedCastingPlugin},
     event::{
-        client::{BulletHit, SomeoneCast},
+        client::{BulletHit, SomeoneCast, SomeoneUpdateComponent},
         spells::ShootingData,
         NetEntId, ERFE,
     },
     netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
-    AnyPlayer,
+    AnyPlayer, stats::Health,
 };
 
 use crate::{EndpointToNetId, PlayerEndpoint, ServerState};
@@ -94,6 +94,8 @@ struct HitList(HashSet<BulletHit>);
 fn hit(
     mut ev_r: EventReader<BulletHit>,
     clients: Query<&PlayerEndpoint>,
+    // todo make this into an event
+    mut players: Query<(&NetEntId, &mut Health), With<AnyPlayer>>,
     sr: Res<ServerResources<EventToServer>>,
     mut hit_list: ResMut<HitList>,
 ) {
@@ -101,8 +103,27 @@ fn hit(
         if hit_list.0.contains(e) {
             continue;
         }
+
         hit_list.0.insert(e.clone());
+        let mut hp_event = None;
+        for (ent_id, mut ply_hp) in &mut players {
+            if ent_id == &e.player {
+                ply_hp -= 1;
+                hp_event = Some(EventToClient::SomeoneUpdateComponent(SomeoneUpdateComponent {
+                    id: ent_id,
+                    update: shared::event::spells::UpdateSharedComponent::Health(*ply_hp),
+                }));
+            }
+        };
+
         for c_net_client in &clients {
+            if let Some(e) = hp_event {
+                send_event_to_server(
+                    &sr.handler,
+                    c_net_client.0,
+                    &e,
+                );
+            }
             send_event_to_server(
                 &sr.handler,
                 c_net_client.0,
