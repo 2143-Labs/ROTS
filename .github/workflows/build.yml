@@ -21,7 +21,6 @@ jobs:
           end
           exit $EXITCODE
 
-
   build:
     needs: [ setup ]
     if: needs.setup.outcome == 'success'
