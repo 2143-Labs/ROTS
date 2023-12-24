@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Disable action if label is present
         if: contains(github.event.pull_request.labels.*.name, 'WIP')
-        run: exit 1
+        run: exit 0
 
   build:
     needs: [ setup ]
