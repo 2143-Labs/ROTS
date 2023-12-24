@@ -10,7 +10,14 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  setup:
+    steps:
+      - name: Disable action if label is present
+        if: contains(github.event.pull_request.labels.*.name, 'WIP')
+        run: exit 1
+
   build:
+    needs: [ setup ]
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -50,6 +57,7 @@ jobs:
         retention-days: 2
 
   upload_assets_as_artifact:
+    needs: [ setup ]
     permissions:
       contents: write
     runs-on: ubuntu-latest
