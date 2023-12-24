@@ -16,7 +16,7 @@ jobs:
       - name: Disable action if label is present
         if: 
         run: |
-          echo Our labels: ${{ github.event.pull_request.labels.*.name }}
+          echo Our labels: ${{ toJSON(github.event.pull_request.labels.*.name) }}
           exit $( ${{ contains(github.event.pull_request.labels.*.name, 'WIP') }} )
 
   build:
