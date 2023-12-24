@@ -157,7 +157,7 @@ fn on_player_connect(
             data: new_player_data.clone(),
         });
 
-        // Tell all other clients, also get their names and IDs to send
+        // Tell all other clients, also collect their player data to send
         let mut connected_player_list = vec![];
         for (c_tfm, c_net_client, &ent_id, ConnectedPlayerName { name: c_name }, &health) in &clients {
             connected_player_list.push(PlayerConnected {
@@ -176,9 +176,9 @@ fn on_player_connect(
             new_player_data.ent_id.clone(),
             new_player_data.health.clone(),
             new_player_data.transform.clone(),
-            // Their connection
+
             PlayerEndpoint(player.endpoint),
-            // Transform component used for movement
+            // Transform component used for generic systems
             shared::AnyPlayer,
         ));
 
