@@ -3,6 +3,8 @@ use bevy::prelude::*;
 use message_io::network::Endpoint;
 use serde::{Deserialize, Serialize};
 
+use crate::stats::Health;
+
 pub mod client;
 pub mod server;
 pub mod spells;
@@ -30,8 +32,11 @@ impl<E> EventFromEndpoint<E> {
     }
 }
 
+// This is all the data need to initialize a player for the client side.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlayerData {
     pub name: String,
     pub ent_id: NetEntId,
+    pub health: Health,
+    pub transform: Transform,
 }

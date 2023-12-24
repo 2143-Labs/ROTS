@@ -2,6 +2,8 @@ use std::time::Duration;
 
 use crate::{
     cameras::{notifications::Notification, thirdperson::PLAYER_SPEED},
+    cli::CliArgs,
+    network::stats::HPIndicator,
     player::{MovementIntention, Player, PlayerName},
     states::GameState,
 };
@@ -20,6 +22,7 @@ use shared::{
 };
 
 mod casting;
+pub mod stats;
 
 pub struct NetworkingPlugin;
 
@@ -27,6 +30,7 @@ impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
         shared::event::client::register_events(app);
         app.add_plugins(casting::CastingNetworkPlugin)
+            .add_plugins(stats::StatsNetworkPlugin)
             .add_event::<SpawnOtherPlayer>()
             .add_systems(
                 OnEnter(GameState::ClientConnecting),
@@ -67,37 +71,70 @@ impl Plugin for NetworkingPlugin {
 
 fn send_connect_packet(
     sr: Res<ServerResources<EventToClient>>,
+    args: Res<CliArgs>,
     mse: Res<MainServerEndpoint>,
     config: Res<Config>,
     local_player: Query<&Transform, With<Player>>,
 ) {
     let my_location = *local_player.single();
     let event = EventToServer::ConnectRequest(ConnectRequest {
-        name: config.name.clone(),
+        name: args.name_override.clone().or(config.name.clone()),
         my_location,
     });
     send_event_to_server(&sr.handler, mse.0, &event);
     info!("Sent connection packet to {}", mse.0);
 }
 
+fn build_healthbar(
+    s: &mut ChildBuilder,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+) {
+    let player_id = s.parent_entity();
+    // spawn their hp bar
+    let mut hp_bar = PbrBundle {
+        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+        material: materials.add(Color::rgb(0.9, 0.3, 0.0).into()),
+        transform: Transform::from_translation(Vec3::new(0.0, 0.4, 0.0)),
+        ..Default::default()
+    };
+
+    // make it invisible until it's updated
+    hp_bar.transform.scale = Vec3::ZERO;
+
+    s.spawn((hp_bar, crate::network::stats::HPBar(player_id)));
+}
+
 fn receive_world_data(
     mut world_data: ERFE<WorldData>,
     mut commands: Commands,
     mut notif: EventWriter<Notification>,
-    local_player: Query<Entity, With<Player>>,
+    mut local_player: Query<(Entity, &mut Transform), With<Player>>,
     mut spawn_player: EventWriter<SpawnOtherPlayer>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: ResMut<AssetServer>,
 ) {
     for event in world_data.read() {
         info!(?event, "Server has returned world data!");
 
-        let my_name = &event.event.your_name;
-        let my_id = event.event.your_id;
+        let our_player_data = &event.event.your_player_data;
+
+        let my_name = &our_player_data.name;
+        let my_id = our_player_data.ent_id;
+
+        let (p_ent, mut p_tfm) = local_player.single_mut();
+
+        // Move to the given location
+        *p_tfm = our_player_data.transform;
 
         // Add our netentid + name
         commands
-            .entity(local_player.single())
+            .entity(p_ent)
             .insert(my_id)
-            .insert(PlayerName(my_name.clone()));
+            .insert(PlayerName(my_name.clone()))
+            .insert(our_player_data.health)
+            .with_children(|s| build_healthbar(s, &mut meshes, &mut materials));
 
         notif.send(Notification(format!(
             "Connected to server as {my_name} {my_id:?}"
@@ -108,6 +145,43 @@ fn receive_world_data(
             spawn_player.send(SpawnOtherPlayer(other_player_data.clone()));
             info!(?other_player_data);
         }
+
+        commands.spawn((
+            HPIndicator::HP,
+            TextBundle::from_section(
+                "HP: #",
+                TextStyle {
+                    font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
+                    font_size: 45.0,
+                    color: Color::rgb(0.4, 0.5, 0.75),
+                },
+            )
+            .with_text_alignment(TextAlignment::Center)
+            .with_style(Style {
+                position_type: PositionType::Absolute,
+                right: Val::Px(10.0),
+                bottom: Val::Px(10.0),
+                ..default()
+            }),
+        ));
+        commands.spawn((
+            HPIndicator::Deaths,
+            TextBundle::from_section(
+                "",
+                TextStyle {
+                    font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
+                    font_size: 45.0,
+                    color: Color::rgb(0.9, 0.2, 0.2),
+                },
+            )
+            .with_text_alignment(TextAlignment::Center)
+            .with_style(Style {
+                position_type: PositionType::Absolute,
+                right: Val::Px(10.0),
+                bottom: Val::Px(50.0),
+                ..default()
+            }),
+        ));
     }
 }
 
@@ -198,28 +272,31 @@ pub struct SpawnOtherPlayer(PlayerConnected);
 fn spawn_player(
     mut commands: Commands,
     asset_server: ResMut<AssetServer>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
 
     mut er: EventReader<SpawnOtherPlayer>,
 ) {
     for SpawnOtherPlayer(event) in er.read() {
         let cube = SceneBundle {
             scene: asset_server.load("tadpole.gltf#Scene0"),
-            transform: Transform::from_xyz(0., 1.0, 0.)
-                .with_rotation(Quat::from_rotation_y(std::f32::consts::PI))
-                .with_scale(Vec3::new(4., 4., 4.)),
+            transform: event.data.transform,
             ..default()
         };
 
-        commands.spawn((
-            cube,
-            OtherPlayer,
-            PlayerName(event.data.name.clone()),
-            MovementIntention(Vec2::ZERO),
-            Name::new(format!("Player: {}", event.data.name)),
-            // their NetEntId is a component
-            event.data.ent_id,
-            AnyPlayer,
-        ));
+        commands
+            .spawn((
+                cube,
+                OtherPlayer,
+                PlayerName(event.data.name.clone()),
+                MovementIntention(Vec2::ZERO),
+                Name::new(format!("Player: {}", event.data.name)),
+                // their NetEntId is a component
+                event.data.ent_id,
+                event.data.health,
+                AnyPlayer,
+            ))
+            .with_children(|s| build_healthbar(s, &mut meshes, &mut materials));
     }
 }
 

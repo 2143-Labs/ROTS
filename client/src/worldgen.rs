@@ -6,8 +6,8 @@ use crate::player::Player;
 const CHUNK_SIZE: i32 = 1;
 
 pub struct Chunk {
-    position: Vec3,
-    size: f32,
+    pub position: Vec3,
+    pub size: f32,
 }
 #[derive(PartialEq, Eq, Hash, Reflect)]
 pub struct ChunkPos(pub i32, pub i32, pub i32);

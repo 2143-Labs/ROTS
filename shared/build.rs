@@ -53,8 +53,8 @@ fn generate_code(req: &GenerateRequest) -> String {
     );
 
     let code = syn::parse_file(&code.to_string()).unwrap();
-    let formatted = prettyplease::unparse(&code);
-    formatted
+
+    prettyplease::unparse(&code)
     //code.to_string()
 }
 
@@ -63,7 +63,7 @@ fn generate_systems(req: GenerateRequest) {
 
     let out_dir = env::var_os("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join(req.output_filename);
-    fs::write(&dest_path, &code_str).unwrap();
+    fs::write(dest_path, code_str).unwrap();
 }
 
 struct GenerateRequest<'a> {

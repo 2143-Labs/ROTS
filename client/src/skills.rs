@@ -40,7 +40,7 @@ pub enum Actions {
 
 impl Actions {
     fn is_cancellable(&self) -> bool {
-        return true;
+        true
     }
 }
 
@@ -88,7 +88,6 @@ fn cast_skills(
 
         let event = Cast::Teleport(target);
         ev_sa.send(StartAnimation(event));
-
     } else {
         let target = _transform.translation
             + Vec3 {
@@ -105,7 +104,6 @@ fn cast_skills(
         info!(?event);
         ev_sa.send(StartAnimation(event));
     }
-
 }
 
 fn start_local_skill_cast_animation(

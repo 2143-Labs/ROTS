@@ -1,3 +1,4 @@
+use crate::stats::Health;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -5,4 +6,9 @@ use serde::{Deserialize, Serialize};
 pub struct ShootingData {
     pub shot_from: Vec3,
     pub target: Vec3,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum UpdateSharedComponent {
+    Health(Health),
 }
