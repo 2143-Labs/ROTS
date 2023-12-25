@@ -50,17 +50,24 @@ fn on_someone_cast(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut ev_w: EventWriter<WeTeleported>,
+    asset_server: Res<AssetServer>,
 ) {
     for cast in someone_cast.read() {
         for (_ply_ent, ply_net_ent, ply_tfm, is_us) in &other_players {
             if &cast.event.caster_id == ply_net_ent {
                 match cast.event.cast {
-                    shared::event::server::Cast::Teleport(target) => match is_us {
-                        true => {
-                            ev_w.send(WeTeleported(target));
+                    shared::event::server::Cast::Teleport(target) => {
+                        commands.spawn(AudioBundle {
+                            source: asset_server.load("sounds/teleport.ogg"),
+                            ..default()
+                        });
+                        match is_us {
+                            true => {
+                                ev_w.send(WeTeleported(target));
+                            }
+                            false => info!("Someone else teleported"),
                         }
-                        false => info!("Someone else teleported"),
-                    },
+                    }
                     shared::event::server::Cast::Shoot(ref dat) => {
                         let cube = PbrBundle {
                             mesh: meshes.add(Mesh::from(shape::Cube { size: 0.3 })),
@@ -89,7 +96,8 @@ fn on_someone_hit(
     all_plys: Query<(&NetEntId, &PlayerName, Has<Player>), With<AnyPlayer>>,
     mut notifs: EventWriter<Notification>,
     bullets: Query<(Entity, &NetEntId, &CasterNetId)>,
-    //mut commands: Commands,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
 ) {
     for hit in someone_hit.read() {
         let mut bullet_caster_id = None;
@@ -112,7 +120,16 @@ fn on_someone_hit(
             if ply_id == &hit.event.player {
                 defender_name = Some(name);
                 if is_us {
+                    commands.spawn(AudioBundle {
+                        source: asset_server.load("sounds/hit.ogg"),
+                        ..default()
+                    });
                     info!("We got hit!");
+                } else {
+                    commands.spawn(AudioBundle {
+                        source: asset_server.load("sounds/hitmarker.ogg"),
+                        ..default()
+                    });
                 }
             }
 
