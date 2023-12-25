@@ -57,10 +57,9 @@ fn on_someone_cast(
             if &cast.event.caster_id == ply_net_ent {
                 match cast.event.cast {
                     shared::event::server::Cast::Teleport(target) => {
-
                         // Spawn a sound at both the source and dest
                         // TODO only play both if you go a far enough distance
-                        for loc in &[target, /* ply_tfm.translation */] {
+                        for loc in &[target /* ply_tfm.translation */] {
                             commands.spawn((
                                 TransformBundle::from_transform(Transform::from_translation(*loc)),
                                 //Transform::from_xyz(0.0, 0.0, 0.0),
@@ -95,8 +94,8 @@ fn on_someone_cast(
                             DespawnTime(Timer::new(Duration::from_secs(5), TimerMode::Once)),
                             // TODO Add a netentid for referencing this item later
                         ));
-                    },
-                    _ => {},
+                    }
+                    _ => {}
                 }
             }
         }

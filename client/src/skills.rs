@@ -17,20 +17,20 @@ pub struct SkillsPlugin;
 
 impl Plugin for SkillsPlugin {
     fn build(&self, app: &mut App) {
-        app .add_event::<StartAnimation>()
-        .add_systems(
-            Update,
-            cast_skill_1.run_if(just_pressed(shared::GameAction::Fire1)),
-        )
-        .add_systems(
-            Update,
-            cast_skill_2.run_if(just_pressed(shared::GameAction::Fire2)),
-        )
-        .add_systems(Update, (start_local_skill_cast_animation,))
-        .add_systems(
-            Update,
-            (send_network_packet).run_if(in_state(GameState::ClientConnected)),
-        );
+        app.add_event::<StartAnimation>()
+            .add_systems(
+                Update,
+                cast_skill_1.run_if(just_pressed(shared::GameAction::Fire1)),
+            )
+            .add_systems(
+                Update,
+                cast_skill_2.run_if(just_pressed(shared::GameAction::Fire2)),
+            )
+            .add_systems(Update, (start_local_skill_cast_animation,))
+            .add_systems(
+                Update,
+                (send_network_packet).run_if(in_state(GameState::ClientConnected)),
+            );
     }
 }
 
@@ -106,7 +106,6 @@ fn cast_skill_1(
     let aim_dir = aim_dir.single().0;
 
     if config.pressed(&keyboard_input, shared::GameAction::MoveBackward) {
-
     } else {
         let target = _transform.translation
             + Vec3 {

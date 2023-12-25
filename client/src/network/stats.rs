@@ -64,7 +64,7 @@ fn on_hp_change(
         if hp.0 == 0 {
             *hp = Health::default();
 
-            // play death sound 
+            // play death sound
             commands.spawn((
                 TransformBundle::from_transform(Transform::from_translation(tfm.translation)),
                 AudioBundle {

@@ -61,7 +61,7 @@ fn on_player_try_cast(
                         DespawnTime(Timer::new(Duration::from_secs(5), TimerMode::Once)),
                         // TODO Add a netentid for referencing this item later
                     ));
-                },
+                }
                 _ => {}
             }
         }
