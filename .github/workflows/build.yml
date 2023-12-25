@@ -19,7 +19,7 @@ jobs:
         id: check
         run: |
           # TODO fix this
-          IS_WIP="${{ !contains(github.event.pull_request.labels.*.name, 'WIP') }}"
+          IS_WIP="${{ contains(github.event.pull_request.labels.*.name, 'WIP') }}"
           true
           if [ "$IS_WIP" = "true" ]; then
             echo 'status=wip' >> $GITHUB_OUTPUT
