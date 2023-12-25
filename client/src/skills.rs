@@ -101,7 +101,6 @@ fn cast_skills(
             target,
         };
         let event = Cast::Shoot(shooting_data);
-        info!(?event);
         ev_sa.send(StartAnimation(event));
     }
 }
