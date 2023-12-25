@@ -145,7 +145,7 @@ impl Config {
                     user_config.keybindings = all_binds;
 
                     user_config
-                },
+                }
                 Err(e) => {
                     eprintln!("====================================");
                     eprintln!("===  Failed to load your config  ===");

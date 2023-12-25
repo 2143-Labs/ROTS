@@ -2,7 +2,7 @@ use bevy::{prelude::*, render::mesh::shape::Plane};
 use bevy_xpbd_3d::components::Collider;
 use std::collections::HashMap;
 
-use crate::{player::Player, cli::CliArgs};
+use crate::{cli::CliArgs, player::Player};
 const CHUNK_SIZE: i32 = 1;
 
 pub struct Chunk {
@@ -56,17 +56,15 @@ fn init_mats(
     }));
 
     if args.optimize_floor() {
-        commands.spawn((
-            PbrBundle {
-                transform: Transform::from_xyz(0.0, -0.01, 0.0),
-                mesh: meshes.add(Mesh::from(Plane {
-                    size: (CHUNK_SIZE * 100) as f32,
-                    subdivisions: 1,
-                })),
-                material: materials.add(Color::hex("#1f7840").unwrap().into()),
-                ..Default::default()
-            },
-        ));
+        commands.spawn((PbrBundle {
+            transform: Transform::from_xyz(0.0, -0.01, 0.0),
+            mesh: meshes.add(Mesh::from(Plane {
+                size: (CHUNK_SIZE * 100) as f32,
+                subdivisions: 1,
+            })),
+            material: materials.add(Color::hex("#1f7840").unwrap().into()),
+            ..Default::default()
+        },));
     }
 }
 

@@ -11,11 +11,11 @@ pub enum Optimizations {
 #[derive(clap::Parser, Resource, Debug)]
 pub struct CliArgs {
     /// Automatically connect to this ip and port (no name resolution, must be an ip.)
-    #[arg(short, long, name="IP")]
+    #[arg(short, long, name = "IP")]
     pub autoconnect: Option<String>,
 
     /// Override your config name when connecting (useful for multiboxing)
-    #[arg(short, long, name="NAME")]
+    #[arg(short, long, name = "NAME")]
     pub name_override: Option<String>,
 
     /// Disable some expensive features for debug builds
