@@ -62,6 +62,7 @@ fn on_player_try_cast(
                         // TODO Add a netentid for referencing this item later
                     ));
                 }
+                _ => {}
             }
         }
     }

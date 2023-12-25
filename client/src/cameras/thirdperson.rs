@@ -142,8 +142,8 @@ pub fn player_movement(
         jumper.timer.tick(time.delta());
         if config.pressed(&keyboard_input, GameAction::Jump) {
             if jumper.timer.finished() {
-                info!("jump");
-                // TODO jump
+                // TODO does this reset with the overflow from the extra time.delta()?
+                // or are we really jumping at slightly slower rate?
                 jumper.timer.reset();
             }
         }
@@ -164,10 +164,7 @@ pub fn player_movement(
             move_vector
         };
 
-        let new_y = jumper.get_y() + 1.0;
-        if new_y != transform.translation.y {
-            transform.translation.y = new_y;
-        }
+        transform.translation.y = jumper.get_y() + 1.0;
 
         // only change this if we have to. This will trigger a packet to be sent
         if movement.0 != final_move {

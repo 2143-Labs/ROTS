@@ -63,13 +63,20 @@ fn on_hp_change(
         // die
         if hp.0 == 0 {
             *hp = Health::default();
+
+            // play death sound
+            commands.spawn((
+                TransformBundle::from_transform(Transform::from_translation(tfm.translation)),
+                AudioBundle {
+                    source: asset_server.load("sounds/death.ogg"),
+                    settings: PlaybackSettings::DESPAWN.with_spatial(true),
+                    ..default()
+                },
+            ));
+
             tfm.translation = Vec3::new(0.0, 1.0, 0.0);
 
             if is_us {
-                commands.spawn(AudioBundle {
-                    source: asset_server.load("sounds/death.ogg"),
-                    ..default()
-                });
                 *total_deaths += 1;
             } else {
                 notifs.send(Notification(format!("{name} died!")));

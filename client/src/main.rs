@@ -15,18 +15,29 @@ use bevy::{
     window::{Cursor, CursorGrabMode},
 };
 use clap::Parser;
+use shared::Config;
 
 pub const HEIGHT: f32 = 720.0;
 pub const WIDTH: f32 = 1280.0;
 
 fn main() {
+    let args = cli::CliArgs::parse();
+
+    if args.print_binds {
+        println!("{:?}", Config::load_from_main_dir().keybindings);
+        return;
+    }
+
+    if args.print_config {
+        println!("{}", Config::default_config_str());
+        return;
+    }
+
     let mut app = App::new();
 
     let mut cursor = Cursor::default();
     cursor.visible = true;
     cursor.grab_mode = CursorGrabMode::None;
-
-    let args = cli::CliArgs::parse();
 
     let window = WindowPlugin {
         primary_window: Some(Window {

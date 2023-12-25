@@ -34,7 +34,12 @@ impl Default for Player {
 #[derive(Resource)]
 pub struct Animation(Handle<AnimationClip>);
 
-pub fn spawn_player_sprite(mut commands: Commands, asset_server: ResMut<AssetServer>) {
+pub fn spawn_player_sprite(
+    mut commands: Commands,
+    asset_server: ResMut<AssetServer>,
+    //mut meshes: ResMut<Assets<Mesh>>,
+    //mut materials: ResMut<Assets<StandardMaterial>>,
+) {
     commands.insert_resource(Animation(asset_server.load("tadpole.gltf#Animation0")));
 
     commands.spawn((
@@ -55,6 +60,7 @@ pub fn spawn_player_sprite(mut commands: Commands, asset_server: ResMut<AssetSer
             timer: Timer::from_seconds(1.05, TimerMode::Once),
         },
         AnyPlayer,
+        SpatialListener::new(1.0),
     ));
 }
 

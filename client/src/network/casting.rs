@@ -57,10 +57,20 @@ fn on_someone_cast(
             if &cast.event.caster_id == ply_net_ent {
                 match cast.event.cast {
                     shared::event::server::Cast::Teleport(target) => {
-                        commands.spawn(AudioBundle {
-                            source: asset_server.load("sounds/teleport.ogg"),
-                            ..default()
-                        });
+                        // Spawn a sound at both the source and dest
+                        // TODO only play both if you go a far enough distance
+                        for loc in &[target /* ply_tfm.translation */] {
+                            commands.spawn((
+                                TransformBundle::from_transform(Transform::from_translation(*loc)),
+                                //Transform::from_xyz(0.0, 0.0, 0.0),
+                                AudioBundle {
+                                    source: asset_server.load("sounds/teleport.ogg"),
+                                    settings: PlaybackSettings::DESPAWN.with_spatial(true),
+                                    ..default()
+                                },
+                            ));
+                        }
+
                         match is_us {
                             true => {
                                 ev_w.send(WeTeleported(target));
@@ -85,6 +95,7 @@ fn on_someone_cast(
                             // TODO Add a netentid for referencing this item later
                         ));
                     }
+                    _ => {}
                 }
             }
         }
@@ -93,7 +104,7 @@ fn on_someone_cast(
 
 fn on_someone_hit(
     mut someone_hit: ERFE<BulletHit>,
-    all_plys: Query<(&NetEntId, &PlayerName, Has<Player>), With<AnyPlayer>>,
+    all_plys: Query<(&NetEntId, &Transform, &PlayerName, Has<Player>), With<AnyPlayer>>,
     mut notifs: EventWriter<Notification>,
     bullets: Query<(Entity, &NetEntId, &CasterNetId)>,
     mut commands: Commands,
@@ -116,7 +127,7 @@ fn on_someone_hit(
         let mut attacker_name = None;
         let mut defender_name = None;
 
-        for (ply_id, PlayerName(name), is_us) in &all_plys {
+        for (ply_id, ply_tfm, PlayerName(name), is_us) in &all_plys {
             if ply_id == &hit.event.player {
                 defender_name = Some(name);
                 if is_us {
