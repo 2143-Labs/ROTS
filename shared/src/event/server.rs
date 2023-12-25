@@ -3,7 +3,7 @@ use crate::netlib::ServerResources;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use super::spells::ShootingData;
+use super::{spells::ShootingData, NetEntId};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
 pub struct ConnectRequest {
@@ -18,6 +18,10 @@ pub struct Heartbeat {}
 pub enum Cast {
     Teleport(Vec3),
     Shoot(ShootingData),
+    ShootTargeted(NetEntId),
+    Aoe(Vec3),
+    Melee,
+    Buff,
 }
 
 /// walking and stuff
