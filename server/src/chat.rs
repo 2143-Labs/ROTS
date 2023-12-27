@@ -3,17 +3,26 @@ use bevy::prelude::*;
 pub struct ChatPlugin;
 impl Plugin for ChatPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_event::<RunChatCommand>()
-            .add_systems(Update, (on_chat, on_chat_command).run_if(in_state(ServerState::Running)));
-
+        app.add_event::<RunChatCommand>().add_systems(
+            Update,
+            (on_chat, on_chat_command).run_if(in_state(ServerState::Running)),
+        );
     }
 }
 
-use clap::{Parser, Args};
-use shared::{event::{ERFE, server::SendChat, client::Chat, NetEntId, spells::{NPC, SpawnNPC}}, AnyPlayer, netlib::{ServerResources, EventToServer, EventToClient, send_event_to_server}};
+use clap::{Args, Parser};
+use shared::{
+    event::{
+        client::Chat,
+        server::SendChat,
+        spells::{SpawnNPC, NPC},
+        NetEntId, ERFE,
+    },
+    netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
+    AnyPlayer,
+};
 
-use crate::{ServerState, EndpointToNetId, PlayerEndpoint, ConnectedPlayerName};
+use crate::{ConnectedPlayerName, EndpointToNetId, PlayerEndpoint, ServerState};
 #[derive(Parser, Debug, Event)]
 #[command(name = "chat_command")]
 #[command(bin_name = "/")]
@@ -39,7 +48,6 @@ fn on_chat(
     sr: Res<ServerResources<EventToServer>>,
     mut cmd: EventWriter<RunChatCommand>,
 ) {
-
     for chat in pd.read() {
         if let Some(moved_net_id) = endpoint_mapping.map.get(&chat.endpoint) {
             let text = &chat.event.text;
@@ -56,13 +64,12 @@ fn on_chat(
                         });
                         send_event_to_server(&sr.handler, chat.endpoint, &event);
 
-
                         // Trigger event to send the chat command
                         cmd.send(RunChatCommand {
                             runner: *moved_net_id,
-                            command: x
+                            command: x,
                         });
-                    },
+                    }
                     Err(k) => {
                         let event = EventToClient::Chat(Chat {
                             source: None,
@@ -76,7 +83,6 @@ fn on_chat(
                     source: Some(*moved_net_id),
                     text: text.clone(),
                 });
-
 
                 for c_net_client in &clients {
                     send_event_to_server(&sr.handler, c_net_client.0, &event);
@@ -92,10 +98,11 @@ fn on_chat_command(
     mut spawn_npc: EventWriter<SpawnNPC>,
 ) {
     for command in cmd.read() {
-        let (_runner_ent, runner_tfm, _runner_net_ent, _runner_name) = match players.iter().find(|(_, _, &id, _)| id == command.runner) {
-            Some(s) => s,
-            None => continue,
-        };
+        let (_runner_ent, runner_tfm, _runner_net_ent, _runner_name) =
+            match players.iter().find(|(_, _, &id, _)| id == command.runner) {
+                Some(s) => s,
+                None => continue,
+            };
 
         match &command.command {
             ChatCommand::Spawn(_se) => {
@@ -103,7 +110,7 @@ fn on_chat_command(
                     location: runner_tfm.translation,
                     npc: NPC::Penguin,
                 });
-            },
+            }
         }
     }
 }

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use shared::event::{ERFE, client::NewNPC};
+use shared::event::{client::NewNPC, ERFE};
 
 use crate::states::GameState;
 
@@ -16,7 +16,10 @@ impl Plugin for NPCPlugin {
             //.add_systems(Update, on_chat_type.run_if(in_state(ChatState::Chatting)))
             //.add_systems(Update, on_chat_toggle.run_if(shared::GameAction::Chat.just_pressed()))
             //.add_systems(Update, (receive_network_chats, on_local_chat_send).run_if(in_state(GameState::ClientConnected)));
-            .add_systems(Update, (on_npc_spawn).run_if(in_state(GameState::ClientConnected)));
+            .add_systems(
+                Update,
+                (on_npc_spawn).run_if(in_state(GameState::ClientConnected)),
+            );
     }
 }
 
@@ -29,7 +32,6 @@ fn on_npc_spawn(
     //mut er: EventReader<Chat>,
     //time: Res<Time>,
 ) {
-
     for event in pd.read() {
         let npc = &event.event;
         let cube = SceneBundle {
@@ -39,12 +41,7 @@ fn on_npc_spawn(
         };
         info!(?npc);
 
-        commands
-            .spawn((
-                cube,
-                npc.id,
-                npc.spawn_commands.npc.clone(),
-            ));
-            //.with_children(|s| build_healthbar(s, &mut meshes, &mut materials));
+        commands.spawn((cube, npc.id, npc.spawn_commands.npc.clone()));
+        //.with_children(|s| build_healthbar(s, &mut meshes, &mut materials));
     }
 }

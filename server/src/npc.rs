@@ -1,13 +1,19 @@
 use bevy::prelude::*;
-use shared::{event::{NetEntId, spells::SpawnNPC, client::NewNPC}, AnyPlayer, netlib::{EventToClient, send_event_to_server, ServerResources, EventToServer}};
+use shared::{
+    event::{client::NewNPC, spells::SpawnNPC, NetEntId},
+    netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
+    AnyPlayer,
+};
 
-use crate::{ServerState, PlayerEndpoint};
+use crate::{PlayerEndpoint, ServerState};
 
 pub struct NPCPlugin;
 impl Plugin for NPCPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<SpawnNPC>()
-            .add_systems(Update, (on_npc_spawn).run_if(in_state(ServerState::Running)));
+        app.add_event::<SpawnNPC>().add_systems(
+            Update,
+            (on_npc_spawn).run_if(in_state(ServerState::Running)),
+        );
     }
 }
 

@@ -1,6 +1,6 @@
+pub mod chat;
 pub mod notifications;
 pub mod thirdperson;
-pub mod chat;
 
 use bevy::{prelude::*, window::CursorGrabMode};
 use shared::Config;
@@ -17,9 +17,10 @@ impl Plugin for CameraPlugin {
         app.add_plugins(chat::ChatPlugin)
             .add_systems(Startup, spawn_camera)
             .add_state::<FreeCamState>()
-            .add_systems(Update, (
-                toggle_camera_mode.run_if(in_state(chat::ChatState::NotChatting)),
-            ))
+            .add_systems(
+                Update,
+                (toggle_camera_mode.run_if(in_state(chat::ChatState::NotChatting)),),
+            )
             .add_systems(
                 Update,
                 (thirdperson::player_movement, thirdperson::wow_camera_system)

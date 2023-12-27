@@ -23,4 +23,3 @@ pub struct SpawnNPC {
     pub location: Vec3,
     pub npc: NPC,
 }
-
