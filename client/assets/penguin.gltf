@@ -1730,7 +1730,7 @@
 		{
 			"bufferView":0,
 			"componentType":5126,
-			"count":1259,
+			"count":2518,
 			"max":[
 				3.589967966079712,
 				1.747859001159668,
@@ -1738,7 +1738,7 @@
 			],
 			"min":[
 				-3.535412073135376,
-				-0.04186568409204483,
+				-1.747859001159668,
 				-2.841566324234009
 			],
 			"type":"VEC3"
@@ -1746,19 +1746,19 @@
 		{
 			"bufferView":1,
 			"componentType":5126,
-			"count":1259,
+			"count":2518,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":2,
 			"componentType":5126,
-			"count":1259,
+			"count":2518,
 			"type":"VEC2"
 		},
 		{
 			"bufferView":3,
 			"componentType":5123,
-			"count":2013,
+			"count":4026,
 			"type":"SCALAR"
 		},
 		{
@@ -1771,37 +1771,37 @@
 	"bufferViews":[
 		{
 			"buffer":0,
-			"byteLength":15108,
+			"byteLength":30216,
 			"byteOffset":0,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":15108,
-			"byteOffset":15108,
-			"target":34962
-		},
-		{
-			"buffer":0,
-			"byteLength":10072,
+			"byteLength":30216,
 			"byteOffset":30216,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":4026,
-			"byteOffset":40288,
+			"byteLength":20144,
+			"byteOffset":60432,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":8052,
+			"byteOffset":80576,
 			"target":34963
 		},
 		{
 			"buffer":0,
 			"byteLength":4800,
-			"byteOffset":44316
+			"byteOffset":88628
 		}
 	],
 	"buffers":[
 		{
-			"byteLength":49116,
+			"byteLength":93428,
 			"uri":"penguin.bin"
 		}
 	]
