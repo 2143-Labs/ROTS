@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use shared::{event::{NetEntId, ERFE, client::Chat}, AnyPlayer};
+use shared::{event::{NetEntId, ERFE, client::Chat, server::SendChat}, AnyPlayer, netlib::{ServerResources, EventToClient, MainServerEndpoint, EventToServer, send_event_to_server}};
 
 use crate::{states::GameState, player::{Player, PlayerName}};
 
@@ -70,7 +70,6 @@ fn on_chat_toggle(
     }
 }
 
-
 #[derive(Event, Debug)]
 struct WeChat(String);
 
@@ -107,7 +106,6 @@ fn setup_panel(
                 top: Val::Percent(50.0),
                 height: Val::Percent(50.0),
 
-
                 display: Display::Flex,
                 flex_direction: FlexDirection::Column,
                 position_type: PositionType::Relative,
@@ -130,7 +128,7 @@ fn setup_panel(
                     },
                 ),
             ])
-            .with_text_alignment(TextAlignment::Right)
+            .with_text_alignment(TextAlignment::Left)
             .with_style(Style { ..default() }),
             ChatTypeContainer,
         ));
@@ -148,15 +146,17 @@ fn receive_network_chats(
 
 fn on_local_chat_send(
     mut er: EventReader<WeChat>,
-    mut ew: EventWriter<Chat>,
-    our_id: Query<&NetEntId, With<Player>>,
+    //mut ew: EventWriter<Chat>,
+    //our_id: Query<&NetEntId, With<Player>>,
+
+    sr: Res<ServerResources<EventToClient>>,
+    mse: Res<MainServerEndpoint>,
 ) {
     for e in er.read() {
-        // TODO send to server
-        ew.send(Chat {
-            source: our_id.get_single().ok().copied(),
+        let event = EventToServer::SendChat(SendChat {
             text: e.0.clone(),
         });
+        send_event_to_server(&sr.handler, mse.0, &event);
     }
 }
 
@@ -177,7 +177,6 @@ fn on_chat(
             None => "Server",
         };
 
-
         let parent = parent.single();
         commands.entity(parent).with_children(|p| {
             p.spawn((
@@ -186,7 +185,7 @@ fn on_chat(
                         &format!("{:03.3} ", time.elapsed_seconds()),
                         TextStyle {
                             font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
-                            font_size: 12.0,
+                            font_size: 14.0,
                             color: Color::DARK_GRAY,
                         },
                     ),
@@ -215,7 +214,7 @@ fn on_chat(
                         },
                     ),
                 ])
-                .with_text_alignment(TextAlignment::Right)
+                .with_text_alignment(TextAlignment::Left)
                 .with_style(Style { ..default() }),
             ));
         });

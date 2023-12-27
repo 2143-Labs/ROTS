@@ -12,6 +12,11 @@ pub struct ConnectRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
+pub struct SendChat {
+    pub text: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Event)]
 pub struct Heartbeat {}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
