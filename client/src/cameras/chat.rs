@@ -88,7 +88,10 @@ fn on_chat_type(
 
     if keyboard_input.pressed(KeyCode::ControlLeft) || keyboard_input.pressed(KeyCode::ControlRight) {
         if keyboard_input.just_released(KeyCode::V) {
-            let mut ctx = clipboard::ClipboardProvider::new().unwrap();
+            use clipboard::ClipboardProvider;
+            use clipboard::ClipboardContext;
+
+            let mut ctx: ClipboardContext = ClipboardProvider::new().unwrap();
             if let Ok(content) = ctx.get_contents() {
                 cur_text.extend(content.chars());
             }
