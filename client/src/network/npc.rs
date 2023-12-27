@@ -33,7 +33,7 @@ fn on_npc_spawn(
     for event in pd.read() {
         let npc = &event.event;
         let cube = SceneBundle {
-            scene: asset_server.load("pedguin.gltf#Scene0"),
+            scene: asset_server.load("penguin.gltf#Scene0"),
             transform: Transform::from_translation(npc.spawn_commands.location),
             ..default()
         };
