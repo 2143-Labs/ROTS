@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use shared::{event::{NetEntId, ERFE, client::Chat, server::SendChat}, AnyPlayer, netlib::{ServerResources, EventToClient, MainServerEndpoint, EventToServer, send_event_to_server}};
+use clipboard::{ClipboardProvider, ClipboardContext};
 
 use crate::{states::GameState, player::{Player, PlayerName}};
 
@@ -88,14 +89,10 @@ fn on_chat_type(
 
     if keyboard_input.pressed(KeyCode::ControlLeft) || keyboard_input.pressed(KeyCode::ControlRight) {
         if keyboard_input.just_released(KeyCode::V) {
-            use clipboard::ClipboardProvider;
-            use clipboard::ClipboardContext;
-
             let mut ctx: ClipboardContext = ClipboardProvider::new().unwrap();
             if let Ok(content) = ctx.get_contents() {
                 cur_text.extend(content.chars());
             }
-
         }
     }
 
