@@ -1,5 +1,6 @@
 pub mod notifications;
 pub mod thirdperson;
+pub mod chat;
 
 use bevy::{prelude::*, window::CursorGrabMode};
 use shared::Config;
@@ -13,13 +14,17 @@ pub struct ClientAimDirection(pub f32);
 pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_camera)
+        app.add_plugins(chat::ChatPlugin)
+            .add_systems(Startup, spawn_camera)
             .add_state::<FreeCamState>()
-            .add_systems(Update, toggle_camera_mode)
+            .add_systems(Update, (
+                toggle_camera_mode.run_if(in_state(chat::ChatState::NotChatting)),
+            ))
             .add_systems(
                 Update,
                 (thirdperson::player_movement, thirdperson::wow_camera_system)
-                    .distributive_run_if(in_state(FreeCamState::ThirdPersonLocked)),
+                    .distributive_run_if(in_state(FreeCamState::ThirdPersonLocked))
+                    .distributive_run_if(in_state(chat::ChatState::NotChatting)),
             )
             .add_systems(
                 Update,
@@ -28,7 +33,8 @@ impl Plugin for CameraPlugin {
                     thirdperson::wow_camera_system,
                     thirdperson::q_e_rotate_cam,
                 )
-                    .distributive_run_if(in_state(FreeCamState::ThirdPersonFreeMouse)),
+                    .distributive_run_if(in_state(FreeCamState::ThirdPersonFreeMouse))
+                    .distributive_run_if(in_state(chat::ChatState::NotChatting)),
             );
     }
 }

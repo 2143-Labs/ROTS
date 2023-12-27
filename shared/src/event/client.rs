@@ -50,4 +50,10 @@ pub struct SomeoneUpdateComponent {
     pub update: UpdateSharedComponent,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Event)]
+pub struct Chat {
+    pub source: Option<NetEntId>,
+    pub text: String,
+}
+
 include!(concat!(env!("OUT_DIR"), "/client_event.rs"));
