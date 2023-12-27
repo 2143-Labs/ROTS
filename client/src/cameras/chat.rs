@@ -88,25 +88,11 @@ fn on_chat_type(
 
     if keyboard_input.pressed(KeyCode::ControlLeft) || keyboard_input.pressed(KeyCode::ControlRight) {
         if keyboard_input.just_released(KeyCode::V) {
-            let mut clipboard = clippers::Clipboard::get();
-            match clipboard.read() {
-                Some(clippers::ClipperData::Text(text)) => {
-                    cur_text.extend(text.as_str());
-                    info!("Clipboard text: {:?}", text);
-                }
-
-                Some(clippers::ClipperData::Image(image)) => {
-                    info!("Clipboard image: {}x{} RGBA", image.width(), image.height());
-                }
-
-                Some(data) => {
-                    info!("Clipboard data is unknown: {data:?}");
-                }
-
-                None => {
-                    info!("Clipboard is empty");
-                }
+            let mut ctx = clipboard::ClipboardProvider::new().unwrap();
+            if let Ok(content) = ctx.get_contents() {
+                cur_text.extend(content.chars());
             }
+
         }
     }
 
