@@ -1,7 +1,7 @@
 use bevy::prelude::*;
-use shared::event::{NetEntId, ERFE, client::Chat};
+use shared::{event::{NetEntId, ERFE, client::Chat}, AnyPlayer};
 
-use crate::{states::GameState, player::Player};
+use crate::{states::GameState, player::{Player, PlayerName}};
 
 #[derive(States, Clone, Copy, PartialEq, Eq, Hash, Debug, Default)]
 pub enum ChatState {
@@ -48,6 +48,7 @@ fn on_chat_toggle(
     cur_chat_state: Res<State<ChatState>>,
     mut chat_state: ResMut<NextState<ChatState>>,
     mut typed_text: Query<&mut Text, With<ChatTypeContainer>>,
+    mut chat_bg_color: Query<&mut BackgroundColor, With<ChatContainer>>,
     mut ew: EventWriter<WeChat>,
 ) {
     match cur_chat_state.get() {
@@ -57,10 +58,14 @@ fn on_chat_toggle(
             let cur_text = chatbox.get_text();
 
             ew.send(WeChat(std::mem::take(cur_text)));
+
             chat_state.set(ChatState::NotChatting);
+            *chat_bg_color.single_mut() = Color::WHITE.with_a(0.00).into();
         }
         ChatState::NotChatting => {
+
             chat_state.set(ChatState::Chatting);
+            *chat_bg_color.single_mut() = Color::WHITE.with_a(0.10).into();
         }
     }
 }
@@ -98,16 +103,17 @@ fn setup_panel(
         NodeBundle {
             style: Style {
                 width: Val::Percent(50.0),
-                bottom: Val::Px(10.0),
-                right: Val::Px(10.0),
+                left: Val::Percent(50.0),
+                top: Val::Percent(50.0),
                 height: Val::Percent(50.0),
+
 
                 display: Display::Flex,
                 flex_direction: FlexDirection::Column,
                 position_type: PositionType::Relative,
                 ..default()
             },
-            background_color: Color::WHITE.with_a(0.10).into(),
+            background_color: Color::WHITE.with_a(0.00).into(),
             ..default()
         },
         ChatContainer,
@@ -124,7 +130,7 @@ fn setup_panel(
                     },
                 ),
             ])
-            .with_text_alignment(TextAlignment::Left)
+            .with_text_alignment(TextAlignment::Right)
             .with_style(Style { ..default() }),
             ChatTypeContainer,
         ));
@@ -147,7 +153,6 @@ fn on_local_chat_send(
 ) {
     for e in er.read() {
         // TODO send to server
-        info!(?e, "We just chatted");
         ew.send(Chat {
             source: our_id.get_single().ok().copied(),
             text: e.0.clone(),
@@ -159,10 +164,20 @@ fn on_chat(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     parent: Query<Entity, With<ChatContainer>>,
+    players: Query<(&NetEntId, &PlayerName), With<AnyPlayer>>,
     mut er: EventReader<Chat>,
     time: Res<Time>,
 ) {
     for chat in er.read() {
+        let name = match chat.source {
+            Some(ref eid) => {
+                let matching = players.iter().find(|(ent_id, _)| eid == *ent_id);
+                matching.map(|(_, player_name)| player_name.0.as_ref()).unwrap_or("Unknown Player")
+            },
+            None => "Server",
+        };
+
+
         let parent = parent.single();
         commands.entity(parent).with_children(|p| {
             p.spawn((
@@ -171,15 +186,15 @@ fn on_chat(
                         &format!("{:03.3} ", time.elapsed_seconds()),
                         TextStyle {
                             font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
-                            font_size: 10.0,
-                            color: Color::GRAY,
+                            font_size: 12.0,
+                            color: Color::DARK_GRAY,
                         },
                     ),
                     TextSection::new(
-                        &format!("{:?}", chat.source),
+                        name,
                         TextStyle {
                             font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
-                            font_size: 14.0,
+                            font_size: 16.0,
                             color: Color::ORANGE_RED,
                         },
                     ),
@@ -187,7 +202,7 @@ fn on_chat(
                         &format!(": "),
                         TextStyle {
                             font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
-                            font_size: 14.0,
+                            font_size: 16.0,
                             color: Color::GRAY,
                         },
                     ),
@@ -195,12 +210,12 @@ fn on_chat(
                         &chat.text,
                         TextStyle {
                             font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
-                            font_size: 14.0,
+                            font_size: 16.0,
                             color: Color::WHITE,
                         },
                     ),
                 ])
-                .with_text_alignment(TextAlignment::Left)
+                .with_text_alignment(TextAlignment::Right)
                 .with_style(Style { ..default() }),
             ));
         });
