@@ -86,6 +86,30 @@ fn on_chat_type(
         cur_text.pop();
     }
 
+    if keyboard_input.pressed(KeyCode::ControlLeft) || keyboard_input.pressed(KeyCode::ControlRight) {
+        if keyboard_input.just_released(KeyCode::V) {
+            let mut clipboard = clippers::Clipboard::get();
+            match clipboard.read() {
+                Some(clippers::ClipperData::Text(text)) => {
+                    cur_text.extend(text.as_str());
+                    info!("Clipboard text: {:?}", text);
+                }
+
+                Some(clippers::ClipperData::Image(image)) => {
+                    info!("Clipboard image: {}x{} RGBA", image.width(), image.height());
+                }
+
+                Some(data) => {
+                    info!("Clipboard data is unknown: {data:?}");
+                }
+
+                None => {
+                    info!("Clipboard is empty");
+                }
+            }
+        }
+    }
+
     for typed_char in typed_chars.read() {
         if !typed_char.char.is_control() {
             cur_text.push(typed_char.char);
