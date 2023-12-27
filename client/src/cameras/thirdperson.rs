@@ -83,18 +83,15 @@ pub fn wow_camera_system(
                 .clamp(camera_follow.min_distance, camera_follow.max_distance);
         }
 
-        if mouse_input.pressed(MouseButton::Right)
-            || *camera_type == FreeCamState::ThirdPersonLocked
-        {
-            for event in mouse_events.read() {
-                //https://github.com/bevyengine/bevy/issues/10860
-                if mouse_input.pressed(MouseButton::Right){
-                    let sens = config.sens;
-                    camera_follow.yaw_radians -= event.delta.x * sens;
-                    camera_follow.pitch_radians -= event.delta.y * sens;
-                    camera_follow.pitch_radians =
-                        camera_follow.pitch_radians.clamp(0.05 * PI, 0.95 * PI);
-                }
+        for event in mouse_events.read() {
+            //https://github.com/bevyengine/bevy/issues/10860
+            if *camera_type == FreeCamState::ThirdPersonLocked 
+                || mouse_input.pressed(MouseButton::Right){
+                let sens = config.sens;
+                camera_follow.yaw_radians -= event.delta.x * sens;
+                camera_follow.pitch_radians -= event.delta.y * sens;
+                camera_follow.pitch_radians =
+                    camera_follow.pitch_radians.clamp(0.05 * PI, 0.95 * PI);
             }
         }
 
