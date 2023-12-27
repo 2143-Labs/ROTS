@@ -4,14 +4,14 @@ pub struct ChatPlugin;
 impl Plugin for ChatPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_event::<ChatCommand>()
+            .add_event::<RunChatCommand>()
             .add_systems(Update, (on_chat, on_chat_command).run_if(in_state(ServerState::Running)));
 
     }
 }
 
 use clap::{Parser, Args};
-use shared::{event::{ERFE, server::SendChat, client::{Chat, SpawnNPC}, NetEntId, spells::NPC}, AnyPlayer, netlib::{ServerResources, EventToServer, EventToClient, send_event_to_server}};
+use shared::{event::{ERFE, server::SendChat, client::Chat, NetEntId, spells::{NPC, SpawnNPC}}, AnyPlayer, netlib::{ServerResources, EventToServer, EventToClient, send_event_to_server}};
 
 use crate::{ServerState, EndpointToNetId, PlayerEndpoint, ConnectedPlayerName};
 #[derive(Parser, Debug, Event)]
@@ -89,18 +89,16 @@ fn on_chat(
 fn on_chat_command(
     mut cmd: EventReader<RunChatCommand>,
     players: Query<(Entity, &Transform, &NetEntId, &ConnectedPlayerName)>,
-    clients: Query<&PlayerEndpoint, With<AnyPlayer>>,
     mut spawn_npc: EventWriter<SpawnNPC>,
 ) {
     for command in cmd.read() {
-        let (runner_ent, runner_tfm, runner_net_ent, runner_name) = match players.iter().find(|(_, _, &id, _)| id == command.runner) {
+        let (_runner_ent, runner_tfm, _runner_net_ent, runner_name) = match players.iter().find(|(_, _, &id, _)| id == command.runner) {
             Some(s) => s,
             None => continue,
         };
 
         match &command.command {
             ChatCommand::Spawn(se) => {
-                info!(?runner_name, ?se);
                 spawn_npc.send(SpawnNPC {
                     location: runner_tfm.translation,
                     npc: NPC::Penguin,
