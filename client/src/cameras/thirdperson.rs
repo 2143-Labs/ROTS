@@ -109,7 +109,7 @@ pub fn wow_camera_system(
     }
 }
 
-pub const PLAYER_SPEED: f32 = 5.;
+pub const PLAYER_SPEED: f32 = 25.;
 pub fn player_movement(
     _commands: Commands,
     mut player_query: Query<(
