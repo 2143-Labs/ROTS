@@ -3,7 +3,7 @@ use crate::netlib::ServerResources;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use super::spells::{UpdateSharedComponent, NPC, SpawnNPC};
+use super::spells::{UpdateSharedComponent, SpawnNPC};
 use super::{
     server::{Cast, ChangeMovement},
     NetEntId, PlayerData,

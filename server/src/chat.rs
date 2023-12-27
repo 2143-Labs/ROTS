@@ -92,13 +92,13 @@ fn on_chat_command(
     mut spawn_npc: EventWriter<SpawnNPC>,
 ) {
     for command in cmd.read() {
-        let (_runner_ent, runner_tfm, _runner_net_ent, runner_name) = match players.iter().find(|(_, _, &id, _)| id == command.runner) {
+        let (_runner_ent, runner_tfm, _runner_net_ent, _runner_name) = match players.iter().find(|(_, _, &id, _)| id == command.runner) {
             Some(s) => s,
             None => continue,
         };
 
         match &command.command {
-            ChatCommand::Spawn(se) => {
+            ChatCommand::Spawn(_se) => {
                 spawn_npc.send(SpawnNPC {
                     location: runner_tfm.translation,
                     npc: NPC::Penguin,

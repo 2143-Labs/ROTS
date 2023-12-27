@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use shared::{event::{NetEntId, ERFE, client::Chat, server::SendChat}, AnyPlayer, netlib::{ServerResources, EventToClient, MainServerEndpoint, EventToServer, send_event_to_server}};
 
-use crate::{states::GameState, player::{Player, PlayerName}};
+use crate::{states::GameState, player::{PlayerName}};
 
 #[derive(States, Clone, Copy, PartialEq, Eq, Hash, Debug, Default)]
 pub enum ChatState {
