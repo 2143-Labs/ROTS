@@ -1,6 +1,6 @@
-use bevy::{ecs::world, prelude::*, render::mesh::shape::Plane};
+use bevy::{prelude::*, render::mesh::shape::Plane};
 use bevy_xpbd_3d::components::Collider;
-use noise::{NoiseFn, Perlin, Seedable};
+use noise::{NoiseFn, Perlin};
 use std::collections::HashMap;
 
 use crate::{cli::CliArgs, player::Player};

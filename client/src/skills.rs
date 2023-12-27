@@ -9,8 +9,8 @@ use shared::{
     Config,
 };
 
-use crate::cameras::ClientAimDirection;
 use crate::cameras::chat::ChatState;
+use crate::cameras::ClientAimDirection;
 use crate::player::Player;
 use crate::states::GameState;
 
@@ -27,7 +27,8 @@ impl Plugin for SkillsPlugin {
             )
             .add_systems(
                 Update,
-                cast_skill_2.run_if(shared::GameAction::Fire2.just_pressed())
+                cast_skill_2
+                    .run_if(shared::GameAction::Fire2.just_pressed())
                     .run_if(in_state(ChatState::NotChatting)),
             )
             .add_systems(Update, (start_local_skill_cast_animation,))

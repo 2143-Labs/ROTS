@@ -22,6 +22,7 @@ use shared::{
 };
 
 mod casting;
+pub mod npc;
 pub mod stats;
 
 pub struct NetworkingPlugin;
@@ -30,7 +31,7 @@ impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
         shared::event::client::register_events(app);
         app.add_plugins(casting::CastingNetworkPlugin)
-            .add_plugins(stats::StatsNetworkPlugin)
+            .add_plugins((stats::StatsNetworkPlugin, npc::NPCPlugin))
             .add_event::<SpawnOtherPlayer>()
             .add_systems(
                 OnEnter(GameState::ClientConnecting),

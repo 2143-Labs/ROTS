@@ -12,3 +12,14 @@ pub struct ShootingData {
 pub enum UpdateSharedComponent {
     Health(Health),
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, clap::ValueEnum, Component)]
+pub enum NPC {
+    Penguin,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Event)]
+pub struct SpawnNPC {
+    pub location: Vec3,
+    pub npc: NPC,
+}

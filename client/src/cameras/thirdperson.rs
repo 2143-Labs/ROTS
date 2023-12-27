@@ -85,8 +85,9 @@ pub fn wow_camera_system(
 
         for event in mouse_events.read() {
             //https://github.com/bevyengine/bevy/issues/10860
-            if *camera_type == FreeCamState::ThirdPersonLocked 
-                || mouse_input.pressed(MouseButton::Right){
+            if *camera_type == FreeCamState::ThirdPersonLocked
+                || mouse_input.pressed(MouseButton::Right)
+            {
                 let sens = config.sens;
                 camera_follow.yaw_radians -= event.delta.x * sens;
                 camera_follow.pitch_radians -= event.delta.y * sens;

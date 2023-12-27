@@ -127,7 +127,7 @@ fn on_someone_hit(
         let mut attacker_name = None;
         let mut defender_name = None;
 
-        for (ply_id, ply_tfm, PlayerName(name), is_us) in &all_plys {
+        for (ply_id, _ply_tfm, PlayerName(name), is_us) in &all_plys {
             if ply_id == &hit.event.player {
                 defender_name = Some(name);
                 if is_us {

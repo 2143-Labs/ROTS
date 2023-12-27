@@ -3,7 +3,7 @@ use crate::netlib::ServerResources;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use super::spells::UpdateSharedComponent;
+use super::spells::{SpawnNPC, UpdateSharedComponent};
 use super::{
     server::{Cast, ChangeMovement},
     NetEntId, PlayerData,
@@ -54,6 +54,12 @@ pub struct SomeoneUpdateComponent {
 pub struct Chat {
     pub source: Option<NetEntId>,
     pub text: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Event)]
+pub struct NewNPC {
+    pub id: NetEntId,
+    pub spawn_commands: SpawnNPC,
 }
 
 include!(concat!(env!("OUT_DIR"), "/client_event.rs"));

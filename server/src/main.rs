@@ -10,8 +10,8 @@ use message_io::network::Endpoint;
 use rand::Rng;
 use shared::{
     event::{
-        client::{PlayerConnected, PlayerDisconnected, SomeoneMoved, WorldData, Chat},
-        server::{ChangeMovement, Heartbeat, SendChat},
+        client::{PlayerConnected, PlayerDisconnected, SomeoneMoved, WorldData},
+        server::{ChangeMovement, Heartbeat},
         NetEntId, PlayerData, ERFE,
     },
     netlib::{
@@ -62,6 +62,8 @@ struct PlayerDisconnect {
 }
 
 pub mod casting_spells;
+pub mod chat;
+pub mod npc;
 
 fn main() {
     info!("Main Start");
@@ -76,6 +78,8 @@ fn main() {
         .add_plugins((
             ConfigPlugin,
             casting_spells::CastingPlugin,
+            chat::ChatPlugin,
+            npc::NPCPlugin,
             //StatusPlugin,
         ))
         .add_state::<ServerState>()
@@ -101,7 +105,6 @@ fn main() {
                 on_player_disconnect,
                 on_player_heartbeat,
                 on_movement,
-                on_chat,
             )
                 .run_if(in_state(ServerState::Running)),
         )
@@ -295,26 +298,6 @@ fn on_movement(
                     // Else, just rebroadcast the packet to everyone else
                     send_event_to_server(&sr.handler, c_net_client.0, &event);
                 }
-            }
-        }
-    }
-}
-
-fn on_chat(
-    mut pd: ERFE<SendChat>,
-    endpoint_mapping: Res<EndpointToNetId>,
-    mut clients: Query<&PlayerEndpoint, With<ConnectedPlayerName>>,
-    sr: Res<ServerResources<EventToServer>>,
-) {
-    for chat in pd.read() {
-        if let Some(moved_net_id) = endpoint_mapping.map.get(&chat.endpoint) {
-            let event = EventToClient::Chat(Chat {
-                source: Some(*moved_net_id),
-                text: chat.event.text.clone(),
-            });
-
-            for c_net_client in &mut clients {
-                send_event_to_server(&sr.handler, c_net_client.0, &event);
             }
         }
     }
