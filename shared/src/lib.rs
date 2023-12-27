@@ -26,6 +26,15 @@ pub enum GameAction {
     Fire2,
     Mod1,
     Special1,
+
+    Chat,
+}
+
+impl GameAction {
+    /// Run condition that returns true if this keycode was just pressed
+    pub const fn just_pressed(&'static self) -> impl Fn(Res<Input<KeyCode>>, Res<Config>) -> bool {
+        move |keyboard_input, config| config.just_pressed(&keyboard_input, self.clone())
+    }
 }
 
 /// Just a tag we have in the shared library for any controlled character
@@ -95,6 +104,7 @@ static DEFAULT_BINDS: Lazy<Keybinds> = Lazy::new(|| {
         (GameAction::Fire1, vec![KeyCode::T]),
         (GameAction::Fire2, vec![KeyCode::E]),
         (GameAction::Mod1, vec![KeyCode::ShiftLeft]),
+        (GameAction::Chat, vec![KeyCode::Return]),
     ])
 });
 
