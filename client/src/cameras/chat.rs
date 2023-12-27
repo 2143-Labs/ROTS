@@ -19,10 +19,10 @@ impl Plugin for ChatPlugin {
             .add_event::<Chat>()
             .add_event::<WeChat>()
             .add_systems(Startup, setup_panel)
-            .add_systems(Update, (on_chat, on_local_chat_send))
+            .add_systems(Update, on_chat)
             .add_systems(Update, on_chat_type.run_if(in_state(ChatState::Chatting)))
             .add_systems(Update, on_chat_toggle.run_if(shared::GameAction::Chat.just_pressed()))
-            .add_systems(Update, receive_network_chats.run_if(in_state(GameState::ClientConnected)));
+            .add_systems(Update, (receive_network_chats, on_local_chat_send).run_if(in_state(GameState::ClientConnected)));
 
     }
 }
