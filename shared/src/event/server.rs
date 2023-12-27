@@ -17,6 +17,12 @@ pub struct SendChat {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
+pub struct Spray {
+    pub data: Vec<u8>,
+    pub filename: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Event)]
 pub struct Heartbeat {}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]

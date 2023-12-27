@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use shared::{
-    event::{client::NewNPC, spells::SpawnNPC, NetEntId},
+    event::{client::NewNPC, spells::SpawnNPC, NetEntId, server::Spray, ERFE},
     netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
     AnyPlayer,
 };
@@ -12,7 +12,7 @@ impl Plugin for NPCPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<SpawnNPC>().add_systems(
             Update,
-            (on_npc_spawn).run_if(in_state(ServerState::Running)),
+            (on_npc_spawn, on_spray).run_if(in_state(ServerState::Running)),
         );
     }
 }
@@ -39,5 +39,17 @@ fn on_npc_spawn(
         for endpoint in &clients {
             send_event_to_server(&sr.handler, endpoint.0, &event);
         }
+    }
+}
+
+fn on_spray(
+    mut spawns: ERFE<Spray>,
+    //mut commands: Commands,
+    //players: Query<(Entity, &Transform, &NetEntId, &ConnectedPlayerName)>,
+    //sr: Res<ServerResources<EventToServer>>,
+    //clients: Query<&PlayerEndpoint, With<AnyPlayer>>,
+) {
+    for spray in spawns.read() {
+        info!("someone sprayed: {}", spray.event.filename);
     }
 }
