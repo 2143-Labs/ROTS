@@ -64,7 +64,7 @@ fn init_mats(
         subdivisions: 0,
     }));
 
-    world.tree_mesh = meshes.add(Mesh::from(shape::Box::new(0.25, TREE_HEIGHT, 0.25)));
+    world.tree_mesh = meshes.add(Mesh::from(shape::Box::new(0.65, TREE_HEIGHT, 0.65)));
     world.material_tree = materials.add(Color::rgb(0.4, 0.2, 0.0).into());
 
     if args.optimize_floor() {
@@ -123,7 +123,6 @@ fn spawn_tree_in_tile(
     ];
     let tree_density = noise.get(point) + 1. / 2.;
     let tree_width = CHUNK_SIZE / 4;
-    println!("noise: {}, point {},{}", tree_density, point[0], point[1]);
 
     // If the tree density is above a certain threshold, spawn a tree in this tile
     // print the noise value for debugging
