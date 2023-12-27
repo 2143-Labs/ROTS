@@ -264,7 +264,7 @@ fn on_player_heartbeat(
         // TODO tryblocks?
         if let Some(id) = endpoint_mapping.map.get(&hb.endpoint) {
             if let Some(hb) = heartbeat_mapping.heartbeats.get(id) {
-                hb.store(0, std::sync::atomic::Ordering::Release);
+                hb.fetch_min(0, std::sync::atomic::Ordering::Release);
             }
         }
     }
