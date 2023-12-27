@@ -27,7 +27,7 @@ impl Default for Player {
             facing_vel: 0.,
             velocity: Vec3::ZERO,
             lock_movement: [None; 4],
-            current_chunk: ChunkPos(0, 0, 0),
+            current_chunk: ChunkPos(-10, 0, -10),
         }
     }
 }
