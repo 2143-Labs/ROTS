@@ -23,13 +23,15 @@ impl Plugin for SkillsPlugin {
                 Update,
                 cast_skill_1
                     .run_if(shared::GameAction::Fire1.just_pressed())
-                    .run_if(in_state(ChatState::NotChatting)),
+                    .run_if(in_state(ChatState::NotChatting))
+                    .run_if(any_with_component::<Player>()),
             )
             .add_systems(
                 Update,
                 cast_skill_2
                     .run_if(shared::GameAction::Fire2.just_pressed())
-                    .run_if(in_state(ChatState::NotChatting)),
+                    .run_if(in_state(ChatState::NotChatting))
+                    .run_if(any_with_component::<Player>()),
             )
             .add_systems(Update, (start_local_skill_cast_animation,))
             .add_systems(

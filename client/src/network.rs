@@ -10,7 +10,7 @@ use crate::{
 use bevy::{prelude::*, time::common_conditions::on_timer};
 use shared::{
     event::{
-        client::{PlayerConnected, PlayerDisconnected, SomeoneMoved, WorldData},
+        client::{PlayerDisconnected, SomeoneMoved, SpawnUnit, WorldData},
         server::{ChangeMovement, ConnectRequest, Heartbeat},
         NetEntId, ERFE,
     },
@@ -18,21 +18,23 @@ use shared::{
         send_event_to_server, setup_client, EventToClient, EventToServer, MainServerEndpoint,
         ServerResources,
     },
-    AnyPlayer, Config,
+    AnyUnit, Config,
 };
 
 mod casting;
 pub mod npc;
 pub mod stats;
 
-pub struct NetworkingPlugin;
+#[derive(Component)]
+pub struct OtherPlayer;
 
+pub struct NetworkingPlugin;
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
         shared::event::client::register_events(app);
         app.add_plugins(casting::CastingNetworkPlugin)
             .add_plugins((stats::StatsNetworkPlugin, npc::NPCPlugin))
-            .add_event::<SpawnOtherPlayer>()
+            .add_event::<SpawnUnit>()
             .add_systems(
                 OnEnter(GameState::ClientConnecting),
                 (
@@ -50,7 +52,6 @@ impl Plugin for NetworkingPlugin {
                     on_connect,
                     on_disconnect,
                     on_someone_move,
-                    spawn_player,
                     go_movement_intents,
                 )
                     .run_if(in_state(GameState::ClientConnected)),
@@ -90,13 +91,14 @@ fn build_healthbar(
     s: &mut ChildBuilder,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
+    offset: Vec3,
 ) {
     let player_id = s.parent_entity();
     // spawn their hp bar
     let mut hp_bar = PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
         material: materials.add(Color::rgb(0.9, 0.3, 0.0).into()),
-        transform: Transform::from_translation(Vec3::new(0.0, 0.4, 0.0)),
+        transform: Transform::from_translation(Vec3::new(0.0, 0.4, 0.0) + offset),
         ..Default::default()
     };
 
@@ -111,7 +113,7 @@ fn receive_world_data(
     mut commands: Commands,
     mut notif: EventWriter<Notification>,
     mut local_player: Query<(Entity, &mut Transform), With<Player>>,
-    mut spawn_player: EventWriter<SpawnOtherPlayer>,
+    mut spawn_units: EventWriter<SpawnUnit>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: ResMut<AssetServer>,
@@ -119,32 +121,44 @@ fn receive_world_data(
     for event in world_data.read() {
         info!(?event, "Server has returned world data!");
 
-        let our_player_data = &event.event.your_player_data;
+        let my_id = event.event.your_unit_id;
+        for unit in &event.event.unit_data {
+            match &unit.unit {
+                shared::event::UnitType::Player { name } => {
+                    // If it's a player, check to see if it is us
+                    if unit.ent_id == my_id {
+                        // If so, start aligning the client to it
+                        let (p_ent, mut p_tfm) = local_player.single_mut();
+                        p_tfm.translation = unit.transform.translation;
 
-        let my_name = &our_player_data.name;
-        let my_id = our_player_data.ent_id;
+                        notif.send(Notification(format!(
+                            "Connected to server as {name} {my_id:?}"
+                        )));
 
-        let (p_ent, mut p_tfm) = local_player.single_mut();
+                        // Add our netentid + name
+                        commands
+                            .entity(p_ent)
+                            .insert(my_id)
+                            .insert(PlayerName(name.clone()))
+                            .insert(unit.health)
+                            .with_children(|s| {
+                                build_healthbar(s, &mut meshes, &mut materials, Vec3::ZERO)
+                            });
 
-        // Move to the given location
-        *p_tfm = our_player_data.transform;
+                        // if this is us, skip the spawn units call cause we updated a local unit
+                        // instead. TODO eventually fix this so when we fully despawn the menu
+                        // player unit
+                        continue;
+                    } else {
+                        // Not the local player
+                        notif.send(Notification(format!("Connected: {name}")));
+                    }
+                }
+                _ => {}
+            }
 
-        // Add our netentid + name
-        commands
-            .entity(p_ent)
-            .insert(my_id)
-            .insert(PlayerName(my_name.clone()))
-            .insert(our_player_data.health)
-            .with_children(|s| build_healthbar(s, &mut meshes, &mut materials));
-
-        notif.send(Notification(format!(
-            "Connected to server as {my_name} {my_id:?}"
-        )));
-
-        for other_player_data in &event.event.players {
-            notif.send(Notification(format!("Connected: {other_player_data:?}")));
-            spawn_player.send(SpawnOtherPlayer(other_player_data.clone()));
-            info!(?other_player_data);
+            //For any unit that isnt us, spawn it
+            spawn_units.send(SpawnUnit { data: unit.clone() });
         }
 
         commands.spawn((
@@ -234,10 +248,7 @@ fn on_disconnect(
 
 fn on_someone_move(
     mut someone_moved: ERFE<SomeoneMoved>,
-    mut other_players: Query<
-        (&NetEntId, &mut Transform, &mut MovementIntention),
-        With<OtherPlayer>,
-    >,
+    mut other_players: Query<(&NetEntId, &mut Transform, &mut MovementIntention), With<AnyUnit>>,
 ) {
     for movement in someone_moved.read() {
         for (ply_net, mut ply_tfm, mut ply_intent) in &mut other_players {
@@ -255,7 +266,7 @@ fn on_someone_move(
 }
 
 fn go_movement_intents(
-    mut other_players: Query<(&mut Transform, &MovementIntention), With<OtherPlayer>>,
+    mut other_players: Query<(&mut Transform, &MovementIntention), With<AnyUnit>>,
     time: Res<Time>,
 ) {
     for (mut ply_tfm, ply_intent) in &mut other_players {
@@ -264,52 +275,14 @@ fn go_movement_intents(
     }
 }
 
-#[derive(Component)]
-pub struct OtherPlayer;
-
-#[derive(Event)]
-pub struct SpawnOtherPlayer(PlayerConnected);
-
-fn spawn_player(
-    mut commands: Commands,
-    asset_server: ResMut<AssetServer>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-
-    mut er: EventReader<SpawnOtherPlayer>,
-) {
-    for SpawnOtherPlayer(event) in er.read() {
-        let cube = SceneBundle {
-            scene: asset_server.load("tadpole.gltf#Scene0"),
-            transform: event.data.transform,
-            ..default()
-        };
-
-        commands
-            .spawn((
-                cube,
-                OtherPlayer,
-                PlayerName(event.data.name.clone()),
-                MovementIntention(Vec2::ZERO),
-                Name::new(format!("Player: {}", event.data.name)),
-                // their NetEntId is a component
-                event.data.ent_id,
-                event.data.health,
-                AnyPlayer,
-            ))
-            .with_children(|s| build_healthbar(s, &mut meshes, &mut materials));
-    }
-}
-
 fn on_connect(
-    mut c_info: ERFE<PlayerConnected>,
+    mut c_info: ERFE<SpawnUnit>,
     mut notif: EventWriter<Notification>,
 
-    mut spawn_player: EventWriter<SpawnOtherPlayer>,
+    mut local_spawn_unit: EventWriter<SpawnUnit>,
 ) {
     for event in c_info.read() {
         notif.send(Notification(format!("{:?}", event.event)));
-        spawn_player.send(SpawnOtherPlayer(event.event.clone()));
-        info!(?event);
+        local_spawn_unit.send(event.event.clone());
     }
 }

@@ -3,21 +3,21 @@ use crate::netlib::ServerResources;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use super::spells::{SpawnNPC, UpdateSharedComponent};
 use super::{
     server::{Cast, ChangeMovement},
-    NetEntId, PlayerData,
+    spells::UpdateSharedComponent,
+    NetEntId, UnitData,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
 pub struct WorldData {
-    pub your_player_data: PlayerData,
-    pub players: Vec<PlayerConnected>,
+    pub your_unit_id: NetEntId,
+    pub unit_data: Vec<UnitData>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
-pub struct PlayerConnected {
-    pub data: PlayerData,
+pub struct SpawnUnit {
+    pub data: UnitData,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
@@ -57,9 +57,8 @@ pub struct Chat {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
-pub struct NewNPC {
+pub struct UnitDie {
     pub id: NetEntId,
-    pub spawn_commands: SpawnNPC,
 }
 
 include!(concat!(env!("OUT_DIR"), "/client_event.rs"));

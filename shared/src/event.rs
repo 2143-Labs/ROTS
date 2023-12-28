@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::stats::Health;
 
+use self::spells::NPC;
+
 pub mod client;
 pub mod server;
 pub mod spells;
@@ -32,10 +34,25 @@ impl<E> EventFromEndpoint<E> {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum UnitType {
+    Player { name: String },
+    NPC { npc_type: NPC },
+}
+//fn components(&self, e: &mut EntityCommands) {
+//match self {
+//UnitType::Player { name } => {
+//e.insert(
+//},
+//UnitType::NPC { npc_type } => todo!(),
+//}
+//}
+//}
+
 // This is all the data need to initialize a player for the client side.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PlayerData {
-    pub name: String,
+pub struct UnitData {
+    pub unit: UnitType,
     pub ent_id: NetEntId,
     pub health: Health,
     pub transform: Transform,

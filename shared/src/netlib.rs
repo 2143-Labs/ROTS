@@ -32,14 +32,38 @@ pub trait NetworkingEvent:
 impl NetworkingEvent for EventToServer {}
 impl NetworkingEvent for EventToClient {}
 
+#[derive(Deserialize)]
+pub enum EventGroupingOwned<T> {
+    Single(T),
+    Batch(Vec<T>),
+}
+
+#[derive(Serialize)]
+pub enum EventGroupingRef<'a, T> {
+    Single(&'a T),
+    Batch(&'a [T]),
+}
+
 pub fn send_event_to_server<T: NetworkingEvent>(
     handler: &NodeHandler<()>,
     endpoint: Endpoint,
     event: &T,
 ) {
-    handler
-        .network()
-        .send(endpoint, &postcard::to_stdvec(&event).unwrap());
+    handler.network().send(
+        endpoint,
+        &postcard::to_stdvec(&EventGroupingRef::Single(event)).unwrap(),
+    );
+}
+
+pub fn send_event_to_server_batch<T: NetworkingEvent>(
+    handler: &NodeHandler<()>,
+    endpoint: Endpoint,
+    event: &[T],
+) {
+    handler.network().send(
+        endpoint,
+        &postcard::to_stdvec(&EventGroupingRef::Batch(event)).unwrap(),
+    );
 }
 
 pub fn setup_server<T: NetworkingEvent>(commands: Commands, config: Res<NetworkConnectionTarget>) {
@@ -102,16 +126,24 @@ pub fn on_node_event<T: NetworkingEvent>(res: &ServerResources<T>, event: NodeEv
         NetEvent::Connected(_, _) => info!("Network Connected"),
         NetEvent::Accepted(_endpoint, _listener) => info!("Connection Accepted"),
         NetEvent::Message(endpoint, data) => {
-            let event = match postcard::from_bytes(data) {
+            let event: EventGroupingOwned<T> = match postcard::from_bytes(data) {
                 Ok(e) => e,
                 Err(_) => {
                     warn!(?endpoint, "Got invalid json from endpoint");
                     return;
                 }
             };
-            let pair = (endpoint, event);
 
-            res.event_list.lock().unwrap().push(pair);
+            let mut list = res.event_list.lock().unwrap();
+            match event {
+                EventGroupingOwned::Single(x) => {
+                    let pair = (endpoint, x);
+                    list.push(pair);
+                }
+                EventGroupingOwned::Batch(events) => {
+                    list.extend(events.into_iter().map(|x| (endpoint, x)));
+                }
+            }
         }
         NetEvent::Disconnected(_endpoint) => warn!("Client disconnected"),
     }

@@ -1,25 +1,27 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashMap};
 
 pub struct ChatPlugin;
 impl Plugin for ChatPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<RunChatCommand>().add_systems(
-            Update,
-            (on_chat, on_chat_command).run_if(in_state(ServerState::Running)),
-        );
+        app.add_event::<EventFromEndpoint<RunChatCommand>>()
+            .add_systems(
+                Update,
+                (on_chat, on_chat_command).run_if(in_state(ServerState::Running)),
+            );
     }
 }
 
 use clap::{Args, Parser};
 use shared::{
     event::{
-        client::Chat,
+        client::{Chat, SpawnUnit},
         server::SendChat,
-        spells::{SpawnNPC, NPC},
-        NetEntId, ERFE,
+        spells::NPC,
+        EventFromEndpoint, NetEntId, UnitData, ERFE,
     },
     netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
-    AnyPlayer,
+    stats::Health,
+    AnyUnit,
 };
 
 use crate::{ConnectedPlayerName, EndpointToNetId, PlayerEndpoint, ServerState};
@@ -27,12 +29,21 @@ use crate::{ConnectedPlayerName, EndpointToNetId, PlayerEndpoint, ServerState};
 #[command(name = "chat_command")]
 #[command(bin_name = "/")]
 pub enum ChatCommand {
-    Spawn(SpawnEnemy),
+    Spawn(CmdSpawnUnit),
+    List(CmdListUnits),
 }
 
+/// Spawn a unit
 #[derive(Args, Debug)]
-pub struct SpawnEnemy {
+pub struct CmdSpawnUnit {
     pub enemy_type: NPC,
+}
+
+/// List all the units on the server
+#[derive(Args, Debug)]
+pub struct CmdListUnits {
+    #[arg(short, default_value = "true")]
+    verbose: bool,
 }
 
 #[derive(Event)]
@@ -44,13 +55,14 @@ struct RunChatCommand {
 fn on_chat(
     mut pd: ERFE<SendChat>,
     endpoint_mapping: Res<EndpointToNetId>,
-    clients: Query<&PlayerEndpoint, With<AnyPlayer>>,
+    clients: Query<&PlayerEndpoint, With<AnyUnit>>,
     sr: Res<ServerResources<EventToServer>>,
-    mut cmd: EventWriter<RunChatCommand>,
+    mut cmd: EventWriter<EventFromEndpoint<RunChatCommand>>,
 ) {
     for chat in pd.read() {
-        if let Some(moved_net_id) = endpoint_mapping.map.get(&chat.endpoint) {
+        if let Some(chatter_net_id) = endpoint_mapping.map.get(&chat.endpoint) {
             let text = &chat.event.text;
+            info!(?chatter_net_id.0, text, "Chat");
             if text.starts_with("/") {
                 // if it starts with /, its a command parse it using clap
                 let cmd_parts = text.split_at(1).1.split(' ');
@@ -65,9 +77,12 @@ fn on_chat(
                         send_event_to_server(&sr.handler, chat.endpoint, &event);
 
                         // Trigger event to send the chat command
-                        cmd.send(RunChatCommand {
-                            runner: *moved_net_id,
-                            command: x,
+                        cmd.send(EventFromEndpoint {
+                            endpoint: chat.endpoint,
+                            event: RunChatCommand {
+                                runner: *chatter_net_id,
+                                command: x,
+                            },
                         });
                     }
                     Err(k) => {
@@ -80,7 +95,7 @@ fn on_chat(
                 };
             } else {
                 let event = EventToClient::Chat(Chat {
-                    source: Some(*moved_net_id),
+                    source: Some(*chatter_net_id),
                     text: text.clone(),
                 });
 
@@ -93,23 +108,51 @@ fn on_chat(
 }
 
 fn on_chat_command(
-    mut cmd: EventReader<RunChatCommand>,
+    mut cmd: EventReader<EventFromEndpoint<RunChatCommand>>,
     players: Query<(Entity, &Transform, &NetEntId, &ConnectedPlayerName)>,
-    mut spawn_npc: EventWriter<SpawnNPC>,
+    list_npc_query: Query<(&NetEntId, &NPC), With<AnyUnit>>,
+    list_player_query: Query<(&NetEntId, &ConnectedPlayerName), With<AnyUnit>>,
+    sr: Res<ServerResources<EventToServer>>,
+    mut spawn_npc: EventWriter<SpawnUnit>,
 ) {
     for command in cmd.read() {
-        let (_runner_ent, runner_tfm, _runner_net_ent, _runner_name) =
-            match players.iter().find(|(_, _, &id, _)| id == command.runner) {
-                Some(s) => s,
-                None => continue,
-            };
+        let (_runner_ent, runner_tfm, _runner_net_ent, _runner_name) = match players
+            .iter()
+            .find(|(_, _, &id, _)| id == command.event.runner)
+        {
+            Some(s) => s,
+            None => continue,
+        };
 
-        match &command.command {
+        match &command.event.command {
             ChatCommand::Spawn(_se) => {
-                spawn_npc.send(SpawnNPC {
-                    location: runner_tfm.translation,
-                    npc: NPC::Penguin,
+                spawn_npc.send(SpawnUnit {
+                    data: UnitData {
+                        unit: shared::event::UnitType::NPC {
+                            npc_type: NPC::Penguin,
+                        },
+                        ent_id: NetEntId(rand::random()),
+                        health: Health(5),
+                        transform: Transform::from_translation(runner_tfm.translation),
+                    },
                 });
+            }
+            ChatCommand::List(_) => {
+                let mut enemies = HashMap::new();
+                let mut player_names = vec![];
+
+                for (_neid, npc) in &list_npc_query {
+                    *enemies.entry(npc).or_insert(0) += 1;
+                }
+                for (_neid, ConnectedPlayerName { name }) in &list_player_query {
+                    player_names.push(name);
+                }
+
+                let event = EventToClient::Chat(Chat {
+                    source: None,
+                    text: format!("Players: {:?} || NPCs: {:?}", player_names, enemies),
+                });
+                send_event_to_server(&sr.handler, command.endpoint, &event);
             }
         }
     }

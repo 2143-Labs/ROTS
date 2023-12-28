@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_xpbd_3d::prelude::{Collider, RigidBody};
-use shared::AnyPlayer;
+use shared::AnyUnit;
 
 use crate::worldgen::ChunkPos;
 
@@ -34,6 +34,9 @@ impl Default for Player {
 #[derive(Resource)]
 pub struct Animation(Handle<AnimationClip>);
 
+#[derive(Component)]
+pub struct PrimaryUnitControl;
+
 pub fn spawn_player_sprite(
     mut commands: Commands,
     asset_server: ResMut<AssetServer>,
@@ -59,10 +62,17 @@ pub fn spawn_player_sprite(
         crate::physics::Jumper {
             timer: Timer::from_seconds(1.05, TimerMode::Once),
         },
-        AnyPlayer,
+        AnyUnit,
+        PrimaryUnitControl,
         SpatialListener::new(1.0),
     ));
 }
+
+//pub fn spawn_spectator_camera(
+//mut commands: Commands,
+//asset_server: ResMut<AssetServer>,
+//) {
+//}
 
 // Once the scene is loaded, start the animation
 pub fn animate_sprites(

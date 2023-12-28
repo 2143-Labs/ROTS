@@ -13,13 +13,28 @@ pub enum UpdateSharedComponent {
     Health(Health),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, clap::ValueEnum, Component)]
+#[derive(Debug, Clone, Serialize, Deserialize, clap::ValueEnum, Component, Hash, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum NPC {
     Penguin,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Event)]
-pub struct SpawnNPC {
-    pub location: Vec3,
-    pub npc: NPC,
+#[derive(Component)]
+pub enum AIType {
+    None,
+    WalkToNearestPlayer,
+}
+
+impl NPC {
+    pub fn model(&self) -> &'static str {
+        match self {
+            NPC::Penguin => "penguin.gltf#Scene0",
+        }
+    }
+
+    pub fn get_ai_component(&self) -> AIType {
+        match self {
+            NPC::Penguin => AIType::WalkToNearestPlayer,
+        }
+    }
 }

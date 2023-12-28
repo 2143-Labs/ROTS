@@ -8,7 +8,7 @@ use shared::{Config, GameAction};
 
 use crate::{
     physics::Jumper,
-    player::{MovementIntention, Player},
+    player::{MovementIntention, Player, PrimaryUnitControl},
 };
 
 use super::{ClientAimDirection, FreeCamState};
@@ -62,12 +62,12 @@ pub fn wow_camera_system(
     mouse_input: Res<Input<MouseButton>>,
     mut camera_query: Query<(&mut Transform, &mut CameraFollow), With<Camera3d>>,
     mut client_aim_direction: Query<&mut ClientAimDirection>,
-    player_query: Query<&Transform, (With<Player>, Without<CameraFollow>)>,
+    current_unit: Query<&Transform, (With<PrimaryUnitControl>, Without<CameraFollow>)>,
     _keyboard_input: Res<Input<KeyCode>>,
     camera_type: Res<State<FreeCamState>>,
     config: Res<Config>,
 ) {
-    let player_transform = match player_query.get_single() {
+    let player_transform = match current_unit.get_single() {
         Ok(s) => s,
         Err(_) => return,
     };

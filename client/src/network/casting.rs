@@ -7,11 +7,10 @@ use shared::{
         client::{BulletHit, SomeoneCast},
         NetEntId, ERFE,
     },
-    AnyPlayer,
+    AnyUnit,
 };
 
 use crate::{
-    cameras::notifications::Notification,
     player::{Player, PlayerName},
     states::GameState,
 };
@@ -44,7 +43,7 @@ fn on_us_tp(
 
 fn on_someone_cast(
     mut someone_cast: ERFE<SomeoneCast>,
-    other_players: Query<(Entity, &NetEntId, &Transform, Has<Player>), With<AnyPlayer>>,
+    other_players: Query<(Entity, &NetEntId, &Transform, Has<Player>), With<AnyUnit>>,
     mut commands: Commands,
     //TODO dont actually spawn a cube on cast
     mut meshes: ResMut<Assets<Mesh>>,
@@ -75,7 +74,7 @@ fn on_someone_cast(
                             true => {
                                 ev_w.send(WeTeleported(target));
                             }
-                            false => info!("Someone else teleported"),
+                            false => trace!("Someone else teleported"),
                         }
                     }
                     shared::event::server::Cast::Shoot(ref dat) => {
@@ -104,8 +103,8 @@ fn on_someone_cast(
 
 fn on_someone_hit(
     mut someone_hit: ERFE<BulletHit>,
-    all_plys: Query<(&NetEntId, &Transform, &PlayerName, Has<Player>), With<AnyPlayer>>,
-    mut notifs: EventWriter<Notification>,
+    all_plys: Query<(&NetEntId, &Transform, Option<&PlayerName>, Has<Player>), With<AnyUnit>>,
+    //mut notifs: EventWriter<Notification>,
     bullets: Query<(Entity, &NetEntId, &CasterNetId)>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -127,15 +126,15 @@ fn on_someone_hit(
         let mut attacker_name = None;
         let mut defender_name = None;
 
-        for (ply_id, _ply_tfm, PlayerName(name), is_us) in &all_plys {
+        for (ply_id, _ply_tfm, p_name, is_us) in &all_plys {
             if ply_id == &hit.event.player {
-                defender_name = Some(name);
+                defender_name = p_name.map(|x| x.0.clone());
                 if is_us {
                     commands.spawn(AudioBundle {
                         source: asset_server.load("sounds/hit.ogg"),
                         ..default()
                     });
-                    info!("We got hit!");
+                    debug!("We got hit!");
                 } else {
                     commands.spawn(AudioBundle {
                         source: asset_server.load("sounds/hitmarker.ogg"),
@@ -145,23 +144,22 @@ fn on_someone_hit(
             }
 
             if ply_id == &bullet_caster_id {
-                attacker_name = Some(name);
+                attacker_name = p_name.map(|x| x.0.clone());
             }
         }
 
         match (attacker_name, defender_name) {
             (Some(atk), Some(def)) => {
-                info!(?atk, ?def, "Hit!");
-                notifs.send(Notification(format!("{atk} hit {def}")));
+                debug!(?atk, ?def, "Hit!");
             }
             (Some(atk), None) => {
-                warn!(?atk, "Unknown defender");
+                debug!(?atk, "Player hit NPC");
             }
             (None, Some(def)) => {
-                warn!(?def, "Unknown attacker");
+                debug!(?def, "NPC hit player");
             }
             (None, None) => {
-                warn!("Unknown bullet");
+                debug!("NPC hit NPC");
             }
         }
     }

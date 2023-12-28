@@ -4,7 +4,7 @@ use shared::{
     netlib::{
         send_event_to_server, EventToClient, EventToServer, MainServerEndpoint, ServerResources,
     },
-    AnyPlayer,
+    AnyUnit,
 };
 
 use crate::{player::PlayerName, states::GameState};
@@ -165,7 +165,7 @@ fn on_chat(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     parent: Query<Entity, With<ChatContainer>>,
-    players: Query<(&NetEntId, &PlayerName), With<AnyPlayer>>,
+    players: Query<(&NetEntId, &PlayerName), With<AnyUnit>>,
     mut er: EventReader<Chat>,
     time: Res<Time>,
 ) {

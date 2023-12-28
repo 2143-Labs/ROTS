@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use shared::{
     event::{client::SomeoneUpdateComponent, NetEntId, ERFE},
     stats::Health,
-    AnyPlayer,
+    AnyUnit,
 };
 
 use crate::{
@@ -25,13 +25,11 @@ impl Plugin for StatsNetworkPlugin {
 
 fn on_someone_update_stats(
     mut stat_update: ERFE<SomeoneUpdateComponent>,
-    mut players: Query<(&NetEntId, &mut Health, &PlayerName), With<AnyPlayer>>,
+    mut players: Query<(&NetEntId, &mut Health), With<AnyUnit>>,
 ) {
     for update in stat_update.read() {
-        for (ply_ent, mut ply_hp, name) in &mut players {
-            warn!(?name, "Someone changed hp??");
+        for (ply_ent, mut ply_hp) in &mut players {
             if ply_ent == &update.event.id {
-                warn!(?update.event);
                 match update.event.update {
                     shared::event::spells::UpdateSharedComponent::Health(hp) => {
                         *ply_hp = hp;
@@ -50,9 +48,10 @@ pub enum HPIndicator {
 
 fn on_hp_change(
     mut notifs: EventWriter<Notification>,
+    // TODO make this system apply to npcs too
     mut players: Query<
         (&mut Transform, &mut Health, Has<Player>, &PlayerName),
-        (With<AnyPlayer>, Changed<Health>),
+        (With<AnyUnit>, Changed<Health>),
     >,
     mut hp_text: Query<(&mut Text, &HPIndicator)>,
     mut total_deaths: Local<u32>,
@@ -108,17 +107,16 @@ fn on_hp_change(
 #[derive(Component)]
 pub struct HPBar(pub Entity);
 
-// TODO make this a child component of players and only run this on update health
 fn update_hp_bar(
     players: Query<(Entity, &Health), Changed<Health>>,
     mut hp_bars: Query<(&mut Transform, &HPBar), Without<Health>>,
 ) {
     for (ply_ent, hp) in &players {
-        info!(?hp);
+        trace!(?hp);
         for (mut hp_bar_tfm, HPBar(owner_ent)) in hp_bars.iter_mut() {
             if &ply_ent == owner_ent {
                 let health_pct = hp.0 as f32 / Health::default().0 as f32;
-                hp_bar_tfm.scale = Vec3::new(0.025, health_pct / 4.0, 0.025);
+                hp_bar_tfm.scale = Vec3::new(health_pct / 4.0, 0.05, 0.05);
             }
         }
     }
