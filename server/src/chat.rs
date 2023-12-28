@@ -146,7 +146,7 @@ fn on_chat_command(
 
                 let event = EventToClient::Chat(Chat {
                     source: None,
-                    text: format!("Players: {:?}\nEntities: {:?}", player_names, enemies),
+                    text: format!("Players: {:?} || NPCs: {:?}", player_names, enemies),
                 });
                 send_event_to_server(&sr.handler, command.endpoint, &event);
             },
