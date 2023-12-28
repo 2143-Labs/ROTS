@@ -6,7 +6,7 @@ use shared::{
 
 use crate::{
     network::{build_healthbar, OtherPlayer},
-    player::{MovementIntention, PlayerName},
+    player::{MovementIntention, PlayerName, Player, PrimaryUnitControl},
     states::GameState,
 };
 
@@ -88,13 +88,21 @@ fn on_npc_spawn(
 
 fn on_unit_die(
     mut er: ERFE<UnitDie>,
-    units: Query<(Entity, &NetEntId), With<AnyUnit>>,
+    units: Query<(Entity, &NetEntId, &Transform, Has<PrimaryUnitControl>), With<AnyUnit>>,
     mut commands: Commands,
 ) {
     for e in er.read() {
-        for (unit_ent, &unit_ent_id) in &units {
+        for (unit_ent, &unit_ent_id, tfm, is_local_player) in &units {
             if e.event.id == unit_ent_id {
                 commands.entity(unit_ent).despawn_recursive();
+
+                if is_local_player {
+                    // Spawn a spectator cameras
+                    commands.spawn((
+                        PrimaryUnitControl,
+                        TransformBundle::from_transform(Transform::from_translation(tfm.translation)),
+                    ));
+                }
             }
         }
     }
