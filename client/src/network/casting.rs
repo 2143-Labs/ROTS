@@ -104,8 +104,8 @@ fn on_someone_cast(
 
 fn on_someone_hit(
     mut someone_hit: ERFE<BulletHit>,
-    all_plys: Query<(&NetEntId, &Transform, &PlayerName, Has<Player>), With<AnyUnit>>,
-    mut notifs: EventWriter<Notification>,
+    all_plys: Query<(&NetEntId, &Transform, Option<&PlayerName>, Has<Player>), With<AnyUnit>>,
+    //mut notifs: EventWriter<Notification>,
     bullets: Query<(Entity, &NetEntId, &CasterNetId)>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -127,9 +127,9 @@ fn on_someone_hit(
         let mut attacker_name = None;
         let mut defender_name = None;
 
-        for (ply_id, _ply_tfm, PlayerName(name), is_us) in &all_plys {
+        for (ply_id, _ply_tfm, p_name, is_us) in &all_plys {
             if ply_id == &hit.event.player {
-                defender_name = Some(name);
+                defender_name = p_name.map(|x| x.0.clone());
                 if is_us {
                     commands.spawn(AudioBundle {
                         source: asset_server.load("sounds/hit.ogg"),
@@ -145,23 +145,22 @@ fn on_someone_hit(
             }
 
             if ply_id == &bullet_caster_id {
-                attacker_name = Some(name);
+                attacker_name = p_name.map(|x| x.0.clone());
             }
         }
 
         match (attacker_name, defender_name) {
             (Some(atk), Some(def)) => {
                 info!(?atk, ?def, "Hit!");
-                notifs.send(Notification(format!("{atk} hit {def}")));
             }
             (Some(atk), None) => {
-                warn!(?atk, "Unknown defender");
+                info!(?atk, "Player hit NPC");
             }
             (None, Some(def)) => {
-                warn!(?def, "Unknown attacker");
+                info!(?def, "NPC hit player");
             }
             (None, None) => {
-                warn!("Unknown bullet");
+                info!("NPC hit NPC");
             }
         }
     }
