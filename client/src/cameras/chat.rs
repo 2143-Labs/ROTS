@@ -23,6 +23,8 @@ impl Plugin for ChatPlugin {
         app.add_state::<ChatState>()
             .add_event::<Chat>()
             .add_event::<WeChat>()
+            .insert_resource(ChatHistory::default())
+            .insert_resource(ChatHistoryPtr::default())
             .add_systems(Startup, setup_panel)
             .add_systems(Update, on_chat)
             .add_systems(Update, on_chat_type.run_if(in_state(ChatState::Chatting)))
@@ -55,11 +57,19 @@ impl EditableText for &mut Text {
     }
 }
 
+#[derive(Resource, Debug, Default)]
+struct ChatHistory(Vec<String>);
+
+#[derive(Resource, Debug, Default)]
+struct ChatHistoryPtr(bool, Option<usize>);
+
 fn on_chat_toggle(
     cur_chat_state: Res<State<ChatState>>,
     mut chat_state: ResMut<NextState<ChatState>>,
     mut typed_text: Query<&mut Text, With<ChatTypeContainer>>,
     mut chat_bg_color: Query<&mut BackgroundColor, With<ChatContainer>>,
+    mut chat_history: ResMut<ChatHistory>,
+    mut chat_history_ptr: ResMut<ChatHistoryPtr>,
     mut ew: EventWriter<WeChat>,
 ) {
     let mut chatbox = typed_text.single_mut();
@@ -67,7 +77,19 @@ fn on_chat_toggle(
     let cur_text = chatbox.get_text();
     match cur_chat_state.get() {
         ChatState::Chatting => {
-            ew.send(WeChat(std::mem::take(cur_text)));
+            let chat = std::mem::take(cur_text);
+            // If this is a new command, then always push it
+            if chat_history_ptr.0 {
+                chat_history.0.push(chat.clone());
+            }
+
+            // If this is not a new command, but it's not the most recent command, push it
+            if chat_history.0.last().unwrap() != &chat {
+                chat_history.0.push(chat.clone());
+            }
+
+            *chat_history_ptr = ChatHistoryPtr(false, None);
+            ew.send(WeChat(chat));
 
             chat_state.set(ChatState::NotChatting);
             *chat_bg_color.single_mut() = Color::WHITE.with_a(0.00).into();
@@ -87,6 +109,8 @@ fn on_chat_type(
     keyboard_input: Res<Input<KeyCode>>,
     mut typed_chars: EventReader<ReceivedCharacter>,
     mut typed_text: Query<&mut Text, With<ChatTypeContainer>>,
+    mut chat_history_ptr: ResMut<ChatHistoryPtr>,
+    chat_history: Res<ChatHistory>,
 ) {
     let mut chatbox = typed_text.single_mut();
     let mut chatbox = chatbox.as_mut();
@@ -96,8 +120,25 @@ fn on_chat_type(
         cur_text.pop();
     }
 
+    if keyboard_input.just_pressed(KeyCode::Up) {
+        if chat_history.0.len() >= 1 {
+            let new_ptr = chat_history_ptr.1.unwrap_or(chat_history.0.len()).saturating_sub(1);
+            *chat_history_ptr = ChatHistoryPtr(false, Some(new_ptr));
+            *cur_text = chat_history.0[new_ptr].clone();
+        }
+    }
+
+    if keyboard_input.just_pressed(KeyCode::Down) {
+        if let Some(cur_ptr) = chat_history_ptr.1 {
+            let new_ptr = (cur_ptr + 1).min(chat_history.0.len());
+            *chat_history_ptr = ChatHistoryPtr(false, Some(new_ptr));
+            *cur_text = chat_history.0[new_ptr].clone();
+        };
+    }
+
     for typed_char in typed_chars.read() {
         if !typed_char.char.is_control() {
+            chat_history_ptr.0 = true;
             cur_text.push(typed_char.char);
         }
     }
