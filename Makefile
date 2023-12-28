@@ -1,6 +1,10 @@
 .PHONY: s c r l rel
 rel:
 	cargo r --release --features bevy/dynamic_linking --bin client
+m:
+	cargo r --features bevy/dynamic_linking --bin client -- --autoconnect main
+mr:
+	cargo r --release --features bevy/dynamic_linking --bin client -- --autoconnect main
 s:
 	cargo r --features bevy/dynamic_linking --bin server
 c:
