@@ -83,7 +83,6 @@ fn on_ai_tick(
                         x
                     }
                 });
-                info!(?positions, ?closest, "ticking");
 
                 if let Some(closest) = closest {
                     unit_tfm.translation.x = closest.translation.x;

@@ -4,11 +4,11 @@ use bevy::{prelude::*, utils::HashSet};
 use shared::{
     casting::{CasterNetId, DespawnTime, SharedCastingPlugin},
     event::{
-        client::{BulletHit, SomeoneCast, SomeoneUpdateComponent},
-        spells::ShootingData,
+        client::{BulletHit, SomeoneCast, SomeoneUpdateComponent, UnitDie},
+        spells::{ShootingData, NPC},
         NetEntId, ERFE,
     },
-    netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
+    netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources, send_event_to_server_batch},
     stats::Health,
     AnyUnit,
 };
@@ -21,10 +21,11 @@ impl Plugin for CastingPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(SharedCastingPlugin)
             .add_event::<BulletHit>()
+            .add_event::<Die>()
             .insert_resource(HitList::default())
             .add_systems(
                 Update,
-                (on_player_try_cast, hit, check_collision).run_if(in_state(ServerState::Running)),
+                (on_player_try_cast, hit, check_collision, on_die).run_if(in_state(ServerState::Running)),
             );
     }
 }
@@ -93,11 +94,15 @@ fn check_collision(
 #[derive(Resource, Default)]
 struct HitList(HashSet<BulletHit>);
 
+#[derive(Event)]
+pub struct Die(NetEntId);
+
 fn hit(
     mut ev_r: EventReader<BulletHit>,
+    mut death: EventWriter<Die>,
     clients: Query<&PlayerEndpoint>,
     // todo make this into an event
-    mut players: Query<(&NetEntId, &mut Health), With<AnyUnit>>,
+    mut unit: Query<(&NetEntId, &mut Health, Option<&NPC>), With<AnyUnit>>,
     sr: Res<ServerResources<EventToServer>>,
     mut hit_list: ResMut<HitList>,
 ) {
@@ -108,7 +113,7 @@ fn hit(
 
         hit_list.0.insert(e.clone());
         let mut hp_event = None;
-        for (ent_id, mut ply_hp) in &mut players {
+        for (ent_id, mut ply_hp, npc_data) in &mut unit {
             if ent_id == &e.player {
                 ply_hp.0 = ply_hp.0.saturating_sub(1);
                 hp_event = Some(EventToClient::SomeoneUpdateComponent(
@@ -119,7 +124,11 @@ fn hit(
                 ));
 
                 if ply_hp.0 <= 0 {
-                    *ply_hp = Health::default();
+                    death.send(Die(*ent_id));
+                    // They get respawned on the client
+                    if npc_data.is_none() {
+                        *ply_hp = Health::default();
+                    }
                 }
             }
         }
@@ -134,5 +143,19 @@ fn hit(
                 &EventToClient::BulletHit(e.clone()),
             );
         }
+    }
+}
+
+fn on_die(
+    mut death: EventReader<UnitDie>,
+    sr: Res<ServerResources<EventToServer>>,
+    clients: Query<&PlayerEndpoint>,
+) {
+    let deaths: Vec<EventToClient> = death.read().map(|x| {
+        // TODO add a method on EventToX that turns a struct into the wrapped variant
+        EventToClient::UnitDie(x.clone())
+    }).collect();
+    for c_net_client in &clients {
+        send_event_to_server_batch(&sr.handler, c_net_client.0, &deaths)
     }
 }

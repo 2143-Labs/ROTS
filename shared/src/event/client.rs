@@ -56,4 +56,9 @@ pub struct Chat {
     pub text: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Event)]
+pub struct UnitDie {
+    pub id: NetEntId,
+}
+
 include!(concat!(env!("OUT_DIR"), "/client_event.rs"));
