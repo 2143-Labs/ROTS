@@ -122,7 +122,10 @@ fn on_chat_type(
 
     if keyboard_input.just_pressed(KeyCode::Up) {
         if chat_history.0.len() >= 1 {
-            let new_ptr = chat_history_ptr.1.unwrap_or(chat_history.0.len()).saturating_sub(1);
+            let new_ptr = chat_history_ptr
+                .1
+                .unwrap_or(chat_history.0.len())
+                .saturating_sub(1);
             *chat_history_ptr = ChatHistoryPtr(false, Some(new_ptr));
             *cur_text = chat_history.0[new_ptr].clone();
         }
