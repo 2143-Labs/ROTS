@@ -60,8 +60,12 @@ impl EditableText for &mut Text {
 #[derive(Resource, Debug, Default)]
 struct ChatHistory(Vec<String>);
 
+/// If you press the up arrow, we need to remember which chats you have seen.
 #[derive(Resource, Debug, Default)]
-struct ChatHistoryPtr(bool, Option<usize>);
+struct ChatHistoryPtr {
+    has_edited: bool,
+    chat_ptr: Option<usize>,
+}
 
 fn on_chat_toggle(
     cur_chat_state: Res<State<ChatState>>,
@@ -78,8 +82,8 @@ fn on_chat_toggle(
     match cur_chat_state.get() {
         ChatState::Chatting => {
             let chat = std::mem::take(cur_text);
-            // If this is a new command, then always push it
-            if chat_history_ptr.0 {
+            // If this is a new chat, then always push it
+            if chat_history_ptr.has_edited {
                 chat_history.0.push(chat.clone());
             }
 
@@ -88,7 +92,10 @@ fn on_chat_toggle(
                 chat_history.0.push(chat.clone());
             }
 
-            *chat_history_ptr = ChatHistoryPtr(false, None);
+            *chat_history_ptr = ChatHistoryPtr {
+                has_edited: false,
+                chat_ptr: None,
+            };
             ew.send(WeChat(chat));
 
             chat_state.set(ChatState::NotChatting);
@@ -123,25 +130,33 @@ fn on_chat_type(
     if keyboard_input.just_pressed(KeyCode::Up) {
         if chat_history.0.len() >= 1 {
             let new_ptr = chat_history_ptr
-                .1
+                .chat_ptr
                 .unwrap_or(chat_history.0.len())
                 .saturating_sub(1);
-            *chat_history_ptr = ChatHistoryPtr(false, Some(new_ptr));
+
+            *chat_history_ptr = ChatHistoryPtr {
+                has_edited: false,
+                chat_ptr: Some(new_ptr),
+            };
             *cur_text = chat_history.0[new_ptr].clone();
         }
     }
 
     if keyboard_input.just_pressed(KeyCode::Down) {
-        if let Some(cur_ptr) = chat_history_ptr.1 {
+        if let Some(cur_ptr) = chat_history_ptr.chat_ptr {
             let new_ptr = (cur_ptr + 1).min(chat_history.0.len());
-            *chat_history_ptr = ChatHistoryPtr(false, Some(new_ptr));
+
+            *chat_history_ptr = ChatHistoryPtr {
+                has_edited: false,
+                chat_ptr: Some(new_ptr),
+            };
             *cur_text = chat_history.0[new_ptr].clone();
         };
     }
 
     for typed_char in typed_chars.read() {
         if !typed_char.char.is_control() {
-            chat_history_ptr.0 = true;
+            chat_history_ptr.has_edited = true;
             cur_text.push(typed_char.char);
         }
     }
