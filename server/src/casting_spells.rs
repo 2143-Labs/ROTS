@@ -8,7 +8,10 @@ use shared::{
         spells::{ShootingData, NPC},
         NetEntId, ERFE,
     },
-    netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources, send_event_to_server_batch},
+    netlib::{
+        send_event_to_server, send_event_to_server_batch, EventToClient, EventToServer,
+        ServerResources,
+    },
     stats::Health,
     AnyUnit,
 };
@@ -25,7 +28,8 @@ impl Plugin for CastingPlugin {
             .insert_resource(HitList::default())
             .add_systems(
                 Update,
-                (on_player_try_cast, hit, check_collision, on_die).run_if(in_state(ServerState::Running)),
+                (on_player_try_cast, hit, check_collision, on_die)
+                    .run_if(in_state(ServerState::Running)),
             );
     }
 }
@@ -146,12 +150,25 @@ fn hit(
 fn on_die(
     mut death: EventReader<UnitDie>,
     sr: Res<ServerResources<EventToServer>>,
+    ents: Query<(Entity, &NetEntId), With<AnyUnit>>,
     clients: Query<&PlayerEndpoint>,
+    mut commands: Commands,
 ) {
-    let deaths: Vec<EventToClient> = death.read().map(|x| {
-        // TODO add a method on EventToX that turns a struct into the wrapped variant
-        EventToClient::UnitDie(x.clone())
-    }).collect();
+    let deaths: Vec<EventToClient> = death
+        .read()
+        .inspect(|x| {
+            // If we have a unit with this id, despawn it.
+            for (unit_ent, ent_id) in &ents {
+                if ent_id == &x.id {
+                    commands.entity(unit_ent).despawn_recursive();
+                }
+            }
+        })
+        .map(|x| {
+            // TODO add a method on EventToX that turns a struct into the wrapped variant
+            EventToClient::UnitDie(x.clone())
+        })
+        .collect();
     for c_net_client in &clients {
         send_event_to_server_batch(&sr.handler, c_net_client.0, &deaths)
     }
