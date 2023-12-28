@@ -112,7 +112,7 @@ fn update_hp_bar(
     mut hp_bars: Query<(&mut Transform, &HPBar), Without<Health>>,
 ) {
     for (ply_ent, hp) in &players {
-        info!(?hp);
+        trace!(?hp);
         for (mut hp_bar_tfm, HPBar(owner_ent)) in hp_bars.iter_mut() {
             if &ply_ent == owner_ent {
                 let health_pct = hp.0 as f32 / Health::default().0 as f32;

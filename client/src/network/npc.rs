@@ -6,7 +6,7 @@ use shared::{
 
 use crate::{
     network::{build_healthbar, OtherPlayer},
-    player::{MovementIntention, PlayerName, Player, PrimaryUnitControl},
+    player::{MovementIntention, PlayerName, PrimaryUnitControl},
     states::GameState,
 };
 

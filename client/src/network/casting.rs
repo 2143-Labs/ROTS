@@ -74,7 +74,7 @@ fn on_someone_cast(
                             true => {
                                 ev_w.send(WeTeleported(target));
                             }
-                            false => info!("Someone else teleported"),
+                            false => trace!("Someone else teleported"),
                         }
                     }
                     shared::event::server::Cast::Shoot(ref dat) => {
@@ -134,7 +134,7 @@ fn on_someone_hit(
                         source: asset_server.load("sounds/hit.ogg"),
                         ..default()
                     });
-                    info!("We got hit!");
+                    debug!("We got hit!");
                 } else {
                     commands.spawn(AudioBundle {
                         source: asset_server.load("sounds/hitmarker.ogg"),
@@ -150,16 +150,16 @@ fn on_someone_hit(
 
         match (attacker_name, defender_name) {
             (Some(atk), Some(def)) => {
-                info!(?atk, ?def, "Hit!");
+                debug!(?atk, ?def, "Hit!");
             }
             (Some(atk), None) => {
-                info!(?atk, "Player hit NPC");
+                debug!(?atk, "Player hit NPC");
             }
             (None, Some(def)) => {
-                info!(?def, "NPC hit player");
+                debug!(?def, "NPC hit player");
             }
             (None, None) => {
-                info!("NPC hit NPC");
+                debug!("NPC hit NPC");
             }
         }
     }
