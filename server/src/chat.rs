@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashMap};
 
 pub struct ChatPlugin;
 impl Plugin for ChatPlugin {
@@ -28,17 +28,22 @@ use crate::{ConnectedPlayerName, EndpointToNetId, PlayerEndpoint, ServerState};
 #[command(name = "chat_command")]
 #[command(bin_name = "/")]
 pub enum ChatCommand {
-    Spawn(SpawnEnemy),
-    List(ListUnits),
+    Spawn(CmdSpawnUnit),
+    List(CmdListUnits),
 }
 
+/// Spawn a unit
 #[derive(Args, Debug)]
-pub struct SpawnEnemy {
+pub struct CmdSpawnUnit {
     pub enemy_type: NPC,
 }
 
+/// List all the units on the server
 #[derive(Args, Debug)]
-pub struct ListUnits { }
+pub struct CmdListUnits {
+    #[arg(short, default_value = "true")]
+    verbose: bool,
+}
 
 #[derive(Event)]
 struct RunChatCommand {
@@ -103,7 +108,8 @@ fn on_chat(
 fn on_chat_command(
     mut cmd: EventReader<EventFromEndpoint<RunChatCommand>>,
     players: Query<(Entity, &Transform, &NetEntId, &ConnectedPlayerName)>,
-    unit_query: Query<(&NetEntId, Option<&NPC>, Option<&ConnectedPlayerName>), With<AnyUnit>>,
+    list_npc_query: Query<(&NetEntId, &NPC), With<AnyUnit>>,
+    list_player_query: Query<(&NetEntId, &ConnectedPlayerName), With<AnyUnit>>,
     sr: Res<ServerResources<EventToServer>>,
     mut spawn_npc: EventWriter<SpawnUnit>,
 ) {
@@ -128,9 +134,19 @@ fn on_chat_command(
                 });
             }
             ChatCommand::List(_) => {
+                let mut enemies = HashMap::new();
+                let mut player_names = vec![];
+
+                for (_neid, npc) in &list_npc_query {
+                    *enemies.entry(npc).or_insert(0) += 1;
+                }
+                for (_neid, ConnectedPlayerName { name }) in &list_player_query {
+                    player_names.push(name);
+                }
+
                 let event = EventToClient::Chat(Chat {
                     source: None,
-                    text: format!("{:?}", unit_query.iter().collect::<Vec<_>>()),
+                    text: format!("Players: {:?}\nEntities: {:?}", player_names, enemies),
                 });
                 send_event_to_server(&sr.handler, command.endpoint, &event);
             },
