@@ -141,14 +141,15 @@ fn on_player_connect(
     mut commands: Commands,
 ) {
     for player in new_players.read() {
-        info!(?player);
-
         // Generate their name
         let name = player
             .event
             .name
             .clone()
             .unwrap_or_else(|| format!("Player #{}", rand::thread_rng().gen_range(1..10000)));
+
+        info!(?name, "Player Connected");
+
 
         //if they are too far, just put them at the spawn
         let default_spawn = player
