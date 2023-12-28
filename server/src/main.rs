@@ -10,9 +10,9 @@ use message_io::network::Endpoint;
 use rand::Rng;
 use shared::{
     event::{
-        client::{PlayerConnected, PlayerDisconnected, SomeoneMoved, WorldData},
+        client::{SpawnUnit, PlayerDisconnected, SomeoneMoved, WorldData},
         server::{ChangeMovement, Heartbeat},
-        NetEntId, PlayerData, ERFE,
+        NetEntId, UnitData, ERFE, UnitType, spells::NPC,
     },
     netlib::{
         send_event_to_server, EventToClient, EventToServer, NetworkConnectionTarget,
@@ -134,6 +134,7 @@ fn on_player_connect(
         &ConnectedPlayerName,
         &Health,
     )>,
+    npcs: Query<(&Transform, &NetEntId, &Health, &NPC)>,
     sr: Res<ServerResources<EventToServer>>,
     _config: Res<Config>,
     mut commands: Commands,
@@ -165,33 +166,47 @@ fn on_player_connect(
             player.event.my_location
         };
 
-        let new_player_data = PlayerData {
-            name: name.clone(),
+        let new_player_data = UnitData {
             ent_id: NetEntId::random(),
             health: Health::default(),
             transform: spawn_location,
+            unit: UnitType::Player { name: name.clone() },
         };
 
-        let event = EventToClient::PlayerConnected(PlayerConnected {
+        let event = EventToClient::SpawnUnit(SpawnUnit {
             data: new_player_data.clone(),
         });
 
-        // Tell all other clients, also collect their player data to send
-        let mut connected_player_list = vec![];
+        // The new player we just spawned is the first unit in the list that we send to the client.
+        let mut unit_list = vec![
+            new_player_data.clone(),
+        ];
+
         for (c_tfm, c_net_client, &ent_id, ConnectedPlayerName { name: c_name }, &health) in
             &clients
         {
-            connected_player_list.push(PlayerConnected {
-                data: PlayerData {
-                    name: c_name.clone(),
-                    ent_id,
-                    health,
-                    transform: *c_tfm,
-                },
+            unit_list.push(UnitData {
+                unit: UnitType::Player { name: c_name.clone() },
+                ent_id,
+                health,
+                transform: *c_tfm,
             });
+
+            // Tell all other clients,
+            // also notify their player data to send
             send_event_to_server(&sr.handler, c_net_client.0, &event);
         }
 
+        for (&transform, &ent_id, &health, npc_type) in &npcs {
+            unit_list.push(UnitData {
+                unit: UnitType::NPC { npc_type: npc_type.clone() },
+                ent_id,
+                health,
+                transform,
+            });
+        }
+
+        // Directly spawn the unit here, instead of sending a SpawnUnit event.
         commands.spawn((
             ConnectedPlayerName { name },
             new_player_data.ent_id,
@@ -217,10 +232,10 @@ fn on_player_connect(
             .map
             .insert(player.endpoint, new_player_data.ent_id);
 
-        // Finally, tell the client their info
+        // Finally, tell the client all this info.
         let event = EventToClient::WorldData(WorldData {
-            your_player_data: new_player_data,
-            players: connected_player_list,
+            your_unit_id: new_player_data.ent_id,
+            unit_data: unit_list,
         });
         send_event_to_server(&sr.handler, player.endpoint, &event);
     }

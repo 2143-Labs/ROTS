@@ -17,9 +17,3 @@ pub enum UpdateSharedComponent {
 pub enum NPC {
     Penguin,
 }
-
-#[derive(Debug, Clone, Serialize, Deserialize, Event)]
-pub struct SpawnNPC {
-    pub location: Vec3,
-    pub npc: NPC,
-}

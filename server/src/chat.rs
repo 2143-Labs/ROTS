@@ -13,13 +13,13 @@ impl Plugin for ChatPlugin {
 use clap::{Args, Parser};
 use shared::{
     event::{
-        client::Chat,
+        client::{Chat, SpawnUnit},
         server::SendChat,
-        spells::{SpawnNPC, NPC},
-        NetEntId, ERFE,
+        spells::NPC,
+        NetEntId, ERFE, UnitData,
     },
     netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
-    AnyPlayer,
+    AnyPlayer, stats::Health,
 };
 
 use crate::{ConnectedPlayerName, EndpointToNetId, PlayerEndpoint, ServerState};
@@ -49,7 +49,7 @@ fn on_chat(
     mut cmd: EventWriter<RunChatCommand>,
 ) {
     for chat in pd.read() {
-        if let Some(moved_net_id) = endpoint_mapping.map.get(&chat.endpoint) {
+        if let Some(chatter_net_id) = endpoint_mapping.map.get(&chat.endpoint) {
             let text = &chat.event.text;
             if text.starts_with("/") {
                 // if it starts with /, its a command parse it using clap
@@ -66,7 +66,7 @@ fn on_chat(
 
                         // Trigger event to send the chat command
                         cmd.send(RunChatCommand {
-                            runner: *moved_net_id,
+                            runner: *chatter_net_id,
                             command: x,
                         });
                     }
@@ -80,7 +80,7 @@ fn on_chat(
                 };
             } else {
                 let event = EventToClient::Chat(Chat {
-                    source: Some(*moved_net_id),
+                    source: Some(*chatter_net_id),
                     text: text.clone(),
                 });
 
@@ -95,7 +95,7 @@ fn on_chat(
 fn on_chat_command(
     mut cmd: EventReader<RunChatCommand>,
     players: Query<(Entity, &Transform, &NetEntId, &ConnectedPlayerName)>,
-    mut spawn_npc: EventWriter<SpawnNPC>,
+    mut spawn_npc: EventWriter<SpawnUnit>,
 ) {
     for command in cmd.read() {
         let (_runner_ent, runner_tfm, _runner_net_ent, _runner_name) =
@@ -106,9 +106,13 @@ fn on_chat_command(
 
         match &command.command {
             ChatCommand::Spawn(_se) => {
-                spawn_npc.send(SpawnNPC {
-                    location: runner_tfm.translation,
-                    npc: NPC::Penguin,
+                spawn_npc.send(SpawnUnit {
+                    data: UnitData {
+                        unit: shared::event::UnitType::NPC { npc_type: NPC::Penguin },
+                        ent_id: NetEntId(rand::random()),
+                        health: Health(5),
+                        transform: Transform::from_translation(runner_tfm.translation),
+                    },
                 });
             }
         }
