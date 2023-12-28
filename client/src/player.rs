@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_xpbd_3d::prelude::{Collider, RigidBody};
-use shared::AnyPlayer;
+use shared::AnyUnit;
 
 use crate::worldgen::ChunkPos;
 
@@ -59,7 +59,7 @@ pub fn spawn_player_sprite(
         crate::physics::Jumper {
             timer: Timer::from_seconds(1.05, TimerMode::Once),
         },
-        AnyPlayer,
+        AnyUnit,
         SpatialListener::new(1.0),
     ));
 }

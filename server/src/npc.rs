@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use shared::{
     event::client::SpawnUnit,
     netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
-    AnyPlayer,
+    AnyUnit,
 };
 
 use crate::{PlayerEndpoint, ServerState};
@@ -22,7 +22,7 @@ fn on_unit_spawn(
     mut commands: Commands,
     //players: Query<(Entity, &Transform, &NetEntId, &ConnectedPlayerName)>,
     sr: Res<ServerResources<EventToServer>>,
-    clients: Query<&PlayerEndpoint, With<AnyPlayer>>,
+    clients: Query<&PlayerEndpoint, With<AnyUnit>>,
 ) {
     for spawn in spawns.read() {
         match &spawn.data.unit {

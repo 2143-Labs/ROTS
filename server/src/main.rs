@@ -214,7 +214,7 @@ fn on_player_connect(
             new_player_data.transform,
             PlayerEndpoint(player.endpoint),
             // Transform component used for generic systems
-            shared::AnyPlayer,
+            shared::AnyUnit,
         ));
 
         // Each time we miss a heartbeat, we increment the Atomic counter.

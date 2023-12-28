@@ -39,7 +39,7 @@ impl GameAction {
 
 /// Just a tag we have in the shared library for any controlled character
 #[derive(Component)]
-pub struct AnyPlayer;
+pub struct AnyUnit;
 
 #[derive(Reflect, Clone, Resource, Deserialize, Serialize, Debug)]
 pub struct Config {

@@ -7,7 +7,7 @@ use shared::{
         client::{BulletHit, SomeoneCast},
         NetEntId, ERFE,
     },
-    AnyPlayer,
+    AnyUnit,
 };
 
 use crate::{
@@ -44,7 +44,7 @@ fn on_us_tp(
 
 fn on_someone_cast(
     mut someone_cast: ERFE<SomeoneCast>,
-    other_players: Query<(Entity, &NetEntId, &Transform, Has<Player>), With<AnyPlayer>>,
+    other_players: Query<(Entity, &NetEntId, &Transform, Has<Player>), With<AnyUnit>>,
     mut commands: Commands,
     //TODO dont actually spawn a cube on cast
     mut meshes: ResMut<Assets<Mesh>>,
@@ -104,7 +104,7 @@ fn on_someone_cast(
 
 fn on_someone_hit(
     mut someone_hit: ERFE<BulletHit>,
-    all_plys: Query<(&NetEntId, &Transform, &PlayerName, Has<Player>), With<AnyPlayer>>,
+    all_plys: Query<(&NetEntId, &Transform, &PlayerName, Has<Player>), With<AnyUnit>>,
     mut notifs: EventWriter<Notification>,
     bullets: Query<(Entity, &NetEntId, &CasterNetId)>,
     mut commands: Commands,

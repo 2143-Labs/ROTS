@@ -10,7 +10,7 @@ use shared::{
     },
     netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
     stats::Health,
-    AnyPlayer,
+    AnyUnit,
 };
 
 use crate::{EndpointToNetId, PlayerEndpoint, ServerState};
@@ -69,8 +69,8 @@ fn on_player_try_cast(
 }
 
 fn check_collision(
-    bullets: Query<(&NetEntId, &CasterNetId, &Transform), (With<ShootingData>, Without<AnyPlayer>)>,
-    players: Query<(&NetEntId, &Transform), With<AnyPlayer>>,
+    bullets: Query<(&NetEntId, &CasterNetId, &Transform), (With<ShootingData>, Without<AnyUnit>)>,
+    players: Query<(&NetEntId, &Transform), With<AnyUnit>>,
     mut ev_w: EventWriter<BulletHit>,
 ) {
     for (b_id, CasterNetId(caster), bullet) in &bullets {
@@ -97,7 +97,7 @@ fn hit(
     mut ev_r: EventReader<BulletHit>,
     clients: Query<&PlayerEndpoint>,
     // todo make this into an event
-    mut players: Query<(&NetEntId, &mut Health), With<AnyPlayer>>,
+    mut players: Query<(&NetEntId, &mut Health), With<AnyUnit>>,
     sr: Res<ServerResources<EventToServer>>,
     mut hit_list: ResMut<HitList>,
 ) {

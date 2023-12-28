@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use shared::{
     event::{client::SomeoneUpdateComponent, NetEntId, ERFE},
     stats::Health,
-    AnyPlayer,
+    AnyUnit,
 };
 
 use crate::{
@@ -25,7 +25,7 @@ impl Plugin for StatsNetworkPlugin {
 
 fn on_someone_update_stats(
     mut stat_update: ERFE<SomeoneUpdateComponent>,
-    mut players: Query<(&NetEntId, &mut Health, &PlayerName), With<AnyPlayer>>,
+    mut players: Query<(&NetEntId, &mut Health, &PlayerName), With<AnyUnit>>,
 ) {
     for update in stat_update.read() {
         for (ply_ent, mut ply_hp, name) in &mut players {
@@ -52,7 +52,7 @@ fn on_hp_change(
     mut notifs: EventWriter<Notification>,
     mut players: Query<
         (&mut Transform, &mut Health, Has<Player>, &PlayerName),
-        (With<AnyPlayer>, Changed<Health>),
+        (With<AnyUnit>, Changed<Health>),
     >,
     mut hp_text: Query<(&mut Text, &HPIndicator)>,
     mut total_deaths: Local<u32>,

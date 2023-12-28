@@ -44,6 +44,11 @@ pub enum UnitType {
     },
 }
 
+//impl UnitType {
+    //fn components(&self) {
+    //}
+//}
+
 // This is all the data need to initialize a player for the client side.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UnitData {

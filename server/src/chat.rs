@@ -19,7 +19,7 @@ use shared::{
         NetEntId, ERFE, UnitData,
     },
     netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
-    AnyPlayer, stats::Health,
+    AnyUnit, stats::Health,
 };
 
 use crate::{ConnectedPlayerName, EndpointToNetId, PlayerEndpoint, ServerState};
@@ -44,7 +44,7 @@ struct RunChatCommand {
 fn on_chat(
     mut pd: ERFE<SendChat>,
     endpoint_mapping: Res<EndpointToNetId>,
-    clients: Query<&PlayerEndpoint, With<AnyPlayer>>,
+    clients: Query<&PlayerEndpoint, With<AnyUnit>>,
     sr: Res<ServerResources<EventToServer>>,
     mut cmd: EventWriter<RunChatCommand>,
 ) {

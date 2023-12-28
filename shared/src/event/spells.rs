@@ -17,3 +17,11 @@ pub enum UpdateSharedComponent {
 pub enum NPC {
     Penguin,
 }
+
+impl NPC {
+    pub fn model(&self) -> &'static str {
+        match self {
+            NPC::Penguin => "penguin.gltf#Scene0",
+        }
+    }
+}
