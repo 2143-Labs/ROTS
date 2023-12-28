@@ -118,7 +118,8 @@ fn on_chat_type(
 
     if keyboard_input.just_pressed(KeyCode::Up) {
         if chat_history.0.len() >= 1 {
-            let new_ptr = chat_history_ptr.0
+            let new_ptr = chat_history_ptr
+                .0
                 .unwrap_or(chat_history.0.len())
                 .saturating_sub(1);
 
