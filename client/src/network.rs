@@ -141,7 +141,9 @@ fn receive_world_data(
                             .insert(my_id)
                             .insert(PlayerName(name.clone()))
                             .insert(unit.health)
-                            .with_children(|s| build_healthbar(s, &mut meshes, &mut materials, Vec3::ZERO));
+                            .with_children(|s| {
+                                build_healthbar(s, &mut meshes, &mut materials, Vec3::ZERO)
+                            });
 
                         // if this is us, skip the spawn units call cause we updated a local unit
                         // instead. TODO eventually fix this so when we fully despawn the menu
@@ -156,9 +158,7 @@ fn receive_world_data(
             }
 
             //For any unit that isnt us, spawn it
-            spawn_units.send(SpawnUnit {
-                data: unit.clone(),
-            });
+            spawn_units.send(SpawnUnit { data: unit.clone() });
         }
 
         commands.spawn((
@@ -248,10 +248,7 @@ fn on_disconnect(
 
 fn on_someone_move(
     mut someone_moved: ERFE<SomeoneMoved>,
-    mut other_players: Query<
-        (&NetEntId, &mut Transform, &mut MovementIntention),
-        With<AnyUnit>,
-    >,
+    mut other_players: Query<(&NetEntId, &mut Transform, &mut MovementIntention), With<AnyUnit>>,
 ) {
     for movement in someone_moved.read() {
         for (ply_net, mut ply_tfm, mut ply_intent) in &mut other_players {

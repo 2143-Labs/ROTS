@@ -39,14 +39,14 @@ pub enum UnitType {
     Player { name: String },
     NPC { npc_type: NPC },
 }
-    //fn components(&self, e: &mut EntityCommands) {
-        //match self {
-            //UnitType::Player { name } => {
-                //e.insert(
-            //},
-            //UnitType::NPC { npc_type } => todo!(),
-        //}
-    //}
+//fn components(&self, e: &mut EntityCommands) {
+//match self {
+//UnitType::Player { name } => {
+//e.insert(
+//},
+//UnitType::NPC { npc_type } => todo!(),
+//}
+//}
 //}
 
 // This is all the data need to initialize a player for the client side.

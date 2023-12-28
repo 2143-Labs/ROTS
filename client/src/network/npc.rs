@@ -78,7 +78,9 @@ fn on_npc_spawn(
                         MovementIntention(Vec2::ZERO),
                         AnyUnit,
                     ))
-                    .with_children(|s| build_healthbar(s, &mut meshes, &mut materials, Vec3::new(0.0, 5.0, 0.0)));
+                    .with_children(|s| {
+                        build_healthbar(s, &mut meshes, &mut materials, Vec3::new(0.0, 5.0, 0.0))
+                    });
             }
         }
     }

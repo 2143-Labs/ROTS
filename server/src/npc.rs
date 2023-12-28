@@ -3,24 +3,29 @@ use std::time::Duration;
 use bevy::prelude::*;
 use bevy_time::common_conditions::on_timer;
 use shared::{
-    event::{client::{SpawnUnit, SomeoneMoved}, spells::AIType, NetEntId},
+    event::{
+        client::{SomeoneMoved, SpawnUnit},
+        spells::AIType,
+        NetEntId,
+    },
     netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
     AnyUnit, Controlled,
 };
 
-use crate::{PlayerEndpoint, ServerState, ConnectedPlayerName};
+use crate::{ConnectedPlayerName, PlayerEndpoint, ServerState};
 
 pub struct NPCPlugin;
 impl Plugin for NPCPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<SpawnUnit>().add_systems(
-            Update,
-            (on_unit_spawn, on_ai_tick).run_if(in_state(ServerState::Running)),
-        )
-        .add_systems(
-            Update,
-            on_npc_move.run_if(on_timer(Duration::from_millis(50))),
-        );
+        app.add_event::<SpawnUnit>()
+            .add_systems(
+                Update,
+                (on_unit_spawn, on_ai_tick).run_if(in_state(ServerState::Running)),
+            )
+            .add_systems(
+                Update,
+                on_npc_move.run_if(on_timer(Duration::from_millis(50))),
+            );
     }
 }
 
@@ -47,10 +52,7 @@ fn on_unit_spawn(
                 return;
             }
             shared::event::UnitType::NPC { npc_type } => {
-                base.insert((
-                    npc_type.clone(),
-                    npc_type.get_ai_component(),
-                ));
+                base.insert((npc_type.clone(), npc_type.get_ai_component()));
             }
         };
 
@@ -70,7 +72,7 @@ fn on_ai_tick(
     let positions: Vec<&Transform> = non_ai.iter().collect();
     for (mut unit_tfm, ai_type) in &mut ai_units {
         match ai_type {
-            AIType::None => {},
+            AIType::None => {}
             AIType::WalkToNearestPlayer => {
                 let closest = positions.iter().reduce(|acc, x| {
                     let dist_old = unit_tfm.translation.distance(acc.translation);
