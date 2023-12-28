@@ -23,6 +23,8 @@ impl Plugin for ChatPlugin {
         app.add_state::<ChatState>()
             .add_event::<Chat>()
             .add_event::<WeChat>()
+            .insert_resource(ChatHistory::default())
+            .insert_resource(ChatHistoryPtr::default())
             .add_systems(Startup, setup_panel)
             .add_systems(Update, on_chat)
             .add_systems(Update, on_chat_type.run_if(in_state(ChatState::Chatting)))
@@ -55,25 +57,41 @@ impl EditableText for &mut Text {
     }
 }
 
+#[derive(Resource, Debug, Default)]
+struct ChatHistory(Vec<String>);
+
+/// If you press the up arrow, we need to remember which chats you have seen.
+#[derive(Resource, Debug, Default)]
+struct ChatHistoryPtr(Option<usize>);
+
 fn on_chat_toggle(
     cur_chat_state: Res<State<ChatState>>,
     mut chat_state: ResMut<NextState<ChatState>>,
     mut typed_text: Query<&mut Text, With<ChatTypeContainer>>,
     mut chat_bg_color: Query<&mut BackgroundColor, With<ChatContainer>>,
+    mut chat_history: ResMut<ChatHistory>,
+    mut chat_history_ptr: ResMut<ChatHistoryPtr>,
     mut ew: EventWriter<WeChat>,
 ) {
+    let mut chatbox = typed_text.single_mut();
+    let mut chatbox = chatbox.as_mut();
+    let cur_text = chatbox.get_text();
     match cur_chat_state.get() {
         ChatState::Chatting => {
-            let mut chatbox = typed_text.single_mut();
-            let mut chatbox = chatbox.as_mut();
-            let cur_text = chatbox.get_text();
+            let chat = std::mem::take(cur_text);
+            // If this is a new chat, push it to the front
+            if chat_history.0.last() != Some(&chat) {
+                chat_history.0.push(chat.clone());
+            }
 
-            ew.send(WeChat(std::mem::take(cur_text)));
+            *chat_history_ptr = ChatHistoryPtr(None);
+            ew.send(WeChat(chat));
 
             chat_state.set(ChatState::NotChatting);
             *chat_bg_color.single_mut() = Color::WHITE.with_a(0.00).into();
         }
         ChatState::NotChatting => {
+            *cur_text = "".into();
             chat_state.set(ChatState::Chatting);
             *chat_bg_color.single_mut() = Color::WHITE.with_a(0.10).into();
         }
@@ -87,6 +105,8 @@ fn on_chat_type(
     keyboard_input: Res<Input<KeyCode>>,
     mut typed_chars: EventReader<ReceivedCharacter>,
     mut typed_text: Query<&mut Text, With<ChatTypeContainer>>,
+    mut chat_history_ptr: ResMut<ChatHistoryPtr>,
+    chat_history: Res<ChatHistory>,
 ) {
     let mut chatbox = typed_text.single_mut();
     let mut chatbox = chatbox.as_mut();
@@ -94,6 +114,27 @@ fn on_chat_type(
 
     if keyboard_input.just_pressed(KeyCode::Back) {
         cur_text.pop();
+    }
+
+    if keyboard_input.just_pressed(KeyCode::Up) {
+        if chat_history.0.len() >= 1 {
+            let new_ptr = chat_history_ptr
+                .0
+                .unwrap_or(chat_history.0.len())
+                .saturating_sub(1);
+
+            *chat_history_ptr = ChatHistoryPtr(Some(new_ptr));
+            *cur_text = chat_history.0[new_ptr].clone();
+        }
+    }
+
+    if keyboard_input.just_pressed(KeyCode::Down) {
+        if let Some(cur_ptr) = chat_history_ptr.0 {
+            let new_ptr = (cur_ptr + 1).min(chat_history.0.len() - 1);
+
+            *chat_history_ptr = ChatHistoryPtr(Some(new_ptr));
+            *cur_text = chat_history.0[new_ptr].clone();
+        };
     }
 
     for typed_char in typed_chars.read() {
