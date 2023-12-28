@@ -49,9 +49,10 @@ pub fn send_event_to_server<T: NetworkingEvent>(
     endpoint: Endpoint,
     event: &T,
 ) {
-    handler
-        .network()
-        .send(endpoint, &postcard::to_stdvec(&EventGroupingRef::Single(event)).unwrap());
+    handler.network().send(
+        endpoint,
+        &postcard::to_stdvec(&EventGroupingRef::Single(event)).unwrap(),
+    );
 }
 
 pub fn send_event_to_server_batch<T: NetworkingEvent>(
@@ -59,9 +60,10 @@ pub fn send_event_to_server_batch<T: NetworkingEvent>(
     endpoint: Endpoint,
     event: &[T],
 ) {
-    handler
-        .network()
-        .send(endpoint, &postcard::to_stdvec(&EventGroupingRef::Batch(event)).unwrap());
+    handler.network().send(
+        endpoint,
+        &postcard::to_stdvec(&EventGroupingRef::Batch(event)).unwrap(),
+    );
 }
 
 pub fn setup_server<T: NetworkingEvent>(commands: Commands, config: Res<NetworkConnectionTarget>) {
@@ -137,13 +139,11 @@ pub fn on_node_event<T: NetworkingEvent>(res: &ServerResources<T>, event: NodeEv
                 EventGroupingOwned::Single(x) => {
                     let pair = (endpoint, x);
                     list.push(pair);
-                },
+                }
                 EventGroupingOwned::Batch(events) => {
                     list.extend(events.into_iter().map(|x| (endpoint, x)));
-                },
-
+                }
             }
-
         }
         NetEvent::Disconnected(_endpoint) => warn!("Client disconnected"),
     }

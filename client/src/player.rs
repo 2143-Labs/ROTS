@@ -69,8 +69,8 @@ pub fn spawn_player_sprite(
 }
 
 //pub fn spawn_spectator_camera(
-    //mut commands: Commands,
-    //asset_server: ResMut<AssetServer>,
+//mut commands: Commands,
+//asset_server: ResMut<AssetServer>,
 //) {
 //}
 

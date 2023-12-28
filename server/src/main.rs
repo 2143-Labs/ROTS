@@ -174,7 +174,6 @@ fn on_player_connect(
 
         info!(?name, ?new_player_data.ent_id, "Player Connected");
 
-
         let event = EventToClient::SpawnUnit(SpawnUnit {
             data: new_player_data.clone(),
         });

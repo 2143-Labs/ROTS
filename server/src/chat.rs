@@ -3,10 +3,11 @@ use bevy::{prelude::*, utils::HashMap};
 pub struct ChatPlugin;
 impl Plugin for ChatPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<EventFromEndpoint<RunChatCommand>>().add_systems(
-            Update,
-            (on_chat, on_chat_command).run_if(in_state(ServerState::Running)),
-        );
+        app.add_event::<EventFromEndpoint<RunChatCommand>>()
+            .add_systems(
+                Update,
+                (on_chat, on_chat_command).run_if(in_state(ServerState::Running)),
+            );
     }
 }
 
@@ -16,7 +17,7 @@ use shared::{
         client::{Chat, SpawnUnit},
         server::SendChat,
         spells::NPC,
-        NetEntId, UnitData, ERFE, EventFromEndpoint,
+        EventFromEndpoint, NetEntId, UnitData, ERFE,
     },
     netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
     stats::Health,
@@ -60,7 +61,6 @@ fn on_chat(
 ) {
     for chat in pd.read() {
         if let Some(chatter_net_id) = endpoint_mapping.map.get(&chat.endpoint) {
-
             let text = &chat.event.text;
             info!(?chatter_net_id.0, text, "Chat");
             if text.starts_with("/") {
@@ -82,7 +82,7 @@ fn on_chat(
                             event: RunChatCommand {
                                 runner: *chatter_net_id,
                                 command: x,
-                            }
+                            },
                         });
                     }
                     Err(k) => {
@@ -116,11 +116,13 @@ fn on_chat_command(
     mut spawn_npc: EventWriter<SpawnUnit>,
 ) {
     for command in cmd.read() {
-        let (_runner_ent, runner_tfm, _runner_net_ent, _runner_name) =
-            match players.iter().find(|(_, _, &id, _)| id == command.event.runner) {
-                Some(s) => s,
-                None => continue,
-            };
+        let (_runner_ent, runner_tfm, _runner_net_ent, _runner_name) = match players
+            .iter()
+            .find(|(_, _, &id, _)| id == command.event.runner)
+        {
+            Some(s) => s,
+            None => continue,
+        };
 
         match &command.event.command {
             ChatCommand::Spawn(_se) => {
@@ -151,7 +153,7 @@ fn on_chat_command(
                     text: format!("Players: {:?} || NPCs: {:?}", player_names, enemies),
                 });
                 send_event_to_server(&sr.handler, command.endpoint, &event);
-            },
+            }
         }
     }
 }

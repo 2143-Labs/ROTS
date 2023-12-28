@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 use shared::{
-    event::{client::{SpawnUnit, UnitDie}, ERFE, NetEntId},
+    event::{
+        client::{SpawnUnit, UnitDie},
+        NetEntId, ERFE,
+    },
     AnyUnit,
 };
 
@@ -100,7 +103,9 @@ fn on_unit_die(
                     // Spawn a spectator cameras
                     commands.spawn((
                         PrimaryUnitControl,
-                        TransformBundle::from_transform(Transform::from_translation(tfm.translation)),
+                        TransformBundle::from_transform(Transform::from_translation(
+                            tfm.translation,
+                        )),
                     ));
                 }
             }
