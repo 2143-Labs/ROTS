@@ -62,7 +62,7 @@ fn on_chat(
     for chat in pd.read() {
         if let Some(chatter_net_id) = endpoint_mapping.map.get(&chat.endpoint) {
             let text = &chat.event.text;
-            info!(?chatter_net_id.0, text, "Chat");
+            info!(?chatter_net_id, text, "Chat");
             if text.starts_with("/") {
                 // if it starts with /, its a command parse it using clap
                 let cmd_parts = text.split_at(1).1.split(' ');
