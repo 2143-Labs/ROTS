@@ -62,18 +62,18 @@ fn on_chat_toggle(
     mut chat_bg_color: Query<&mut BackgroundColor, With<ChatContainer>>,
     mut ew: EventWriter<WeChat>,
 ) {
+    let mut chatbox = typed_text.single_mut();
+    let mut chatbox = chatbox.as_mut();
+    let cur_text = chatbox.get_text();
     match cur_chat_state.get() {
         ChatState::Chatting => {
-            let mut chatbox = typed_text.single_mut();
-            let mut chatbox = chatbox.as_mut();
-            let cur_text = chatbox.get_text();
-
             ew.send(WeChat(std::mem::take(cur_text)));
 
             chat_state.set(ChatState::NotChatting);
             *chat_bg_color.single_mut() = Color::WHITE.with_a(0.00).into();
         }
         ChatState::NotChatting => {
+            *cur_text = "".into();
             chat_state.set(ChatState::Chatting);
             *chat_bg_color.single_mut() = Color::WHITE.with_a(0.10).into();
         }
