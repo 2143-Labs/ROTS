@@ -39,7 +39,7 @@ fn on_npc_spawn(
 ) {
     for event in pd.read() {
         let ud = &event.event.data;
-        match ud.unit {
+        match &ud.unit {
             shared::event::UnitType::Player { name } => {
                 let cube = SceneBundle {
                     scene: asset_server.load("tadpole.gltf#Scene0"),
@@ -51,9 +51,9 @@ fn on_npc_spawn(
                     .spawn((
                         cube,
                         OtherPlayer,
-                        PlayerName(event.data.name.clone()),
+                        PlayerName(name.clone()),
                         MovementIntention(Vec2::ZERO),
-                        Name::new(format!("Player: {}", event.data.name)),
+                        Name::new(format!("Player: {name}")),
                         // their NetEntId is a component
                         ud.ent_id,
                         ud.health,
@@ -62,10 +62,9 @@ fn on_npc_spawn(
                     .with_children(|s| build_healthbar(s, &mut meshes, &mut materials));
             }
             shared::event::UnitType::NPC { npc_type } => {
-                let npc = &event.event;
                 let cube = SceneBundle {
                     scene: asset_server.load(npc_type.model()),
-                    transform: Transform::from_translation(ud.transform.location),
+                    transform: Transform::from_translation(ud.transform.translation),
                     ..default()
                 };
 

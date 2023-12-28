@@ -25,14 +25,16 @@ mod casting;
 pub mod npc;
 pub mod stats;
 
-pub struct NetworkingPlugin;
+#[derive(Component)]
+pub struct OtherPlayer;
 
+pub struct NetworkingPlugin;
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
         shared::event::client::register_events(app);
         app.add_plugins(casting::CastingNetworkPlugin)
             .add_plugins((stats::StatsNetworkPlugin, npc::NPCPlugin))
-            .add_event::<SpawnOtherPlayer>()
+            .add_event::<SpawnUnit>()
             .add_systems(
                 OnEnter(GameState::ClientConnecting),
                 (
@@ -50,7 +52,6 @@ impl Plugin for NetworkingPlugin {
                     on_connect,
                     on_disconnect,
                     on_someone_move,
-                    spawn_player,
                     go_movement_intents,
                 )
                     .run_if(in_state(GameState::ClientConnected)),
@@ -111,7 +112,7 @@ fn receive_world_data(
     mut commands: Commands,
     mut notif: EventWriter<Notification>,
     mut local_player: Query<(Entity, &mut Transform), With<Player>>,
-    mut spawn_player: EventWriter<SpawnOtherPlayer>,
+    mut spawn_units: EventWriter<SpawnUnit>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: ResMut<AssetServer>,
@@ -120,41 +121,43 @@ fn receive_world_data(
         info!(?event, "Server has returned world data!");
 
         let my_id = event.event.your_unit_id;
-        for unit in event.event.unit_data {
-            match unit.unit {
+        for unit in &event.event.unit_data {
+            match &unit.unit {
                 shared::event::UnitType::Player { name } => {
+                    // If it's a player, check to see if it is us
                     if unit.ent_id == my_id {
+                        // If so, start aligning the client to it
                         let (p_ent, mut p_tfm) = local_player.single_mut();
                         p_tfm.translation = unit.transform.translation;
 
-                        let my_name = match unit.unit {
-                            shared::event::UnitType::Player { name } => name,
-                            shared::event::UnitType::NPC { npc_type } => {
-                                error!("We were spawned as an npc?");
-                                continue;
-                            }
-                        };
-
                         notif.send(Notification(format!(
-                            "Connected to server as {my_name} {my_id:?}"
+                            "Connected to server as {name} {my_id:?}"
                         )));
 
                         // Add our netentid + name
                         commands
                             .entity(p_ent)
                             .insert(my_id)
-                            .insert(PlayerName(my_name.clone()))
+                            .insert(PlayerName(name.clone()))
                             .insert(unit.health)
                             .with_children(|s| build_healthbar(s, &mut meshes, &mut materials));
+
+                        // if this is us, skip the spawn units call cause we updated a local unit
+                        // instead. TODO eventually fix this so when we fully despawn the menu
+                        // player unit
+                        continue;
                     } else {
                         // Not the local player
                         notif.send(Notification(format!("Connected: {name}")));
-                        spawn_player.send(SpawnOtherPlayer());
-                        info!(?other_player_data);
                     }
                 }
-                shared::event::UnitType::NPC { npc_type } => {}
+                _ => {}
             }
+
+            //For any unit that isnt us, spawn it
+            spawn_units.send(SpawnUnit {
+                data: unit.clone(),
+            });
         }
 
         commands.spawn((
@@ -272,20 +275,6 @@ fn go_movement_intents(
         ply_tfm.translation +=
             Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * PLAYER_SPEED * time.delta_seconds();
     }
-}
-
-#[derive(Component)]
-pub struct OtherPlayer;
-
-fn spawn_player(
-    mut commands: Commands,
-    asset_server: ResMut<AssetServer>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-
-    mut er: EventReader<SpawnUnit>,
-) {
-    for unit in er.read() {}
 }
 
 fn on_connect(
