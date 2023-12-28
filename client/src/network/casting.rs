@@ -11,7 +11,6 @@ use shared::{
 };
 
 use crate::{
-    cameras::notifications::Notification,
     player::{Player, PlayerName},
     states::GameState,
 };

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use shared::{
-    event::{client::SpawnUnit, ERFE},
+    event::{client::SpawnUnit},
     AnyUnit,
 };
 
