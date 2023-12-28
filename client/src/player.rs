@@ -68,9 +68,11 @@ pub fn spawn_player_sprite(
     ));
 }
 
-pub fn spawn_spectator_camera(
-) {
-}
+//pub fn spawn_spectator_camera(
+    //mut commands: Commands,
+    //asset_server: ResMut<AssetServer>,
+//) {
+//}
 
 // Once the scene is loaded, start the animation
 pub fn animate_sprites(
