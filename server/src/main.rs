@@ -148,9 +148,6 @@ fn on_player_connect(
             .clone()
             .unwrap_or_else(|| format!("Player #{}", rand::thread_rng().gen_range(1..10000)));
 
-        info!(?name, "Player Connected");
-
-
         //if they are too far, just put them at the spawn
         let default_spawn = player
             .event
@@ -174,6 +171,9 @@ fn on_player_connect(
             transform: spawn_location,
             unit: UnitType::Player { name: name.clone() },
         };
+
+        info!(?name, ?new_player_data.ent_id, "Player Connected");
+
 
         let event = EventToClient::SpawnUnit(SpawnUnit {
             data: new_player_data.clone(),
