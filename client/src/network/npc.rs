@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use shared::{
-    event::{client::SpawnUnit},
+    event::{client::{SpawnUnit, UnitDie}, ERFE, NetEntId},
     AnyUnit,
 };
 
@@ -21,7 +21,7 @@ impl Plugin for NPCPlugin {
             //.add_systems(Update, on_chat_toggle.run_if(shared::GameAction::Chat.just_pressed()))
             .add_systems(
                 Update,
-                (on_npc_spawn).run_if(in_state(GameState::ClientConnected)),
+                (on_npc_spawn, on_unit_die).run_if(in_state(GameState::ClientConnected)),
             );
     }
 }
@@ -81,6 +81,20 @@ fn on_npc_spawn(
                     .with_children(|s| {
                         build_healthbar(s, &mut meshes, &mut materials, Vec3::new(0.0, 5.0, 0.0))
                     });
+            }
+        }
+    }
+}
+
+fn on_unit_die(
+    mut er: ERFE<UnitDie>,
+    units: Query<(Entity, &NetEntId), With<AnyUnit>>,
+    mut commands: Commands,
+) {
+    for e in er.read() {
+        for (unit_ent, &unit_ent_id) in &units {
+            if e.event.id == unit_ent_id {
+                commands.entity(unit_ent).despawn_recursive();
             }
         }
     }

@@ -21,7 +21,7 @@ impl Plugin for CastingPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(SharedCastingPlugin)
             .add_event::<BulletHit>()
-            .add_event::<Die>()
+            .add_event::<UnitDie>()
             .insert_resource(HitList::default())
             .add_systems(
                 Update,
@@ -94,12 +94,9 @@ fn check_collision(
 #[derive(Resource, Default)]
 struct HitList(HashSet<BulletHit>);
 
-#[derive(Event)]
-pub struct Die(NetEntId);
-
 fn hit(
     mut ev_r: EventReader<BulletHit>,
-    mut death: EventWriter<Die>,
+    mut death: EventWriter<UnitDie>,
     clients: Query<&PlayerEndpoint>,
     // todo make this into an event
     mut unit: Query<(&NetEntId, &mut Health, Option<&NPC>), With<AnyUnit>>,
@@ -124,7 +121,7 @@ fn hit(
                 ));
 
                 if ply_hp.0 <= 0 {
-                    death.send(Die(*ent_id));
+                    death.send(UnitDie { id: *ent_id });
                     // They get respawned on the client
                     if npc_data.is_none() {
                         *ply_hp = Health::default();
