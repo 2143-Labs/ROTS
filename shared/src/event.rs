@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use bevy_ecs::system::EntityCommands;
 use message_io::network::Endpoint;
 use serde::{Deserialize, Serialize};
 
@@ -41,8 +42,14 @@ pub enum UnitType {
 }
 
 //impl UnitType {
-//fn components(&self) {
-//}
+    //fn components(&self, e: &mut EntityCommands) {
+        //match self {
+            //UnitType::Player { name } => {
+                //e.insert(
+            //},
+            //UnitType::NPC { npc_type } => todo!(),
+        //}
+    //}
 //}
 
 // This is all the data need to initialize a player for the client side.

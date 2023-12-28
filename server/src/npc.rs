@@ -26,6 +26,7 @@ fn on_unit_spawn(
 ) {
     for spawn in spawns.read() {
         let mut base = commands.spawn((
+            AnyUnit,
             spawn.data.ent_id,
             spawn.data.health,
             spawn.data.transform,

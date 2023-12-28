@@ -80,7 +80,7 @@ fn check_collision(
                 continue;
             }
 
-            if bullet.translation.distance_squared(player.translation) < 1.0 {
+            if bullet.translation.distance_squared(player.translation) < 5.0 {
                 ev_w.send(BulletHit {
                     bullet: *b_id,
                     player: *p_id,
