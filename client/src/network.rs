@@ -91,13 +91,14 @@ fn build_healthbar(
     s: &mut ChildBuilder,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
+    offset: Vec3,
 ) {
     let player_id = s.parent_entity();
     // spawn their hp bar
     let mut hp_bar = PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
         material: materials.add(Color::rgb(0.9, 0.3, 0.0).into()),
-        transform: Transform::from_translation(Vec3::new(0.0, 0.4, 0.0)),
+        transform: Transform::from_translation(Vec3::new(0.0, 0.4, 0.0) + offset),
         ..Default::default()
     };
 
@@ -140,7 +141,7 @@ fn receive_world_data(
                             .insert(my_id)
                             .insert(PlayerName(name.clone()))
                             .insert(unit.health)
-                            .with_children(|s| build_healthbar(s, &mut meshes, &mut materials));
+                            .with_children(|s| build_healthbar(s, &mut meshes, &mut materials, Vec3::ZERO));
 
                         // if this is us, skip the spawn units call cause we updated a local unit
                         // instead. TODO eventually fix this so when we fully despawn the menu
@@ -249,7 +250,7 @@ fn on_someone_move(
     mut someone_moved: ERFE<SomeoneMoved>,
     mut other_players: Query<
         (&NetEntId, &mut Transform, &mut MovementIntention),
-        With<OtherPlayer>,
+        With<AnyUnit>,
     >,
 ) {
     for movement in someone_moved.read() {
@@ -268,7 +269,7 @@ fn on_someone_move(
 }
 
 fn go_movement_intents(
-    mut other_players: Query<(&mut Transform, &MovementIntention), With<OtherPlayer>>,
+    mut other_players: Query<(&mut Transform, &MovementIntention), With<AnyUnit>>,
     time: Res<Time>,
 ) {
     for (mut ply_tfm, ply_intent) in &mut other_players {

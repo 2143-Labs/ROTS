@@ -199,6 +199,7 @@ fn on_player_connect(
         }
 
         for (&transform, &ent_id, &health, npc_type) in &npcs {
+            info!("Got an npc to send tot he player");
             unit_list.push(UnitData {
                 unit: UnitType::NPC {
                     npc_type: npc_type.clone(),

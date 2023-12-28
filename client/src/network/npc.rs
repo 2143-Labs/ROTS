@@ -27,7 +27,7 @@ impl Plugin for NPCPlugin {
 }
 
 fn on_npc_spawn(
-    mut pd: ERFE<SpawnUnit>,
+    mut pd: EventReader<SpawnUnit>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -38,7 +38,7 @@ fn on_npc_spawn(
     //time: Res<Time>,
 ) {
     for event in pd.read() {
-        let ud = &event.event.data;
+        let ud = &event.data;
         match &ud.unit {
             shared::event::UnitType::Player { name } => {
                 let cube = SceneBundle {
@@ -59,7 +59,7 @@ fn on_npc_spawn(
                         ud.health,
                         AnyUnit,
                     ))
-                    .with_children(|s| build_healthbar(s, &mut meshes, &mut materials));
+                    .with_children(|s| build_healthbar(s, &mut meshes, &mut materials, Vec3::ZERO));
             }
             shared::event::UnitType::NPC { npc_type } => {
                 let cube = SceneBundle {
@@ -78,7 +78,7 @@ fn on_npc_spawn(
                         MovementIntention(Vec2::ZERO),
                         AnyUnit,
                     ))
-                    .with_children(|s| build_healthbar(s, &mut meshes, &mut materials));
+                    .with_children(|s| build_healthbar(s, &mut meshes, &mut materials, Vec3::new(0.0, 5.0, 0.0)));
             }
         }
     }

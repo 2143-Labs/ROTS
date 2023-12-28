@@ -114,7 +114,7 @@ fn on_chat_command(
                         },
                         ent_id: NetEntId(rand::random()),
                         health: Health(5),
-                        transform: Transform::from_translation(runner_tfm.translation),
+                        transform: Transform::from_translation(runner_tfm.translation).with_scale(Vec3::new(0.5, 0.5, 0.5)),
                     },
                 });
             }
