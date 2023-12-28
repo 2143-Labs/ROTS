@@ -16,10 +16,11 @@ use shared::{
         client::{Chat, SpawnUnit},
         server::SendChat,
         spells::NPC,
-        NetEntId, ERFE, UnitData,
+        NetEntId, UnitData, ERFE,
     },
     netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
-    AnyUnit, stats::Health,
+    stats::Health,
+    AnyUnit,
 };
 
 use crate::{ConnectedPlayerName, EndpointToNetId, PlayerEndpoint, ServerState};
@@ -108,7 +109,9 @@ fn on_chat_command(
             ChatCommand::Spawn(_se) => {
                 spawn_npc.send(SpawnUnit {
                     data: UnitData {
-                        unit: shared::event::UnitType::NPC { npc_type: NPC::Penguin },
+                        unit: shared::event::UnitType::NPC {
+                            npc_type: NPC::Penguin,
+                        },
                         ent_id: NetEntId(rand::random()),
                         health: Health(5),
                         transform: Transform::from_translation(runner_tfm.translation),

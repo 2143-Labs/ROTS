@@ -36,17 +36,13 @@ impl<E> EventFromEndpoint<E> {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum UnitType {
-    Player {
-        name: String,
-    },
-    NPC {
-        npc_type: NPC
-    },
+    Player { name: String },
+    NPC { npc_type: NPC },
 }
 
 //impl UnitType {
-    //fn components(&self) {
-    //}
+//fn components(&self) {
+//}
 //}
 
 // This is all the data need to initialize a player for the client side.

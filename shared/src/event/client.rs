@@ -4,8 +4,8 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    spells::UpdateSharedComponent,
     server::{Cast, ChangeMovement},
+    spells::UpdateSharedComponent,
     NetEntId, UnitData,
 };
 

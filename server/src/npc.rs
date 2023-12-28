@@ -28,19 +28,19 @@ fn on_unit_spawn(
         match &spawn.data.unit {
             shared::event::UnitType::Player { name } => {
                 //commands.spawn((
-                    //ConnectedPlayerName { name },
-                    //new_player_data.ent_id,
-                    //new_player_data.health,
-                    //new_player_data.transform,
-                    //PlayerEndpoint(player.endpoint),
-                    //// Transform component used for generic systems
-                    //shared::AnyPlayer,
+                //ConnectedPlayerName { name },
+                //new_player_data.ent_id,
+                //new_player_data.health,
+                //new_player_data.transform,
+                //PlayerEndpoint(player.endpoint),
+                //// Transform component used for generic systems
+                //shared::AnyPlayer,
                 //));
                 // This is likely invalid because on_player_connect also inserts the commands to
                 // spawn the player.
                 error!(?name, "Sent a SpawnUnit event containing a new player");
                 return;
-            },
+            }
             shared::event::UnitType::NPC { npc_type } => {
                 commands.spawn((
                     spawn.data.transform,
@@ -48,7 +48,7 @@ fn on_unit_spawn(
                     spawn.data.health,
                     npc_type.clone(),
                 ));
-            },
+            }
         };
 
         let event = EventToClient::SpawnUnit(SpawnUnit {

@@ -10,7 +10,7 @@ use crate::{
 use bevy::{prelude::*, time::common_conditions::on_timer};
 use shared::{
     event::{
-        client::{SpawnUnit, PlayerDisconnected, SomeoneMoved, WorldData},
+        client::{PlayerDisconnected, SomeoneMoved, SpawnUnit, WorldData},
         server::{ChangeMovement, ConnectRequest, Heartbeat},
         NetEntId, ERFE,
     },
@@ -132,7 +132,7 @@ fn receive_world_data(
                             shared::event::UnitType::NPC { npc_type } => {
                                 error!("We were spawned as an npc?");
                                 continue;
-                            },
+                            }
                         };
 
                         notif.send(Notification(format!(
@@ -146,16 +146,14 @@ fn receive_world_data(
                             .insert(PlayerName(my_name.clone()))
                             .insert(unit.health)
                             .with_children(|s| build_healthbar(s, &mut meshes, &mut materials));
-
                     } else {
                         // Not the local player
                         notif.send(Notification(format!("Connected: {name}")));
                         spawn_player.send(SpawnOtherPlayer());
                         info!(?other_player_data);
                     }
-                },
-                shared::event::UnitType::NPC { npc_type } => {
-                },
+                }
+                shared::event::UnitType::NPC { npc_type } => {}
             }
         }
 
@@ -287,8 +285,7 @@ fn spawn_player(
 
     mut er: EventReader<SpawnUnit>,
 ) {
-    for unit in er.read() {
-    }
+    for unit in er.read() {}
 }
 
 fn on_connect(

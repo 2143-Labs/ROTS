@@ -10,9 +10,10 @@ use message_io::network::Endpoint;
 use rand::Rng;
 use shared::{
     event::{
-        client::{SpawnUnit, PlayerDisconnected, SomeoneMoved, WorldData},
+        client::{PlayerDisconnected, SomeoneMoved, SpawnUnit, WorldData},
         server::{ChangeMovement, Heartbeat},
-        NetEntId, UnitData, ERFE, UnitType, spells::NPC,
+        spells::NPC,
+        NetEntId, UnitData, UnitType, ERFE,
     },
     netlib::{
         send_event_to_server, EventToClient, EventToServer, NetworkConnectionTarget,
@@ -178,15 +179,15 @@ fn on_player_connect(
         });
 
         // The new player we just spawned is the first unit in the list that we send to the client.
-        let mut unit_list = vec![
-            new_player_data.clone(),
-        ];
+        let mut unit_list = vec![new_player_data.clone()];
 
         for (c_tfm, c_net_client, &ent_id, ConnectedPlayerName { name: c_name }, &health) in
             &clients
         {
             unit_list.push(UnitData {
-                unit: UnitType::Player { name: c_name.clone() },
+                unit: UnitType::Player {
+                    name: c_name.clone(),
+                },
                 ent_id,
                 health,
                 transform: *c_tfm,
@@ -199,7 +200,9 @@ fn on_player_connect(
 
         for (&transform, &ent_id, &health, npc_type) in &npcs {
             unit_list.push(UnitData {
-                unit: UnitType::NPC { npc_type: npc_type.clone() },
+                unit: UnitType::NPC {
+                    npc_type: npc_type.clone(),
+                },
                 ent_id,
                 health,
                 transform,
