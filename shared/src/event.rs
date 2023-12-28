@@ -40,8 +40,6 @@ pub enum UnitType {
     Player { name: String },
     NPC { npc_type: NPC },
 }
-
-//impl UnitType {
     //fn components(&self, e: &mut EntityCommands) {
         //match self {
             //UnitType::Player { name } => {

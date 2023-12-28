@@ -20,7 +20,7 @@ use shared::{
         ServerResources,
     },
     stats::Health,
-    Config, ConfigPlugin,
+    Config, ConfigPlugin, Controlled,
 };
 
 /// How often to run the system
@@ -217,6 +217,8 @@ fn on_player_connect(
             new_player_data.health,
             new_player_data.transform,
             PlayerEndpoint(player.endpoint),
+            // Used as a target for some AI
+            Controlled,
             // Transform component used for generic systems
             shared::AnyUnit,
         ));

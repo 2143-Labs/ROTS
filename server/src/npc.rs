@@ -1,18 +1,25 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
+use bevy_time::common_conditions::on_timer;
 use shared::{
-    event::client::SpawnUnit,
+    event::{client::{SpawnUnit, SomeoneMoved}, spells::AIType, NetEntId},
     netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
-    AnyUnit,
+    AnyUnit, Controlled,
 };
 
-use crate::{PlayerEndpoint, ServerState};
+use crate::{PlayerEndpoint, ServerState, ConnectedPlayerName};
 
 pub struct NPCPlugin;
 impl Plugin for NPCPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<SpawnUnit>().add_systems(
             Update,
-            (on_unit_spawn).run_if(in_state(ServerState::Running)),
+            (on_unit_spawn, on_ai_tick).run_if(in_state(ServerState::Running)),
+        )
+        .add_systems(
+            Update,
+            on_npc_move.run_if(on_timer(Duration::from_millis(50))),
         );
     }
 }
@@ -42,12 +49,57 @@ fn on_unit_spawn(
             shared::event::UnitType::NPC { npc_type } => {
                 base.insert((
                     npc_type.clone(),
+                    npc_type.get_ai_component(),
                 ));
             }
         };
 
         let event = EventToClient::SpawnUnit(SpawnUnit {
             data: spawn.data.clone(),
+        });
+        for endpoint in &clients {
+            send_event_to_server(&sr.handler, endpoint.0, &event);
+        }
+    }
+}
+
+fn on_ai_tick(
+    mut ai_units: Query<(&mut Transform, &AIType), Without<Controlled>>,
+    non_ai: Query<&Transform, With<Controlled>>,
+) {
+    let positions: Vec<&Transform> = non_ai.iter().collect();
+    for (mut unit_tfm, ai_type) in &mut ai_units {
+        match ai_type {
+            AIType::None => {},
+            AIType::WalkToNearestPlayer => {
+                let closest = positions.iter().reduce(|acc, x| {
+                    let dist_old = unit_tfm.translation.distance(acc.translation);
+                    let dist_new = unit_tfm.translation.distance(x.translation);
+                    if dist_old < dist_new {
+                        acc
+                    } else {
+                        x
+                    }
+                });
+                info!(?positions, ?closest, "ticking");
+
+                if let Some(closest) = closest {
+                    unit_tfm.translation.x = closest.translation.x;
+                }
+            }
+        }
+    }
+}
+
+fn on_npc_move(
+    npcs: Query<(&Transform, &NetEntId), (With<AIType>, Changed<Transform>)>,
+    clients: Query<&PlayerEndpoint, With<ConnectedPlayerName>>,
+    sr: Res<ServerResources<EventToServer>>,
+) {
+    for (&movement, &id) in &npcs {
+        let event = EventToClient::SomeoneMoved(SomeoneMoved {
+            id,
+            movement: shared::event::server::ChangeMovement::SetTransform(movement),
         });
         for endpoint in &clients {
             send_event_to_server(&sr.handler, endpoint.0, &event);

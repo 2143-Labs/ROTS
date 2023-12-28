@@ -41,6 +41,9 @@ impl GameAction {
 #[derive(Component)]
 pub struct AnyUnit;
 
+#[derive(Component)]
+pub struct Controlled;
+
 #[derive(Reflect, Clone, Resource, Deserialize, Serialize, Debug)]
 pub struct Config {
     pub ip: String,
