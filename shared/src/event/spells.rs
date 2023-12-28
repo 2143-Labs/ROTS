@@ -1,6 +1,5 @@
 use crate::stats::Health;
 use bevy::prelude::*;
-use bevy_ecs::system::EntityCommands;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Component)]
