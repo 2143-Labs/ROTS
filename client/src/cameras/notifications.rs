@@ -28,7 +28,7 @@ impl Plugin for NotificationPlugin {
 
 //#[derive(Resource, Default)]
 //pub struct NotificationResource {
-    //expired: Vec<Notification>,
+//expired: Vec<Notification>,
 //}
 
 fn notification_ui() {}

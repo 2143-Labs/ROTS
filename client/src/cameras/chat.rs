@@ -2,11 +2,12 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 use shared::{
+    casting::DespawnTime,
     event::{client::Chat, server::SendChat, NetEntId, ERFE},
     netlib::{
         send_event_to_server, EventToClient, EventToServer, MainServerEndpoint, ServerResources,
     },
-    AnyUnit, casting::DespawnTime,
+    AnyUnit,
 };
 
 use crate::{player::PlayerName, states::GameState};
