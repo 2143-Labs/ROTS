@@ -76,7 +76,10 @@ fn main() {
         .insert_resource(HeartbeatList::default())
         .add_event::<PlayerDisconnect>()
         .add_plugins(MinimalPlugins)
-        .add_plugins(LogPlugin::default())
+        .add_plugins(LogPlugin {
+            //level: bevy::log::Level::TRACE,
+            ..Default::default()
+        })
         .add_plugins((
             ConfigPlugin,
             casting_spells::CastingPlugin,
@@ -102,10 +105,17 @@ fn main() {
         .add_systems(
             Update,
             (
-                shared::event::server::drain_events,
-                on_player_connect,
                 on_player_disconnect,
+                on_player_connect,
                 on_player_heartbeat,
+            )
+                .run_if(in_state(ServerState::Running))
+                .run_if(on_timer(Duration::from_millis(50))),
+        )
+        .add_systems(
+            Update,
+            (
+                shared::event::server::drain_events,
                 on_movement,
             )
                 .run_if(in_state(ServerState::Running)),
@@ -154,6 +164,7 @@ fn on_player_connect(
             .event
             .my_location
             .with_translation(Vec3::new(0.0, 0.0, 0.0));
+
         let spawn_location = if player
             .event
             .my_location

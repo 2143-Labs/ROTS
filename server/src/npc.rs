@@ -24,11 +24,14 @@ impl Plugin for NPCPlugin {
         app.add_event::<SpawnUnit>()
             .add_systems(
                 Update,
-                (on_unit_spawn, on_ai_tick, apply_npc_movement_intents).run_if(in_state(ServerState::Running)),
+                (on_ai_tick, apply_npc_movement_intents)
+                    .run_if(in_state(ServerState::Running)),
             )
             .add_systems(
                 Update,
-                on_npc_move.run_if(on_timer(Duration::from_millis(50))),
+                (on_npc_move, on_unit_spawn)
+                    .run_if(in_state(ServerState::Running))
+                    .run_if(on_timer(Duration::from_millis(50))),
             );
     }
 }

@@ -49,6 +49,7 @@ pub fn send_event_to_server<T: NetworkingEvent>(
     endpoint: Endpoint,
     event: &T,
 ) {
+    trace!(?event, "Sending event");
     handler.network().send(
         endpoint,
         &postcard::to_stdvec(&EventGroupingRef::Single(event)).unwrap(),
@@ -60,6 +61,7 @@ pub fn send_event_to_server_batch<T: NetworkingEvent>(
     endpoint: Endpoint,
     event: &[T],
 ) {
+    trace!(?event, "Sending batch event");
     handler.network().send(
         endpoint,
         &postcard::to_stdvec(&EventGroupingRef::Batch(event)).unwrap(),
