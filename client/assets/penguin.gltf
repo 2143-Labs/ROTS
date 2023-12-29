@@ -11,7 +11,8 @@
 				0,
 				1,
 				2,
-				78
+				78,
+				79
 			]
 		}
 	],
@@ -1626,6 +1627,44 @@
 				0.07117941975593567,
 				0.5463576316833496
 			]
+		},
+		{
+			"mesh":1,
+			"name":"Sphere",
+			"scale":[
+				0.05143827199935913,
+				0.05143827199935913,
+				0.05143827199935913
+			],
+			"translation":[
+				0.28421157598495483,
+				4.6552510261535645,
+				-0.20769429206848145
+			]
+		}
+	],
+	"materials":[
+		{
+			"doubleSided":true,
+			"name":"Material.001",
+			"pbrMetallicRoughness":{
+				"baseColorTexture":{
+					"index":0
+				},
+				"metallicFactor":0,
+				"roughnessFactor":0.5
+			}
+		},
+		{
+			"doubleSided":true,
+			"name":"Material",
+			"pbrMetallicRoughness":{
+				"baseColorTexture":{
+					"index":1
+				},
+				"metallicFactor":0,
+				"roughnessFactor":0.5
+			}
 		}
 	],
 	"meshes":[
@@ -1638,14 +1677,46 @@
 						"NORMAL":1,
 						"TEXCOORD_0":2
 					},
-					"indices":3
+					"indices":3,
+					"material":0
+				}
+			]
+		},
+		{
+			"name":"Sphere.001",
+			"primitives":[
+				{
+					"attributes":{
+						"POSITION":4,
+						"NORMAL":5,
+						"TEXCOORD_0":6
+					},
+					"indices":7,
+					"material":1
 				}
 			]
 		}
 	],
+	"textures":[
+		{
+			"sampler":0,
+			"source":0
+		},
+		{
+			"sampler":0,
+			"source":0
+		}
+	],
+	"images":[
+		{
+			"mimeType":"image/png",
+			"name":"PenguinUV",
+			"uri":"PenguinUV.png"
+		}
+	],
 	"skins":[
 		{
-			"inverseBindMatrices":4,
+			"inverseBindMatrices":8,
 			"joints":[
 				77,
 				7,
@@ -1730,14 +1801,14 @@
 		{
 			"bufferView":0,
 			"componentType":5126,
-			"count":2518,
+			"count":2452,
 			"max":[
 				3.589967966079712,
 				1.747859001159668,
-				1.0409493446350098
+				1.0395771265029907
 			],
 			"min":[
-				-3.535412073135376,
+				-3.582012176513672,
 				-1.747859001159668,
 				-2.841566324234009
 			],
@@ -1746,23 +1817,57 @@
 		{
 			"bufferView":1,
 			"componentType":5126,
-			"count":2518,
+			"count":2452,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":2,
 			"componentType":5126,
-			"count":2518,
+			"count":2452,
 			"type":"VEC2"
 		},
 		{
 			"bufferView":3,
 			"componentType":5123,
-			"count":4026,
+			"count":3882,
 			"type":"SCALAR"
 		},
 		{
 			"bufferView":4,
+			"componentType":5126,
+			"count":168,
+			"max":[
+				0.866025447845459,
+				1,
+				1.0000009536743164
+			],
+			"min":[
+				-11.916607856750488,
+				-1,
+				-1
+			],
+			"type":"VEC3"
+		},
+		{
+			"bufferView":5,
+			"componentType":5126,
+			"count":168,
+			"type":"VEC3"
+		},
+		{
+			"bufferView":6,
+			"componentType":5126,
+			"count":168,
+			"type":"VEC2"
+		},
+		{
+			"bufferView":7,
+			"componentType":5123,
+			"count":216,
+			"type":"SCALAR"
+		},
+		{
+			"bufferView":8,
 			"componentType":5126,
 			"count":75,
 			"type":"MAT4"
@@ -1771,37 +1876,67 @@
 	"bufferViews":[
 		{
 			"buffer":0,
-			"byteLength":30216,
+			"byteLength":29424,
 			"byteOffset":0,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":30216,
-			"byteOffset":30216,
+			"byteLength":29424,
+			"byteOffset":29424,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":20144,
-			"byteOffset":60432,
+			"byteLength":19616,
+			"byteOffset":58848,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":8052,
-			"byteOffset":80576,
+			"byteLength":7764,
+			"byteOffset":78464,
+			"target":34963
+		},
+		{
+			"buffer":0,
+			"byteLength":2016,
+			"byteOffset":86228,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":2016,
+			"byteOffset":88244,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":1344,
+			"byteOffset":90260,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":432,
+			"byteOffset":91604,
 			"target":34963
 		},
 		{
 			"buffer":0,
 			"byteLength":4800,
-			"byteOffset":88628
+			"byteOffset":92036
+		}
+	],
+	"samplers":[
+		{
+			"magFilter":9729,
+			"minFilter":9987
 		}
 	],
 	"buffers":[
 		{
-			"byteLength":93428,
+			"byteLength":96836,
 			"uri":"penguin.bin"
 		}
 	]
