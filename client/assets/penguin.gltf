@@ -1646,7 +1646,7 @@
 	"materials":[
 		{
 			"doubleSided":true,
-			"name":"Material.001",
+			"name":"Material.002",
 			"pbrMetallicRoughness":{
 				"baseColorTexture":{
 					"index":0
@@ -1704,10 +1704,15 @@
 		},
 		{
 			"sampler":0,
-			"source":0
+			"source":1
 		}
 	],
 	"images":[
+		{
+			"mimeType":"image/png",
+			"name":"PenguinUV2",
+			"uri":"PenguinUV2.png"
+		},
 		{
 			"mimeType":"image/png",
 			"name":"PenguinUV",
