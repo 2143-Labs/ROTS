@@ -8,7 +8,11 @@ use shared::{
         spells::AIType,
         NetEntId,
     },
-    netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
+    netlib::{
+        send_event_to_server, send_event_to_server_batch, EventToClient, EventToServer,
+        ServerResources,
+    },
+    unit::MovementIntention,
     AnyUnit, Controlled,
 };
 
@@ -39,6 +43,7 @@ fn on_unit_spawn(
     for spawn in spawns.read() {
         let mut base = commands.spawn((
             AnyUnit,
+            MovementIntention(Vec2::ZERO),
             spawn.data.ent_id,
             spawn.data.health,
             spawn.data.transform,
@@ -66,17 +71,17 @@ fn on_unit_spawn(
 }
 
 fn on_ai_tick(
-    mut ai_units: Query<(&mut Transform, &AIType), Without<Controlled>>,
-    non_ai: Query<&Transform, With<Controlled>>,
+    mut ai_units: Query<(&mut Transform, &mut MovementIntention, &AIType), Without<Controlled>>,
+    non_ai: Query<(&Transform, &MovementIntention), With<Controlled>>,
 ) {
-    let positions: Vec<&Transform> = non_ai.iter().collect();
-    for (mut unit_tfm, ai_type) in &mut ai_units {
+    let positions: Vec<(&Transform, &MovementIntention)> = non_ai.iter().collect();
+    for (mut unit_tfm, mut unit_mi, ai_type) in &mut ai_units {
         match ai_type {
             AIType::None => {}
             AIType::WalkToNearestPlayer => {
                 let closest = positions.iter().reduce(|acc, x| {
-                    let dist_old = unit_tfm.translation.distance(acc.translation);
-                    let dist_new = unit_tfm.translation.distance(x.translation);
+                    let dist_old = unit_tfm.translation.distance(acc.0.translation);
+                    let dist_new = unit_tfm.translation.distance(x.0.translation);
                     if dist_old < dist_new {
                         acc
                     } else {
@@ -85,7 +90,10 @@ fn on_ai_tick(
                 });
 
                 if let Some(closest) = closest {
-                    unit_tfm.translation.x = closest.translation.x;
+                    unit_tfm.translation.x = closest.0.translation.x;
+                    unit_mi.0.x = closest.1 .0.x;
+                } else if unit_mi.0.length_squared() > 0.0 {
+                    unit_mi.0 = Vec2::ZERO;
                 }
             }
         }
@@ -93,17 +101,28 @@ fn on_ai_tick(
 }
 
 fn on_npc_move(
-    npcs: Query<(&Transform, &NetEntId), (With<AIType>, Changed<Transform>)>,
+    npcs: Query<
+        (&Transform, &MovementIntention, &NetEntId),
+        (
+            With<AIType>,
+            Or<(Changed<Transform>, Changed<MovementIntention>)>,
+        ),
+    >,
     clients: Query<&PlayerEndpoint, With<ConnectedPlayerName>>,
     sr: Res<ServerResources<EventToServer>>,
 ) {
-    for (&movement, &id) in &npcs {
-        let event = EventToClient::SomeoneMoved(SomeoneMoved {
+    for (&movement, mi, &id) in &npcs {
+        let eventa = EventToClient::SomeoneMoved(SomeoneMoved {
             id,
             movement: shared::event::server::ChangeMovement::SetTransform(movement),
         });
+        let eventb = EventToClient::SomeoneMoved(SomeoneMoved {
+            id,
+            movement: shared::event::server::ChangeMovement::Move2d(mi.0),
+        });
+        let events = &[eventa, eventb];
         for endpoint in &clients {
-            send_event_to_server(&sr.handler, endpoint.0, &event);
+            send_event_to_server_batch(&sr.handler, endpoint.0, events);
         }
     }
 }

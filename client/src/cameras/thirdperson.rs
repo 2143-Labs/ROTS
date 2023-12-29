@@ -4,11 +4,11 @@ use bevy::{
     input::mouse::{MouseMotion, MouseWheel},
     prelude::*,
 };
-use shared::{Config, GameAction};
+use shared::{Config, GameAction, unit::MovementIntention};
 
 use crate::{
     physics::Jumper,
-    player::{MovementIntention, Player, PrimaryUnitControl},
+    player::{Player, PrimaryUnitControl},
 };
 
 use super::{ClientAimDirection, FreeCamState};
@@ -165,7 +165,10 @@ pub fn player_movement(
             move_vector
         };
 
-        transform.translation.y = jumper.get_y() + 1.0;
+        let y = jumper.get_y() + 1.0;
+        if transform.translation.y != y {
+            transform.translation.y = y
+        }
 
         // only change this if we have to. This will trigger a packet to be sent
         if movement.0 != final_move {

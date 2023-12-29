@@ -4,12 +4,12 @@ use shared::{
         client::{SpawnUnit, UnitDie},
         NetEntId, ERFE,
     },
-    AnyUnit,
+    AnyUnit, unit::MovementIntention,
 };
 
 use crate::{
     network::{build_healthbar, OtherPlayer},
-    player::{MovementIntention, PlayerName, PrimaryUnitControl},
+    player::{PlayerName, PrimaryUnitControl},
     states::GameState,
 };
 

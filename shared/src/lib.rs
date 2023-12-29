@@ -8,6 +8,7 @@ pub mod casting;
 pub mod event;
 pub mod netlib;
 pub mod stats;
+pub mod unit;
 
 #[derive(Reflect, Hash, Eq, PartialEq, Clone, Deserialize, Serialize, Debug)]
 pub enum GameAction {
