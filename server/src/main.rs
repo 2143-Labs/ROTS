@@ -20,6 +20,7 @@ use shared::{
         ServerResources,
     },
     stats::Health,
+    unit::MovementIntention,
     Config, ConfigPlugin, Controlled,
 };
 
@@ -75,7 +76,10 @@ fn main() {
         .insert_resource(HeartbeatList::default())
         .add_event::<PlayerDisconnect>()
         .add_plugins(MinimalPlugins)
-        .add_plugins(LogPlugin::default())
+        .add_plugins(LogPlugin {
+            //level: bevy::log::Level::TRACE,
+            ..Default::default()
+        })
         .add_plugins((
             ConfigPlugin,
             casting_spells::CastingPlugin,
@@ -101,10 +105,10 @@ fn main() {
         .add_systems(
             Update,
             (
-                shared::event::server::drain_events,
-                on_player_connect,
                 on_player_disconnect,
+                on_player_connect,
                 on_player_heartbeat,
+                shared::event::server::drain_events,
                 on_movement,
             )
                 .run_if(in_state(ServerState::Running)),
@@ -153,6 +157,7 @@ fn on_player_connect(
             .event
             .my_location
             .with_translation(Vec3::new(0.0, 0.0, 0.0));
+
         let spawn_location = if player
             .event
             .my_location
@@ -218,6 +223,7 @@ fn on_player_connect(
             PlayerEndpoint(player.endpoint),
             // Used as a target for some AI
             Controlled,
+            MovementIntention(Vec2::ZERO),
             // Transform component used for generic systems
             shared::AnyUnit,
         ));
@@ -252,6 +258,7 @@ fn check_heartbeats(
 ) {
     for (ent_id, beats_missed) in &heartbeat_mapping.heartbeats {
         let beats = beats_missed.fetch_add(1, std::sync::atomic::Ordering::Acquire);
+        trace!(?ent_id, ?beats, "hb");
         if beats >= (HEARTBEAT_TIMEOUT / HEARTBEAT_MILLIS) as i16 {
             warn!("Missed {beats} beats, disconnecting {ent_id:?}");
             on_disconnect.send(PlayerDisconnect { ent: *ent_id });
@@ -297,7 +304,15 @@ fn on_player_heartbeat(
 fn on_movement(
     mut pd: ERFE<ChangeMovement>,
     endpoint_mapping: Res<EndpointToNetId>,
-    mut clients: Query<(&PlayerEndpoint, &NetEntId, &mut Transform), With<ConnectedPlayerName>>,
+    mut clients: Query<
+        (
+            &PlayerEndpoint,
+            &NetEntId,
+            &mut Transform,
+            &mut MovementIntention,
+        ),
+        With<ConnectedPlayerName>,
+    >,
     sr: Res<ServerResources<EventToServer>>,
 ) {
     for movement in pd.read() {
@@ -307,11 +322,15 @@ fn on_movement(
                 movement: movement.event.clone(),
             });
 
-            for (c_net_client, c_net_ent, mut c_tfm) in &mut clients {
+            for (c_net_client, c_net_ent, mut c_tfm, mut intent) in &mut clients {
                 if moved_net_id == c_net_ent {
+                    info!(?event);
                     // If this person moved, update their transform serverside
                     match movement.event {
                         ChangeMovement::SetTransform(new_tfm) => *c_tfm = new_tfm,
+                        ChangeMovement::Move2d(new_intent) => {
+                            *intent = MovementIntention(new_intent)
+                        }
                         _ => {}
                     }
                 } else {

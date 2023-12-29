@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_xpbd_3d::prelude::{Collider, RigidBody};
-use shared::AnyUnit;
+use shared::{unit::MovementIntention, AnyUnit};
 
 use crate::worldgen::ChunkPos;
 
@@ -15,9 +15,6 @@ pub struct Player {
 
 #[derive(Reflect, Component, Debug)]
 pub struct PlayerName(pub String);
-
-#[derive(Component)]
-pub struct MovementIntention(pub Vec2);
 
 impl Default for Player {
     fn default() -> Self {

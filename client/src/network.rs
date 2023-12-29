@@ -4,7 +4,7 @@ use crate::{
     cameras::{notifications::Notification, thirdperson::PLAYER_SPEED},
     cli::CliArgs,
     network::stats::HPIndicator,
-    player::{MovementIntention, Player, PlayerName},
+    player::{Player, PlayerName},
     states::GameState,
 };
 use bevy::{prelude::*, time::common_conditions::on_timer};
@@ -15,11 +15,13 @@ use shared::{
         NetEntId, ERFE,
     },
     netlib::{
-        send_event_to_server, setup_client, EventToClient, EventToServer, MainServerEndpoint,
-        ServerResources,
+        send_event_to_server, send_event_to_server_batch, setup_client, EventToClient,
+        EventToServer, MainServerEndpoint, ServerResources,
     },
     AnyUnit, Config,
 };
+
+use shared::unit::MovementIntention;
 
 mod casting;
 pub mod npc;
@@ -219,11 +221,24 @@ fn send_interp(
 fn send_movement(
     sr: Res<ServerResources<EventToClient>>,
     mse: Res<MainServerEndpoint>,
-    our_transform: Query<&Transform, (With<Player>, Changed<Transform>)>,
+    our_transform: Query<
+        (&Transform, Option<&MovementIntention>),
+        (With<Player>, Changed<Transform>),
+    >,
 ) {
-    if let Ok(transform) = our_transform.get_single() {
-        let event = EventToServer::ChangeMovement(ChangeMovement::SetTransform(transform.clone()));
-        send_event_to_server(&sr.handler, mse.0, &event);
+    if let Ok((transform, some_intent)) = our_transform.get_single() {
+        let mut events = vec![];
+        events.push(EventToServer::ChangeMovement(ChangeMovement::SetTransform(
+            transform.clone(),
+        )));
+
+        if let Some(intent) = some_intent {
+            events.push(EventToServer::ChangeMovement(ChangeMovement::Move2d(
+                intent.0,
+            )));
+        };
+
+        send_event_to_server_batch(&sr.handler, mse.0, &events);
     }
 }
 
@@ -249,6 +264,7 @@ fn on_disconnect(
 fn on_someone_move(
     mut someone_moved: ERFE<SomeoneMoved>,
     mut other_players: Query<(&NetEntId, &mut Transform, &mut MovementIntention), With<AnyUnit>>,
+    //mut other_players: Query<(&NetEntId, &mut Transform, &mut MovementIntention), (With<AnyUnit>, Without<Player>)>,
 ) {
     for movement in someone_moved.read() {
         for (ply_net, mut ply_tfm, mut ply_intent) in &mut other_players {
@@ -266,7 +282,10 @@ fn on_someone_move(
 }
 
 fn go_movement_intents(
-    mut other_players: Query<(&mut Transform, &MovementIntention), With<AnyUnit>>,
+    mut other_players: Query<
+        (&mut Transform, &MovementIntention),
+        (With<AnyUnit>, Without<Player>),
+    >,
     time: Res<Time>,
 ) {
     for (mut ply_tfm, ply_intent) in &mut other_players {
