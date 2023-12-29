@@ -5,7 +5,7 @@ use bevy_time::common_conditions::on_timer;
 use shared::{
     event::{
         client::{SomeoneMoved, SpawnUnit},
-        spells::AIType,
+        spells::{AIType, NPC},
         NetEntId,
     },
     netlib::{
@@ -24,7 +24,7 @@ impl Plugin for NPCPlugin {
         app.add_event::<SpawnUnit>()
             .add_systems(
                 Update,
-                (on_unit_spawn, on_ai_tick).run_if(in_state(ServerState::Running)),
+                (on_unit_spawn, on_ai_tick, apply_npc_movement_intents).run_if(in_state(ServerState::Running)),
             )
             .add_systems(
                 Update,
@@ -71,11 +71,11 @@ fn on_unit_spawn(
 }
 
 fn on_ai_tick(
-    mut ai_units: Query<(&mut Transform, &mut MovementIntention, &AIType), Without<Controlled>>,
+    mut ai_units: Query<(&Transform, &mut MovementIntention, &AIType), Without<Controlled>>,
     non_ai: Query<(&Transform, &MovementIntention), With<Controlled>>,
 ) {
     let positions: Vec<(&Transform, &MovementIntention)> = non_ai.iter().collect();
-    for (mut unit_tfm, mut unit_mi, ai_type) in &mut ai_units {
+    for (unit_tfm, mut unit_mi, ai_type) in &mut ai_units {
         match ai_type {
             AIType::None => {}
             AIType::WalkToNearestPlayer => {
@@ -90,13 +90,32 @@ fn on_ai_tick(
                 });
 
                 if let Some(closest) = closest {
-                    unit_tfm.translation.x = closest.0.translation.x;
-                    unit_mi.0.x = closest.1 .0.x;
+                    let target = closest.0.translation.xz();
+                    let our_pos = unit_tfm.translation.xz();
+
+                    let dir = target - our_pos;
+                    if dir.length_squared() > 1.0 {
+                        unit_mi.0 = dir.normalize() * 0.25;
+                    } else {
+                        unit_mi.0 = Vec2::ZERO;
+                    }
                 } else if unit_mi.0.length_squared() > 0.0 {
                     unit_mi.0 = Vec2::ZERO;
                 }
             }
         }
+    }
+}
+
+fn apply_npc_movement_intents(
+    mut npcs: Query<
+        (&mut Transform, &MovementIntention),
+        With<AIType>
+    >,
+    time: Res<Time>,
+) {
+    for (mut ply_tfm, ply_intent) in &mut npcs {
+        ply_tfm.translation += Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * 25.0 * time.delta_seconds();
     }
 }
 
