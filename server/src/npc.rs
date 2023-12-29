@@ -112,15 +112,16 @@ fn on_npc_move(
     sr: Res<ServerResources<EventToServer>>,
 ) {
     for (&movement, mi, &id) in &npcs {
-        let eventa = EventToClient::SomeoneMoved(SomeoneMoved {
-            id,
-            movement: shared::event::server::ChangeMovement::SetTransform(movement),
-        });
-        let eventb = EventToClient::SomeoneMoved(SomeoneMoved {
-            id,
-            movement: shared::event::server::ChangeMovement::Move2d(mi.0),
-        });
-        let events = &[eventa, eventb];
+        let events = &[
+            EventToClient::SomeoneMoved(SomeoneMoved {
+                id,
+                movement: shared::event::server::ChangeMovement::SetTransform(movement),
+            }),
+            EventToClient::SomeoneMoved(SomeoneMoved {
+                id,
+                movement: shared::event::server::ChangeMovement::Move2d(mi.0),
+            }),
+        ];
         for endpoint in &clients {
             send_event_to_server_batch(&sr.handler, endpoint.0, events);
         }
