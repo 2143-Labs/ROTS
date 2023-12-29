@@ -5,7 +5,7 @@ use bevy_time::common_conditions::on_timer;
 use shared::{
     event::{
         client::{SomeoneMoved, SpawnUnit},
-        spells::{AIType, NPC},
+        spells::AIType,
         NetEntId,
     },
     netlib::{
@@ -111,14 +111,12 @@ fn on_ai_tick(
 }
 
 fn apply_npc_movement_intents(
-    mut npcs: Query<
-        (&mut Transform, &MovementIntention),
-        With<AIType>
-    >,
+    mut npcs: Query<(&mut Transform, &MovementIntention), With<AIType>>,
     time: Res<Time>,
 ) {
     for (mut ply_tfm, ply_intent) in &mut npcs {
-        ply_tfm.translation += Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * 25.0 * time.delta_seconds();
+        ply_tfm.translation +=
+            Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * 25.0 * time.delta_seconds();
     }
 }
 
