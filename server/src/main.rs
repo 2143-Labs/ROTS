@@ -265,6 +265,7 @@ fn check_heartbeats(
 ) {
     for (ent_id, beats_missed) in &heartbeat_mapping.heartbeats {
         let beats = beats_missed.fetch_add(1, std::sync::atomic::Ordering::Acquire);
+        trace!(?ent_id, ?beats, "hb");
         if beats >= (HEARTBEAT_TIMEOUT / HEARTBEAT_MILLIS) as i16 {
             warn!("Missed {beats} beats, disconnecting {ent_id:?}");
             on_disconnect.send(PlayerDisconnect { ent: *ent_id });
