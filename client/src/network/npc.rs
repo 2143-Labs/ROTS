@@ -4,7 +4,8 @@ use shared::{
         client::{SpawnUnit, UnitDie},
         NetEntId, ERFE,
     },
-    AnyUnit, unit::MovementIntention,
+    unit::MovementIntention,
+    AnyUnit,
 };
 
 use crate::{

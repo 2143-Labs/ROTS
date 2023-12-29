@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_xpbd_3d::prelude::{Collider, RigidBody};
-use shared::{AnyUnit, unit::MovementIntention};
+use shared::{unit::MovementIntention, AnyUnit};
 
 use crate::worldgen::ChunkPos;
 

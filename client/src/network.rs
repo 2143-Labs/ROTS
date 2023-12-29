@@ -15,10 +15,10 @@ use shared::{
         NetEntId, ERFE,
     },
     netlib::{
-        send_event_to_server, setup_client, EventToClient, EventToServer, MainServerEndpoint,
-        ServerResources, send_event_to_server_batch,
+        send_event_to_server, send_event_to_server_batch, setup_client, EventToClient,
+        EventToServer, MainServerEndpoint, ServerResources,
     },
-    AnyUnit, Config
+    AnyUnit, Config,
 };
 
 use shared::unit::MovementIntention;
@@ -221,14 +221,21 @@ fn send_interp(
 fn send_movement(
     sr: Res<ServerResources<EventToClient>>,
     mse: Res<MainServerEndpoint>,
-    our_transform: Query<(&Transform, Option<&MovementIntention>), (With<Player>, Changed<Transform>)>,
+    our_transform: Query<
+        (&Transform, Option<&MovementIntention>),
+        (With<Player>, Changed<Transform>),
+    >,
 ) {
     if let Ok((transform, some_intent)) = our_transform.get_single() {
         let mut events = vec![];
-        events.push(EventToServer::ChangeMovement(ChangeMovement::SetTransform(transform.clone())));
+        events.push(EventToServer::ChangeMovement(ChangeMovement::SetTransform(
+            transform.clone(),
+        )));
 
         if let Some(intent) = some_intent {
-            events.push(EventToServer::ChangeMovement(ChangeMovement::Move2d(intent.0)));
+            events.push(EventToServer::ChangeMovement(ChangeMovement::Move2d(
+                intent.0,
+            )));
         };
 
         send_event_to_server_batch(&sr.handler, mse.0, &events);
@@ -275,7 +282,10 @@ fn on_someone_move(
 }
 
 fn go_movement_intents(
-    mut other_players: Query<(&mut Transform, &MovementIntention), (With<AnyUnit>, Without<Player>)>,
+    mut other_players: Query<
+        (&mut Transform, &MovementIntention),
+        (With<AnyUnit>, Without<Player>),
+    >,
     time: Res<Time>,
 ) {
     for (mut ply_tfm, ply_intent) in &mut other_players {

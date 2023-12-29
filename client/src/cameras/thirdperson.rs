@@ -4,7 +4,7 @@ use bevy::{
     input::mouse::{MouseMotion, MouseWheel},
     prelude::*,
 };
-use shared::{Config, GameAction, unit::MovementIntention};
+use shared::{unit::MovementIntention, Config, GameAction};
 
 use crate::{
     physics::Jumper,

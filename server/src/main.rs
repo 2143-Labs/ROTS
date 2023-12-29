@@ -20,7 +20,8 @@ use shared::{
         ServerResources,
     },
     stats::Health,
-    Config, ConfigPlugin, Controlled, unit::MovementIntention,
+    unit::MovementIntention,
+    Config, ConfigPlugin, Controlled,
 };
 
 /// How often to run the system
@@ -298,7 +299,15 @@ fn on_player_heartbeat(
 fn on_movement(
     mut pd: ERFE<ChangeMovement>,
     endpoint_mapping: Res<EndpointToNetId>,
-    mut clients: Query<(&PlayerEndpoint, &NetEntId, &mut Transform, &mut MovementIntention), With<ConnectedPlayerName>>,
+    mut clients: Query<
+        (
+            &PlayerEndpoint,
+            &NetEntId,
+            &mut Transform,
+            &mut MovementIntention,
+        ),
+        With<ConnectedPlayerName>,
+    >,
     sr: Res<ServerResources<EventToServer>>,
 ) {
     for movement in pd.read() {
@@ -314,7 +323,9 @@ fn on_movement(
                     // If this person moved, update their transform serverside
                     match movement.event {
                         ChangeMovement::SetTransform(new_tfm) => *c_tfm = new_tfm,
-                        ChangeMovement::Move2d(new_intent) => *intent = MovementIntention(new_intent),
+                        ChangeMovement::Move2d(new_intent) => {
+                            *intent = MovementIntention(new_intent)
+                        }
                         _ => {}
                     }
                 } else {
