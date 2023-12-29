@@ -24,12 +24,12 @@ impl Plugin for NPCPlugin {
         app.add_event::<SpawnUnit>()
             .add_systems(
                 Update,
-                (on_ai_tick, apply_npc_movement_intents)
+                (on_ai_tick, apply_npc_movement_intents, on_unit_spawn)
                     .run_if(in_state(ServerState::Running)),
             )
             .add_systems(
                 Update,
-                (on_npc_move, on_unit_spawn)
+                (send_networked_npc_move)
                     .run_if(in_state(ServerState::Running))
                     .run_if(on_timer(Duration::from_millis(50))),
             );
@@ -122,7 +122,7 @@ fn apply_npc_movement_intents(
     }
 }
 
-fn on_npc_move(
+fn send_networked_npc_move(
     npcs: Query<
         (&Transform, &MovementIntention, &NetEntId),
         (

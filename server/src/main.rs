@@ -108,13 +108,6 @@ fn main() {
                 on_player_disconnect,
                 on_player_connect,
                 on_player_heartbeat,
-            )
-                .run_if(in_state(ServerState::Running))
-                .run_if(on_timer(Duration::from_millis(50))),
-        )
-        .add_systems(
-            Update,
-            (
                 shared::event::server::drain_events,
                 on_movement,
             )
