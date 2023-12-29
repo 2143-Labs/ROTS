@@ -1,4 +1,7 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
+use shared::casting::DespawnTime;
 
 #[derive(Event)]
 pub struct Notification(pub String);
@@ -16,18 +19,17 @@ pub struct NotificationPlugin;
 impl Plugin for NotificationPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<Notification>()
-            .insert_resource(NotificationResource::default())
+            //.insert_resource(NotificationResource::default())
             .add_systems(Startup, setup_panel)
             .add_systems(Update, notification_ui)
-            .add_systems(Update, on_notification)
-            .add_systems(Update, delete_old_notifs);
+            .add_systems(Update, on_notification);
     }
 }
 
-#[derive(Resource, Default)]
-pub struct NotificationResource {
-    expired: Vec<Notification>,
-}
+//#[derive(Resource, Default)]
+//pub struct NotificationResource {
+    //expired: Vec<Notification>,
+//}
 
 fn notification_ui() {}
 
@@ -56,27 +58,6 @@ fn setup_panel(mut commands: Commands) {
     ));
 }
 
-fn delete_old_notifs(
-    _commands: Commands,
-    notifs: Query<(Entity, &NotificationElement, &NotificationExpiresAt)>,
-    mut expired: ResMut<NotificationResource>,
-    time: Res<Time>,
-) {
-    let cur_time = time.elapsed_seconds();
-    for (_ent, NotificationElement(text), NotificationExpiresAt(expire)) in &notifs {
-        if expire < &cur_time {
-            // TODO: This crashes the game
-            //match commands.get_entity(ent) {
-            //Some(mut e) => {
-            //e.despawn();
-            //}
-            //None => {}
-            //}
-            expired.expired.push(Notification(text.clone()));
-        }
-    }
-}
-
 fn on_notification(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -100,7 +81,7 @@ fn on_notification(
                 .with_text_alignment(TextAlignment::Right)
                 .with_style(Style { ..default() }),
                 NotificationElement(e.0.clone()),
-                NotificationExpiresAt(time.elapsed_seconds() + 0.5),
+                DespawnTime(Timer::new(Duration::from_millis(10000), TimerMode::Once)),
             ));
         });
     }

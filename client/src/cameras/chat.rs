@@ -1,10 +1,12 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
 use shared::{
     event::{client::Chat, server::SendChat, NetEntId, ERFE},
     netlib::{
         send_event_to_server, EventToClient, EventToServer, MainServerEndpoint, ServerResources,
     },
-    AnyUnit,
+    AnyUnit, casting::DespawnTime,
 };
 
 use crate::{player::PlayerName, states::GameState};
@@ -79,14 +81,16 @@ fn on_chat_toggle(
     match cur_chat_state.get() {
         ChatState::Chatting => {
             let chat = std::mem::take(cur_text);
-            // If this is a new chat, push it to the front
-            if chat_history.0.last() != Some(&chat) {
-                chat_history.0.push(chat.clone());
+            if chat.len() > 0 {
+                // If this is a new chat, push it to the front
+                if chat_history.0.last() != Some(&chat) {
+                    chat_history.0.push(chat.clone());
+                }
+
+                ew.send(WeChat(chat));
             }
 
             *chat_history_ptr = ChatHistoryPtr(None);
-            ew.send(WeChat(chat));
-
             chat_state.set(ChatState::NotChatting);
             *chat_bg_color.single_mut() = Color::WHITE.with_a(0.00).into();
         }
@@ -223,42 +227,45 @@ fn on_chat(
 
         let parent = parent.single();
         commands.entity(parent).with_children(|p| {
-            p.spawn((TextBundle::from_sections([
-                TextSection::new(
-                    &format!("{:03.3} ", time.elapsed_seconds()),
-                    TextStyle {
-                        font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
-                        font_size: 14.0,
-                        color: Color::DARK_GRAY,
-                    },
-                ),
-                TextSection::new(
-                    name,
-                    TextStyle {
-                        font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
-                        font_size: 16.0,
-                        color: Color::ORANGE_RED,
-                    },
-                ),
-                TextSection::new(
-                    &format!(": "),
-                    TextStyle {
-                        font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
-                        font_size: 16.0,
-                        color: Color::GRAY,
-                    },
-                ),
-                TextSection::new(
-                    &chat.text,
-                    TextStyle {
-                        font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
-                        font_size: 16.0,
-                        color: Color::WHITE,
-                    },
-                ),
-            ])
-            .with_text_alignment(TextAlignment::Left)
-            .with_style(Style { ..default() }),));
+            p.spawn((
+                TextBundle::from_sections([
+                    TextSection::new(
+                        &format!("{:03.3} ", time.elapsed_seconds()),
+                        TextStyle {
+                            font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
+                            font_size: 14.0,
+                            color: Color::DARK_GRAY,
+                        },
+                    ),
+                    TextSection::new(
+                        name,
+                        TextStyle {
+                            font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
+                            font_size: 16.0,
+                            color: Color::ORANGE_RED,
+                        },
+                    ),
+                    TextSection::new(
+                        &format!(": "),
+                        TextStyle {
+                            font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
+                            font_size: 16.0,
+                            color: Color::GRAY,
+                        },
+                    ),
+                    TextSection::new(
+                        &chat.text,
+                        TextStyle {
+                            font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
+                            font_size: 16.0,
+                            color: Color::WHITE,
+                        },
+                    ),
+                ])
+                .with_text_alignment(TextAlignment::Left)
+                .with_style(Style { ..default() }),
+                DespawnTime(Timer::new(Duration::from_millis(15000), TimerMode::Once)),
+            ));
         });
     }
 }

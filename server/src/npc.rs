@@ -5,7 +5,7 @@ use bevy_time::common_conditions::on_timer;
 use shared::{
     event::{
         client::{SomeoneMoved, SpawnUnit},
-        spells::{AIType, NPC},
+        spells::{AIType},
         NetEntId,
     },
     netlib::{
