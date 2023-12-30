@@ -35,6 +35,7 @@ pub enum ChangeMovement {
     StandStill,
     Move2d(Vec2),
     SetTransform(Transform),
+    TurnQuat(Quat),
 }
 
 include!(concat!(env!("OUT_DIR"), "/server_event.rs"));

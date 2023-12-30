@@ -4,7 +4,7 @@ use shared::{
         client::{SpawnUnit, UnitDie},
         NetEntId, ERFE,
     },
-    unit::MovementIntention,
+    unit::{MovementIntention, TurningIntention},
     AnyUnit,
 };
 
@@ -80,6 +80,7 @@ fn on_npc_spawn(
                         npc_type.clone(),
                         Name::new(format!("NPC: {:?}", npc_type)),
                         MovementIntention(Vec2::ZERO),
+                        TurningIntention(Quat::IDENTITY),
                         AnyUnit,
                     ))
                     .with_children(|s| {

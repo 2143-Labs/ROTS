@@ -21,6 +21,7 @@ use shared::{
     },
     stats::Health,
     unit::MovementIntention,
+    unit::TurningIntention,
     Config, ConfigPlugin, Controlled,
 };
 

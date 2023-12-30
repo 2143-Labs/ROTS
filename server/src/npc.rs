@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{time::Duration, f32::consts::PI};
 
 use bevy::prelude::*;
 use bevy_time::common_conditions::on_timer;
@@ -13,6 +13,7 @@ use shared::{
         ServerResources,
     },
     unit::MovementIntention,
+    unit::TurningIntention,
     AnyUnit, Controlled,
 };
 
@@ -47,6 +48,7 @@ fn on_unit_spawn(
         let mut base = commands.spawn((
             AnyUnit,
             MovementIntention(Vec2::ZERO),
+            TurningIntention(Quat::IDENTITY),
             spawn.data.ent_id,
             spawn.data.health,
             spawn.data.transform,
@@ -74,11 +76,11 @@ fn on_unit_spawn(
 }
 
 fn on_ai_tick(
-    mut ai_units: Query<(&Transform, &mut MovementIntention, &AIType), Without<Controlled>>,
+    mut ai_units: Query<(&mut Transform, &mut MovementIntention, &mut TurningIntention, &AIType), Without<Controlled>>,
     non_ai: Query<(&Transform, &MovementIntention), With<Controlled>>,
 ) {
     let positions: Vec<(&Transform, &MovementIntention)> = non_ai.iter().collect();
-    for (unit_tfm, mut unit_mi, ai_type) in &mut ai_units {
+    for (mut unit_tfm, mut unit_mi, mut unit_ti, ai_type) in &mut ai_units {
         match ai_type {
             AIType::None => {}
             AIType::WalkToNearestPlayer => {
@@ -96,16 +98,44 @@ fn on_ai_tick(
                     let target = closest.0.translation.xz();
                     let our_pos = unit_tfm.translation.xz();
 
-                    let dir = target - our_pos;
+                    let dir = (target - our_pos).normalize();
+                    unit_tfm.rotation = Quat::from_rotation_y(-(dir.y.atan2(dir.x)) - std::f32::consts::PI/2.);
+                    //unit_ti.0 = Quat::from_rotation_y(dir.y.atan2(dir.x));
+                    //println!("Unit TI quaternion: {:?}", unit_ti.0);
+                    //info!(?unit_ti);
                     if dir.length_squared() > 1.0 {
-                        unit_mi.0 = dir.normalize() * 0.25;
+                        unit_mi.0 = dir * 0.25;
                     } else {
                         unit_mi.0 = Vec2::ZERO;
                     }
                 } else if unit_mi.0.length_squared() > 0.0 {
                     unit_mi.0 = Vec2::ZERO;
-                }
+                } 
             }
+            // AIType::TurnToNearestPlayer => {
+            //     let closest = positions.iter().reduce(|acc, x| {
+            //         let dist_old = unit_tfm.translation.distance(acc.0.translation);
+            //         let dist_new = unit_tfm.translation.distance(x.0.translation);
+            //         if dist_old < dist_new {
+            //             acc
+            //         } else {
+            //             x
+            //         }
+            //     });
+
+            //     if let Some(closest) = closest {
+            //         let target = closest.0.translation.xz();
+            //         let our_pos = unit_tfm.translation.xz();
+
+            //         let dir = (target - our_pos).normalize();
+
+            //         unit_ti.0 = Quat::from_rotation_y(dir.y.atan2(dir.x));
+            //         info!("Unit TI {:?}", unit_ti.0);
+            //     //unit_ti.0 = dir.y.atan2(dir.x);
+            //     } else {
+            //         unit_ti.0 = Quat::IDENTITY;
+            //     }
+            // }
         }
     }
 }
@@ -116,22 +146,33 @@ fn apply_npc_movement_intents(
 ) {
     for (mut ply_tfm, ply_intent) in &mut npcs {
         ply_tfm.translation +=
-            Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * 25.0 * time.delta_seconds();
+            Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * 25.0 * time.delta_seconds();   
+        //ply_tfm.rotation = trn_intent.0; 
     }
 }
 
+// fn apply_npc_turning_intents(
+//     mut npcs: Query<(&mut Transform, &TurningIntention), With<AIType>>,
+// ) {
+//     for (mut ply_tfm, ply_intent) in &mut npcs {
+//         ply_tfm.rotation =
+//             //Quat::from_xyzw(ply_intent.0.x, ply_intent.0.y, ply_intent.0.z, 0.0);
+//             ply_intent.0;
+//     }
+// }
+
 fn send_networked_npc_move(
     npcs: Query<
-        (&Transform, &MovementIntention, &NetEntId),
+        (&Transform, &MovementIntention, &TurningIntention, &NetEntId),
         (
             With<AIType>,
-            Or<(Changed<Transform>, Changed<MovementIntention>)>,
+            Or<(Changed<Transform>, Changed<MovementIntention>, Changed<TurningIntention>,)>,
         ),
     >,
     clients: Query<&PlayerEndpoint, With<ConnectedPlayerName>>,
     sr: Res<ServerResources<EventToServer>>,
 ) {
-    for (&movement, mi, &id) in &npcs {
+    for (&movement, mi, ti, &id) in &npcs {
         let events = &[
             EventToClient::SomeoneMoved(SomeoneMoved {
                 id,
@@ -140,6 +181,10 @@ fn send_networked_npc_move(
             EventToClient::SomeoneMoved(SomeoneMoved {
                 id,
                 movement: shared::event::server::ChangeMovement::Move2d(mi.0),
+            }),
+            EventToClient::SomeoneMoved(SomeoneMoved {
+                id,
+                movement: shared::event::server::ChangeMovement::TurnQuat(ti.0),
             }),
         ];
         for endpoint in &clients {
