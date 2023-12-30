@@ -291,15 +291,14 @@ fn on_someone_move(
 
 fn go_movement_intents(
     mut other_players: Query<
-        (&mut Transform, &MovementIntention, &TurningIntention),
+        (&mut Transform, &MovementIntention),
         (With<AnyUnit>, Without<Player>),
     >,
     time: Res<Time>,
 ) {
-    for (mut ply_tfm, ply_intent, trn_intent) in &mut other_players {
+    for (mut ply_tfm, ply_intent) in &mut other_players {
         ply_tfm.translation +=
             Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * PLAYER_SPEED * time.delta_seconds();
-        //ply_tfm.rotation = trn_intent;
     }
 }
 
