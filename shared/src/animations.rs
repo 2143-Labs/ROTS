@@ -1,3 +1,7 @@
+use std::time::Duration;
+
+use crate::event::server::Cast;
+
 use super::event::NetEntId;
 use bevy::prelude::*;
 
@@ -11,6 +15,60 @@ pub enum AnimationState {
     WindDown,
     /// Optional part of the animation backswing
     Backswing,
+    Done
 }
 
+pub struct SkillInfo {
+    pub frontswing: Duration,
+    pub windup: Duration,
+    pub winddown: Duration,
+    pub backswing: Duration,
 
+    pub cooldown: Duration,
+}
+
+macro_rules! skill_info {
+    (cd $cd:expr => [ fs $fs:expr ; wu $wu:expr ; wd $wd:expr ; bs $bs: expr ]) => {
+        SkillInfo {
+            frontswing: Duration::from_secs_f32($fs),
+            windup: Duration::from_secs_f32($wu),
+            winddown: Duration::from_secs_f32($wd),
+            backswing: Duration::from_secs_f32($bs),
+
+            cooldown: Duration::from_secs_f32($cd),
+        }
+    };
+}
+
+impl Cast {
+    pub fn get_skill_info(&self) -> SkillInfo {
+        match self {
+            Cast::Teleport(_)      => skill_info!(cd 5.0 => [ fs 1.0 ; wu 1.0 ; wd 1.0 ; bs 1.0 ]),
+            Cast::Shoot(_)         => skill_info!(cd 0.5 => [ fs 0.1 ; wu 0.0 ; wd 0.1 ; bs 0.0 ]),
+            Cast::ShootTargeted(_) => skill_info!(cd 1.0 => [ fs 0.5 ; wu 0.0 ; wd 0.1 ; bs 0.0 ]),
+            Cast::Melee            => skill_info!(cd 1.0 => [ fs 0.2 ; wu 0.0 ; wd 0.1 ; bs 0.3 ]),
+            Cast::Aoe(_)           => skill_info!(cd 5.0 => [ fs 1.0 ; wu 1.0 ; wd 1.0 ; bs 1.0 ]),
+            Cast::Buff             => skill_info!(cd 30.0 => [ fs 0.25 ; wu 0.75 ; wd 0.0 ; bs 0.0 ]),
+        }
+    }
+
+    pub fn get_current_animation(&self, mut time: Duration) -> AnimationState {
+        let skill = self.get_skill_info();
+        if time < skill.frontswing {
+            return AnimationState::FrontSwing;
+        }
+        time -= skill.frontswing;
+        if time < skill.windup {
+            return AnimationState::WindUp;
+        }
+        time -= skill.windup;
+        if time < skill.winddown {
+            return AnimationState::WindDown;
+        }
+        if time < skill.backswing {
+            return AnimationState::Backswing;
+        }
+
+        AnimationState::Done
+    }
+}

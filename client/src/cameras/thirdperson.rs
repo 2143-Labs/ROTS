@@ -4,7 +4,7 @@ use bevy::{
     input::mouse::{MouseMotion, MouseWheel},
     prelude::*,
 };
-use shared::{unit::MovementIntention, Config, GameAction};
+use shared::{unit::MovementIntention, Config, GameAction, event::server::Cast};
 
 use crate::{
     physics::Jumper,
@@ -128,7 +128,7 @@ pub(crate) fn player_movement(
         &mut Jumper,
         &mut Player,
         &mut MovementIntention,
-        Option<&AnimationTimer>,
+        Option<(&AnimationTimer, &Cast)>,
     )>,
     camera_query: Query<&CameraFollow>,
     keyboard_input: Res<Input<KeyCode>>,
@@ -136,7 +136,7 @@ pub(crate) fn player_movement(
     mut last_movement: Local<LastMovement>,
     time: Res<Time>,
 ) {
-    for (mut transform, _player_ent, mut jumper, _player, mut movement, anim) in player_query.iter_mut() {
+    for (mut transform, _player_ent, mut jumper, _player, mut movement, casting) in player_query.iter_mut() {
         let mut move_vector = Vec2::ZERO;
         if config.pressed(&keyboard_input, GameAction::MoveForward) {
             move_vector += Vec2::new(1.0, 0.0);
@@ -175,15 +175,34 @@ pub(crate) fn player_movement(
             move_vector
         };
 
-        let anim_offset = if let Some(a) = anim {
-            a.0.elapsed_secs() * PI * 2.0
-        } else {
-            0.0
-        };
-
         // point in the direction you are moving, offset by (animation sections * 1 turn per second)
         let movem = last_movement.0;
-        transform.rotation = Quat::from_rotation_y(anim_offset + movem.x.atan2(movem.y));
+        transform.rotation = Quat::from_rotation_y(movem.x.atan2(movem.y));
+
+        if let Some((anim_timer, cast)) = casting {
+            let anim_timer = &anim_timer.0;
+            let anim = cast.get_current_animation(anim_timer.elapsed());
+            let time_offset = anim_timer.elapsed_secs() * PI * 2.0;
+
+            match anim {
+                shared::animations::AnimationState::FrontSwing => {
+                    transform.rotation *= Quat::from_rotation_y(time_offset);
+                }
+                shared::animations::AnimationState::WindUp => {
+                    transform.rotation *= Quat::from_rotation_y(time_offset);
+                    transform.rotation *= Quat::from_rotation_z(time_offset);
+                }
+                shared::animations::AnimationState::WindDown => {
+                    transform.rotation *= Quat::from_rotation_y(time_offset);
+                    transform.rotation *= Quat::from_rotation_z(time_offset);
+                    transform.rotation *= Quat::from_rotation_x(time_offset);
+                }
+                shared::animations::AnimationState::Backswing => {
+                    transform.rotation *= Quat::from_rotation_x(time_offset);
+                }
+                shared::animations::AnimationState::Done => {} // no rotation
+            }
+        };
 
         let y = jumper.get_y() + 1.0;
         if transform.translation.y != y {
