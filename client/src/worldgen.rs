@@ -1,6 +1,6 @@
 use bevy::{prelude::*, render::mesh::shape::Plane};
 use bevy_xpbd_3d::components::Collider;
-use noise::{NoiseFn, Perlin};
+use noise::{NoiseFn, Simplex};
 use std::collections::HashMap;
 
 use crate::{cli::CliArgs, player::Player};
@@ -19,7 +19,7 @@ pub struct ChunkPos(pub i32, pub i32, pub i32);
 pub struct World {
     // TODO make these entities with a ChunkPos component
     chunks: HashMap<ChunkPos, Entity>,
-    noise: Perlin,
+    noise: Simplex,
 }
 
 #[derive(Resource, Clone)]
@@ -36,7 +36,7 @@ impl Plugin for WorldGenPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(World {
             chunks: HashMap::new(),
-            noise: Perlin::new(421018),
+            noise: Simplex::new(421018),
         })
         .insert_resource(WorldMaterialAssets {
             ground_mesh: Handle::default(),
@@ -89,7 +89,7 @@ fn spawn_chunk_objects(
     chunk_pos: ChunkPos,
     commands: &mut Commands,
     world_assets: WorldMaterialAssets,
-    noise: &Perlin,
+    noise: &Simplex,
     chunk: Entity,
 ) {
     let tree_width = CHUNK_SIZE / 4;
@@ -112,7 +112,7 @@ fn spawn_tree_in_tile(
     commands: &mut Commands,
     chunk_pos: &ChunkPos,
     tile_pos: Vec2,
-    noise: &Perlin,
+    noise: &Simplex,
     tree_mesh: Handle<Mesh>,
     tree_material: Handle<StandardMaterial>,
 ) {
