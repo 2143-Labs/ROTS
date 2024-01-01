@@ -29,6 +29,10 @@ pub struct SkillInfo {
     pub cooldown: Duration,
 }
 
+
+#[derive(Component, Debug)]
+pub struct AnimationTimer(pub Timer);
+
 macro_rules! skill_info {
     (cd $cd:expr => [ fs $fs:expr ; wu $wu:expr ; wd $wd:expr ; bs $bs: expr ]) => {
         SkillInfo {

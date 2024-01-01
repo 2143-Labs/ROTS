@@ -3,6 +3,7 @@ use std::time::Duration;
 use bevy::input::common_conditions::input_just_pressed;
 use bevy::prelude::*;
 
+use shared::animations::AnimationTimer;
 use shared::event::spells::ShootingData;
 use shared::netlib::EventToClient;
 use shared::netlib::EventToServer;
@@ -115,9 +116,6 @@ fn cast_skill_1(
     ev_sa.send(StartAnimation(event));
 }
 
-#[derive(Component, Debug)]
-pub struct AnimationTimer(pub Timer);
-
 fn tick_anim_timers(
     mut all_timers: Query<(Entity, &mut AnimationTimer)>,
     mut commands: Commands,
@@ -157,7 +155,6 @@ fn start_local_skill_cast_animation(
                 shared::animations::AnimationState::Done => {},
             }
         }
-
 
         if !can_cast {
             warn!(?cast, "Could not cast because of existing cast animation");
