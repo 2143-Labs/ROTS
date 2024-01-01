@@ -18,7 +18,7 @@ use shared::{
         send_event_to_server, send_event_to_server_batch, setup_client, EventToClient,
         EventToServer, MainServerEndpoint, ServerResources,
     },
-    AnyUnit, Config, unit::TurningIntention,
+    AnyUnit, Config,
 };
 
 use shared::unit::MovementIntention;
@@ -222,11 +222,11 @@ fn send_movement(
     sr: Res<ServerResources<EventToClient>>,
     mse: Res<MainServerEndpoint>,
     our_transform: Query<
-        (&Transform, Option<&MovementIntention>, Option<&TurningIntention>),
+        (&Transform, Option<&MovementIntention>),
         (With<Player>, Changed<Transform>),
     >,
 ) {
-    if let Ok((transform, some_intent, other_intent)) = our_transform.get_single() {
+    if let Ok((transform, some_intent)) = our_transform.get_single() {
         let mut events = vec![];
         events.push(EventToServer::ChangeMovement(ChangeMovement::SetTransform(
             transform.clone(),
@@ -236,12 +236,7 @@ fn send_movement(
             events.push(EventToServer::ChangeMovement(ChangeMovement::Move2d(
                 intent.0,
             )));
-        } else if let Some(intent) = other_intent {
-            events.push(EventToServer::ChangeMovement(ChangeMovement::TurnQuat(
-                intent.0,
-            )))
         };
-        
 
         send_event_to_server_batch(&sr.handler, mse.0, &events);
     }
@@ -268,20 +263,17 @@ fn on_disconnect(
 
 fn on_someone_move(
     mut someone_moved: ERFE<SomeoneMoved>,
-    mut other_players: Query<(&NetEntId, &mut Transform, &mut MovementIntention, &mut TurningIntention), With<AnyUnit>>,
+    mut other_players: Query<(&NetEntId, &mut Transform, &mut MovementIntention), With<AnyUnit>>,
     //mut other_players: Query<(&NetEntId, &mut Transform, &mut MovementIntention), (With<AnyUnit>, Without<Player>)>,
 ) {
     for movement in someone_moved.read() {
-        for (ply_net, mut ply_tfm, mut ply_intent, mut trn_intent) in &mut other_players {
+        for (ply_net, mut ply_tfm, mut ply_intent) in &mut other_players {
             if &movement.event.id == ply_net {
                 match movement.event.movement {
                     ChangeMovement::SetTransform(t) => *ply_tfm = t,
                     ChangeMovement::StandStill => {}
                     ChangeMovement::Move2d(intent) => {
                         *ply_intent = MovementIntention(intent);
-                    }
-                    ChangeMovement::TurnQuat(quat) => {
-                        *trn_intent = TurningIntention(quat);
                     }
                 }
             }
