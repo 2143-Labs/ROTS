@@ -49,7 +49,7 @@ pub(crate) struct PlayerCooldown(pub Discriminant<Cast>, pub NetEntId);
 
 fn do_cast(mut do_cast: EventReader<DoCast>, mut commands: Commands, time: Res<Time<Virtual>>) {
     for DoCast(cast) in do_cast.read() {
-        info!(?cast, "Cast has completed");
+        trace!(?cast, "Cast has completed");
 
         commands.spawn((
             PlayerCooldown(discriminant(&cast.cast), cast.caster_id),
@@ -87,9 +87,10 @@ fn on_player_try_cast(
 ) {
     'next_cast: for cast in casts.read() {
         if let Some(caster_net_id) = endpoint_mapping.map.get(&cast.endpoint) {
+            // if it's on cd, deny it and don't tell anyone else.
             for cd in &cooldowns {
                 if cd.1 == *caster_net_id && discriminant(&cast.event) == cd.0 {
-                    warn!(?cd, "denied cast for cooldown");
+                    info!(?cd, "denied cast for cooldown");
                     let event = EventToClient::YourCastResult(YourCastResult::No);
                     send_event_to_server(&sr.handler, cast.endpoint, &event);
                     continue 'next_cast;
@@ -114,7 +115,7 @@ fn on_player_try_cast(
 
             for (casting_ent, net_ent_id, _current_cast) in &casting_units {
                 if net_ent_id == caster_net_id {
-                    //info!("Adding the cast to the entity");
+                    trace!(?net_ent_id, ?cast.event, "Adding the cast to the entity");
                     commands.entity(casting_ent).insert((
                         AnimationTimer(Timer::new(
                             cast.event.get_skill_info().get_total_duration(),
