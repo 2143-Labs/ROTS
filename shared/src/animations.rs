@@ -56,18 +56,22 @@ impl Cast {
 
     pub fn get_current_animation(&self, mut time: Duration) -> AnimationState {
         let skill = self.get_skill_info();
+
         if time < skill.frontswing {
             return AnimationState::FrontSwing;
         }
         time -= skill.frontswing;
+
         if time < skill.windup {
             return AnimationState::WindUp;
         }
         time -= skill.windup;
+
         if time < skill.winddown {
             return AnimationState::WindDown;
         }
         time -= skill.winddown;
+
         if time < skill.backswing {
             return AnimationState::Backswing;
         }
@@ -77,7 +81,13 @@ impl Cast {
 }
 
 impl SkillInfo {
+    /// Duration until the skill is complete
     pub fn get_total_duration(&self) -> Duration {
         self.frontswing + self.windup + self.winddown + self.backswing
+    }
+
+    /// Duration until the skill is actually cast on the server (eg does damage or whatever)
+    pub fn get_cast_point(&self) -> Duration {
+        self.frontswing + self.windup
     }
 }

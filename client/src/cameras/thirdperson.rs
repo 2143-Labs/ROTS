@@ -163,7 +163,19 @@ pub(crate) fn player_movement(
         let final_move = if move_vector.length_squared() > 0.0 {
             let camera = camera_query.single();
             let rotation = Vec2::from_angle(-camera.yaw_radians);
-            let movem = move_vector.normalize().rotate(rotation);
+            let mut movem = move_vector.normalize().rotate(rotation);
+
+            if let Some((anim_timer, cast)) = casting {
+                let anim_timer = &anim_timer.0;
+                let anim = cast.get_current_animation(anim_timer.elapsed());
+                match anim {
+                    shared::animations::AnimationState::FrontSwing => movem *= 0.75,
+                    shared::animations::AnimationState::WindUp => movem *= 0.25,
+                    shared::animations::AnimationState::WindDown => movem *= 0.5,
+                    shared::animations::AnimationState::Backswing => movem *= 0.75,
+                    shared::animations::AnimationState::Done => {},
+                }
+            }
 
             transform.translation +=
                 Vec3::new(movem.x, 0.0, movem.y) * PLAYER_SPEED * time.delta_seconds();
