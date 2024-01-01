@@ -125,7 +125,10 @@ fn tick_anim_timers(
         timer.0.tick(time.delta());
         if timer.0.finished() {
             trace!("Finished backswing");
-            commands.entity(ent).remove::<Cast>().remove::<AnimationTimer>();
+            commands
+                .entity(ent)
+                .remove::<Cast>()
+                .remove::<AnimationTimer>();
         }
     }
 }
@@ -144,15 +147,15 @@ fn start_local_skill_cast_animation(
 
         // TODO check cooldown
         if let Some((anim_timer, existing_cast_data)) = existing_cast {
-
-            let current_anim_state = existing_cast_data.get_current_animation(anim_timer.0.elapsed());
+            let current_anim_state =
+                existing_cast_data.get_current_animation(anim_timer.0.elapsed());
             info!(?current_anim_state);
             match current_anim_state {
-                shared::animations::AnimationState::FrontSwing => {},
+                shared::animations::AnimationState::FrontSwing => {}
                 shared::animations::AnimationState::WindUp => can_cast = false,
                 shared::animations::AnimationState::WindDown => can_cast = false,
-                shared::animations::AnimationState::Backswing => {},
-                shared::animations::AnimationState::Done => {},
+                shared::animations::AnimationState::Backswing => {}
+                shared::animations::AnimationState::Done => {}
             }
         }
 

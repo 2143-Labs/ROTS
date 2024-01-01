@@ -2,18 +2,20 @@ use std::time::Duration;
 
 use bevy::{prelude::*, utils::HashSet};
 use shared::{
+    animations::AnimationTimer,
     casting::{CasterNetId, DespawnTime, SharedCastingPlugin},
     event::{
         client::{BulletHit, SomeoneCast, SomeoneUpdateComponent, UnitDie},
+        server::Cast,
         spells::{ShootingData, NPC},
-        NetEntId, ERFE, server::Cast,
+        NetEntId, ERFE,
     },
     netlib::{
         send_event_to_server, send_event_to_server_batch, EventToClient, EventToServer,
         ServerResources,
     },
     stats::Health,
-    AnyUnit, animations::AnimationTimer,
+    AnyUnit,
 };
 
 use crate::{EndpointToNetId, PlayerEndpoint, ServerState};
@@ -29,7 +31,14 @@ impl Plugin for CastingPlugin {
             .insert_resource(HitList::default())
             .add_systems(
                 Update,
-                (on_player_try_cast, hit, check_collision, on_die, tick_casts, do_cast)
+                (
+                    on_player_try_cast,
+                    hit,
+                    check_collision,
+                    on_die,
+                    tick_casts,
+                    do_cast,
+                )
                     .run_if(in_state(ServerState::Running)),
             );
     }
@@ -41,12 +50,21 @@ impl Plugin for CastingPlugin {
 //
 ///go until the cast point and then do the actual effect
 fn tick_casts(
-    mut casting_units: Query<(Entity, &NetEntId, &mut CastPointTimer, &mut AnimationTimer, &Cast, &CastNetId)>,
+    mut casting_units: Query<(
+        Entity,
+        &NetEntId,
+        &mut CastPointTimer,
+        &mut AnimationTimer,
+        &Cast,
+        &CastNetId,
+    )>,
     mut commands: Commands,
     mut do_cast: EventWriter<DoCast>,
     time: Res<Time<Virtual>>,
 ) {
-    for (_unit_ent, _net_ent_id, mut cast_timer, mut anim_timer, cast, cast_net_id) in &mut casting_units {
+    for (_unit_ent, _net_ent_id, mut cast_timer, mut anim_timer, cast, cast_net_id) in
+        &mut casting_units
+    {
         cast_timer.0.tick(time.delta());
         anim_timer.0.tick(time.delta());
 
@@ -59,7 +77,12 @@ fn tick_casts(
         }
 
         if anim_timer.0.finished() {
-            commands.entity(_unit_ent).remove::<AnimationTimer>().remove::<CastPointTimer>().remove::<Cast>().remove::<CastNetId>();
+            commands
+                .entity(_unit_ent)
+                .remove::<AnimationTimer>()
+                .remove::<CastPointTimer>()
+                .remove::<Cast>()
+                .remove::<CastNetId>();
         }
     }
 }
@@ -67,10 +90,7 @@ fn tick_casts(
 #[derive(Event)]
 struct DoCast(SomeoneCast);
 
-fn do_cast(
-    mut do_cast: EventReader<DoCast>,
-    mut commands: Commands,
-) {
+fn do_cast(mut do_cast: EventReader<DoCast>, mut commands: Commands) {
     for DoCast(cast) in do_cast.read() {
         match cast.cast {
             shared::event::server::Cast::Teleport(_) => {} // TODO
@@ -124,14 +144,19 @@ fn on_player_try_cast(
             for (casting_ent, net_ent_id, _current_cast) in &casting_units {
                 if net_ent_id == caster_net_id {
                     commands.entity(casting_ent).insert((
-                        AnimationTimer(Timer::new(cast.event.get_skill_info().get_total_duration(), TimerMode::Once)),
-                        CastPointTimer(Timer::new(cast.event.get_skill_info().get_cast_point(), TimerMode::Once)),
+                        AnimationTimer(Timer::new(
+                            cast.event.get_skill_info().get_total_duration(),
+                            TimerMode::Once,
+                        )),
+                        CastPointTimer(Timer::new(
+                            cast.event.get_skill_info().get_cast_point(),
+                            TimerMode::Once,
+                        )),
                         CastNetId(new_cast_id),
                         cast.event.clone(),
                     ));
                 }
             }
-
         }
     }
 }

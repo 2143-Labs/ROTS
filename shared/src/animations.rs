@@ -15,7 +15,7 @@ pub enum AnimationState {
     WindDown,
     /// Optional part of the animation backswing
     Backswing,
-    Done
+    Done,
 }
 
 #[derive(Debug)]
@@ -27,7 +27,6 @@ pub struct SkillInfo {
 
     pub cooldown: Duration,
 }
-
 
 #[derive(Component, Debug)]
 pub struct AnimationTimer(pub Timer);
@@ -48,12 +47,12 @@ macro_rules! skill_info {
 impl Cast {
     pub fn get_skill_info(&self) -> SkillInfo {
         match self {
-            Cast::Teleport(_)      => skill_info!(cd 5.0 => [ fs 1.0 ; wu 1.0 ; wd 1.0 ; bs 1.0 ]),
-            Cast::Shoot(_)         => skill_info!(cd 0.5 => [ fs 0.1 ; wu 0.0 ; wd 0.1 ; bs 0.0 ]),
+            Cast::Teleport(_) => skill_info!(cd 5.0 => [ fs 1.0 ; wu 1.0 ; wd 1.0 ; bs 1.0 ]),
+            Cast::Shoot(_) => skill_info!(cd 0.5 => [ fs 0.1 ; wu 0.0 ; wd 0.1 ; bs 0.0 ]),
             Cast::ShootTargeted(_) => skill_info!(cd 1.0 => [ fs 0.5 ; wu 0.0 ; wd 0.1 ; bs 0.0 ]),
-            Cast::Melee            => skill_info!(cd 1.0 => [ fs 0.2 ; wu 0.0 ; wd 0.1 ; bs 0.3 ]),
-            Cast::Aoe(_)           => skill_info!(cd 5.0 => [ fs 1.0 ; wu 1.0 ; wd 1.0 ; bs 1.0 ]),
-            Cast::Buff             => skill_info!(cd 30.0 => [ fs 0.25 ; wu 0.75 ; wd 0.0 ; bs 0.0 ]),
+            Cast::Melee => skill_info!(cd 1.0 => [ fs 0.2 ; wu 0.0 ; wd 0.1 ; bs 0.3 ]),
+            Cast::Aoe(_) => skill_info!(cd 5.0 => [ fs 1.0 ; wu 1.0 ; wd 1.0 ; bs 1.0 ]),
+            Cast::Buff => skill_info!(cd 30.0 => [ fs 0.25 ; wu 0.75 ; wd 0.0 ; bs 0.0 ]),
         }
     }
 

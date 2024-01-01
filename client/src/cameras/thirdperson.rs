@@ -4,7 +4,9 @@ use bevy::{
     input::mouse::{MouseMotion, MouseWheel},
     prelude::*,
 };
-use shared::{unit::MovementIntention, Config, GameAction, event::server::Cast, animations::AnimationTimer};
+use shared::{
+    animations::AnimationTimer, event::server::Cast, unit::MovementIntention, Config, GameAction,
+};
 
 use crate::{
     physics::Jumper,
@@ -136,7 +138,9 @@ pub(crate) fn player_movement(
     mut last_movement: Local<LastMovement>,
     time: Res<Time>,
 ) {
-    for (mut transform, _player_ent, mut jumper, _player, mut movement, casting) in player_query.iter_mut() {
+    for (mut transform, _player_ent, mut jumper, _player, mut movement, casting) in
+        player_query.iter_mut()
+    {
         let mut move_vector = Vec2::ZERO;
         if config.pressed(&keyboard_input, GameAction::MoveForward) {
             move_vector += Vec2::new(1.0, 0.0);
@@ -173,7 +177,7 @@ pub(crate) fn player_movement(
                     shared::animations::AnimationState::WindUp => movem *= 0.25,
                     shared::animations::AnimationState::WindDown => movem *= 0.5,
                     shared::animations::AnimationState::Backswing => movem *= 0.75,
-                    shared::animations::AnimationState::Done => {},
+                    shared::animations::AnimationState::Done => {}
                 }
             }
 

@@ -100,7 +100,9 @@ fn on_ai_tick(
                     if dir.length_squared() > 1.0 {
                         let dir = dir.normalize();
                         unit_mi.0 = dir * 0.25;
-                        unit_tfm.rotation = Quat::from_rotation_y(-(dir.y.atan2(dir.x)) - std::f32::consts::PI/2.);
+                        unit_tfm.rotation = Quat::from_rotation_y(
+                            -(dir.y.atan2(dir.x)) - std::f32::consts::PI / 2.,
+                        );
                     } else {
                         unit_mi.0 = Vec2::ZERO;
                     }
