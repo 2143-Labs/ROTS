@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use crate::event::server::Cast;
 
-use super::event::NetEntId;
 use bevy::prelude::*;
 
 #[derive(Debug)]

@@ -25,6 +25,7 @@ impl Plugin for CastingPlugin {
         app.add_plugins(SharedCastingPlugin)
             .add_event::<BulletHit>()
             .add_event::<UnitDie>()
+            .add_event::<DoCast>()
             .insert_resource(HitList::default())
             .add_systems(
                 Update,

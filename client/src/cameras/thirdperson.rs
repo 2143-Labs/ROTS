@@ -4,11 +4,11 @@ use bevy::{
     input::mouse::{MouseMotion, MouseWheel},
     prelude::*,
 };
-use shared::{unit::MovementIntention, Config, GameAction, event::server::Cast};
+use shared::{unit::MovementIntention, Config, GameAction, event::server::Cast, animations::AnimationTimer};
 
 use crate::{
     physics::Jumper,
-    player::{Player, PrimaryUnitControl}, skills::AnimationTimer,
+    player::{Player, PrimaryUnitControl},
 };
 
 use super::{ClientAimDirection, FreeCamState};
