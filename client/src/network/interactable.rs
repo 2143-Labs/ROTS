@@ -1,16 +1,12 @@
 use bevy::prelude::*;
 use shared::{
     event::{
-        client::{SpawnUnit, UnitDie, SpawnInteractable, DespawnInteractable},
+        client::{SpawnInteractable, DespawnInteractable},
         NetEntId, ERFE,
     },
-    unit::MovementIntention,
-    AnyUnit,
 };
 
 use crate::{
-    network::{build_healthbar, OtherPlayer},
-    player::{PlayerName, PrimaryUnitControl},
     states::GameState,
 };
 
