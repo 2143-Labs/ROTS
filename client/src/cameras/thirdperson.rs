@@ -202,20 +202,27 @@ pub(crate) fn player_movement(
 
             match anim {
                 shared::animations::AnimationState::FrontSwing => {
+                    // A forward spin
                     transform.rotation *= Quat::from_rotation_x(time_offset);
                 }
                 shared::animations::AnimationState::WindUp => {
+                    // spinning in all directions
                     transform.rotation *= Quat::from_rotation_z(time_offset);
                     transform.rotation *= Quat::from_rotation_y(time_offset);
                     transform.rotation *= Quat::from_rotation_x(time_offset);
                 }
                 shared::animations::AnimationState::WindDown => {
+                    // flipped upside down like a turtle
                     transform.rotation *= Quat::from_rotation_x(PI);
                     transform.rotation *= Quat::from_rotation_y(time_offset);
                     transform.rotation *= Quat::from_rotation_z(time_offset.sin());
                 }
                 shared::animations::AnimationState::Backswing => {
+                    // slowly turn back up
+                    let si = cast.get_skill_info();
+                    let pct_recovered = (anim_timer.elapsed() - si.get_free_point()).as_secs_f32() / (si.get_total_duration() - si.get_free_point()).as_secs_f32();
                     transform.rotation *= Quat::from_rotation_x(PI);
+                    transform.rotation *= Quat::from_rotation_x(pct_recovered * PI);
                 }
                 shared::animations::AnimationState::Done => {} // no rotation
             }

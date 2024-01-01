@@ -103,4 +103,8 @@ impl SkillInfo {
     pub fn get_cast_point(&self) -> Duration {
         self.frontswing + self.windup
     }
+
+    pub fn get_free_point(&self) -> Duration {
+        self.frontswing + self.windup + self.winddown
+    }
 }
