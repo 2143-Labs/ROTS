@@ -202,23 +202,20 @@ pub(crate) fn player_movement(
 
             match anim {
                 shared::animations::AnimationState::FrontSwing => {
-                    transform.rotation *= Quat::from_rotation_y(time_offset);
+                    transform.rotation *= Quat::from_rotation_x(time_offset);
                 }
                 shared::animations::AnimationState::WindUp => {
-                    transform.rotation *= Quat::from_rotation_y(time_offset);
                     transform.rotation *= Quat::from_rotation_z(time_offset);
+                    transform.rotation *= Quat::from_rotation_y(time_offset);
+                    transform.rotation *= Quat::from_rotation_x(time_offset);
                 }
                 shared::animations::AnimationState::WindDown => {
-                    transform.rotation *= Quat::from_rotation_x(time_offset);
-                    transform.rotation *= Quat::from_rotation_x(time_offset);
+                    transform.rotation *= Quat::from_rotation_x(PI);
+                    transform.rotation *= Quat::from_rotation_y(time_offset);
+                    transform.rotation *= Quat::from_rotation_z(time_offset.sin());
                 }
                 shared::animations::AnimationState::Backswing => {
-                    transform.rotation *= Quat::from_rotation_x(time_offset);
-                    transform.rotation *= Quat::from_rotation_x(time_offset);
-                    transform.rotation *= Quat::from_rotation_x(time_offset);
-                    transform.rotation *= Quat::from_rotation_x(time_offset);
-                    transform.rotation *= Quat::from_rotation_x(time_offset);
-                    transform.rotation *= Quat::from_rotation_x(time_offset);
+                    transform.rotation *= Quat::from_rotation_x(PI);
                 }
                 shared::animations::AnimationState::Done => {} // no rotation
             }
