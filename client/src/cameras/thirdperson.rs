@@ -110,8 +110,17 @@ pub fn wow_camera_system(
     }
 }
 
+#[derive(Debug)]
+pub(crate) struct LastMovement(pub Vec2);
+
+impl Default for LastMovement {
+    fn default() -> Self {
+        Self(Vec2::new(1.0, 0.0))
+    }
+}
+
 pub const PLAYER_SPEED: f32 = 25.;
-pub fn player_movement(
+pub(crate) fn player_movement(
     _commands: Commands,
     mut player_query: Query<(
         &mut Transform,
@@ -124,9 +133,10 @@ pub fn player_movement(
     camera_query: Query<&CameraFollow>,
     keyboard_input: Res<Input<KeyCode>>,
     config: Res<Config>,
+    mut last_movement: Local<LastMovement>,
     time: Res<Time>,
 ) {
-    for (mut transform, _player_ent, mut jumper, _player, mut movement, mut anim) in player_query.iter_mut() {
+    for (mut transform, _player_ent, mut jumper, _player, mut movement, anim) in player_query.iter_mut() {
         let mut move_vector = Vec2::ZERO;
         if config.pressed(&keyboard_input, GameAction::MoveForward) {
             move_vector += Vec2::new(1.0, 0.0);
@@ -158,19 +168,22 @@ pub fn player_movement(
             transform.translation +=
                 Vec3::new(movem.x, 0.0, movem.y) * PLAYER_SPEED * time.delta_seconds();
 
-            let anim_offset = if let Some(a) = anim {
-                a.0.elapsed_secs()
-            } else {
-                0.0
-            };
-
-            // point in the direction you are moving
-            transform.rotation = Quat::from_rotation_y(anim_offset + movem.x.atan2(movem.y));
+            last_movement.0 = movem;
 
             movem
         } else {
             move_vector
         };
+
+        let anim_offset = if let Some(a) = anim {
+            a.0.elapsed_secs() * PI * 2.0
+        } else {
+            0.0
+        };
+
+        // point in the direction you are moving, offset by (animation sections * 1 turn per second)
+        let movem = last_movement.0;
+        transform.rotation = Quat::from_rotation_y(anim_offset + movem.x.atan2(movem.y));
 
         let y = jumper.get_y() + 1.0;
         if transform.translation.y != y {
