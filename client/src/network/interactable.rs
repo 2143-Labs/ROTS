@@ -1,23 +1,18 @@
 use bevy::prelude::*;
-use shared::{
-    event::{
-        client::{SpawnInteractable, DespawnInteractable},
-        NetEntId, ERFE,
-    },
+use shared::event::{
+    client::{DespawnInteractable, SpawnInteractable},
+    NetEntId, ERFE,
 };
 
-use crate::{
-    states::GameState,
-};
+use crate::states::GameState;
 
 pub struct InteractablePlugin;
 impl Plugin for InteractablePlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_systems(
-                Update,
-                (on_interact_spawn, on_interact_despawn).run_if(in_state(GameState::ClientConnected)),
-            );
+        app.add_systems(
+            Update,
+            (on_interact_spawn, on_interact_despawn).run_if(in_state(GameState::ClientConnected)),
+        );
     }
 }
 
@@ -39,13 +34,12 @@ fn on_interact_spawn(
             ..Default::default()
         };
 
-        commands
-            .spawn((
-                cube,
-                event.id,
-                //Name::new(format!("Interactable: {:?}", npc_type)),
-                Interactable,
-            ));
+        commands.spawn((
+            cube,
+            event.id,
+            //Name::new(format!("Interactable: {:?}", npc_type)),
+            Interactable,
+        ));
     }
 }
 
