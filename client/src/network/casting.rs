@@ -46,9 +46,11 @@ fn do_cast_finish(
     mut do_cast: EventReader<DoCast>,
     mut commands: Commands,
     //mut units: Query<(&NetEntId, &mut Transform, ), With<AnyUnit>>,
+    local_player_ent_id: Query<&NetEntId, With<Player>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
+    mut ev_w: EventWriter<WeTeleported>,
 ) {
     for DoCast(cast) in do_cast.read() {
         info!(?cast, "Cast has completed");
@@ -72,12 +74,12 @@ fn do_cast_finish(
                     ));
                 }
 
-                //match is_us {
-                    //true => {
-                        //ev_w.send(WeTeleported(target));
-                    //}
-                    //false => trace!("Someone else teleported"),
-                //}
+                match local_player_ent_id.single() == &cast.caster_id {
+                    true => {
+                        ev_w.send(WeTeleported(target));
+                    }
+                    false => trace!("Someone else teleported"),
+                }
             }
             shared::event::server::Cast::Shoot(ref dat) => {
                 let cube = PbrBundle {

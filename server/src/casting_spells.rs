@@ -5,7 +5,7 @@ use shared::{
     animations::{AnimationTimer, CastPointTimer, CastNetId, DoCast},
     casting::{CasterNetId, DespawnTime, SharedCastingPlugin},
     event::{
-        client::{BulletHit, SomeoneCast, SomeoneUpdateComponent, UnitDie},
+        client::{BulletHit, SomeoneCast, SomeoneUpdateComponent, UnitDie, YourCastResult},
         server::Cast,
         spells::{ShootingData, NPC},
         NetEntId, ERFE,
@@ -89,6 +89,10 @@ fn on_player_try_cast(
             for (c_net_client, _c_net_ent) in &clients {
                 send_event_to_server(&sr.handler, c_net_client.0, &event);
             }
+
+            // tell the client they are ok to continue their animation
+            let event = EventToClient::YourCastResult(YourCastResult::Ok(new_cast_id));
+            send_event_to_server(&sr.handler, cast.endpoint, &event);
 
             for (casting_ent, net_ent_id, _current_cast) in &casting_units {
                 if net_ent_id == caster_net_id {

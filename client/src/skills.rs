@@ -4,7 +4,11 @@ use bevy::input::common_conditions::input_just_pressed;
 use bevy::prelude::*;
 
 use shared::animations::AnimationTimer;
+use shared::animations::CastNetId;
 use shared::animations::CastPointTimer;
+use shared::event::ERFE;
+use shared::event::NetEntId;
+use shared::event::client::YourCastResult;
 use shared::event::spells::ShootingData;
 use shared::netlib::EventToClient;
 use shared::netlib::EventToServer;
@@ -50,6 +54,7 @@ impl Plugin for SkillsPlugin {
                 (
                     start_local_skill_cast_animation,
                     shared::animations::systems::tick_casts,
+                    maybe_cancel_local_skill_animation,
                 )
                     .run_if(in_state(GameState::ClientConnected)),
             );
@@ -164,5 +169,21 @@ fn start_local_skill_cast_animation(
                 AnimationTimer(Timer::new(skill_data.get_total_duration(), TimerMode::Once)),
                 CastPointTimer(Timer::new(skill_data.get_cast_point(), TimerMode::Once)),
             ));
+    }
+}
+
+fn maybe_cancel_local_skill_animation(
+    mut commands: Commands,
+    player: Query<Entity, With<Player>>,
+    mut skill_cast_results: ERFE<YourCastResult>,
+) {
+    for skill_cast_result in skill_cast_results.read() {
+        match skill_cast_result.event {
+            YourCastResult::Ok(new_cast_id) => {
+                commands.entity(player.single()).insert(CastNetId(new_cast_id));
+            },
+            YourCastResult::OffsetBy(_, _) => todo!(),
+            YourCastResult::No => todo!(),
+        }
     }
 }

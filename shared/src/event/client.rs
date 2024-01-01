@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::event::EventFromEndpoint;
 use crate::netlib::ServerResources;
 use bevy::prelude::*;
@@ -36,6 +38,16 @@ pub struct SomeoneCast {
     pub caster_id: NetEntId,
     pub cast_id: NetEntId,
     pub cast: Cast,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Event)]
+pub enum YourCastResult {
+    /// Go ahead with cast
+    Ok(NetEntId),
+    /// Go ahread with cast, but you had some extra cd to account for
+    OffsetBy(Duration, NetEntId),
+    /// no, cant cast
+    No,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event, Hash, PartialEq, Eq)]
