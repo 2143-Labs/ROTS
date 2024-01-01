@@ -5,6 +5,7 @@ use crate::event::server::Cast;
 use super::event::NetEntId;
 use bevy::prelude::*;
 
+#[derive(Debug)]
 pub enum AnimationState {
     /// Still cancelable
     FrontSwing,
@@ -18,6 +19,7 @@ pub enum AnimationState {
     Done
 }
 
+#[derive(Debug)]
 pub struct SkillInfo {
     pub frontswing: Duration,
     pub windup: Duration,
@@ -65,10 +67,17 @@ impl Cast {
         if time < skill.winddown {
             return AnimationState::WindDown;
         }
+        time -= skill.winddown;
         if time < skill.backswing {
             return AnimationState::Backswing;
         }
 
         AnimationState::Done
+    }
+}
+
+impl SkillInfo {
+    pub fn get_total_duration(&self) -> Duration {
+        self.frontswing + self.windup + self.winddown + self.backswing
     }
 }

@@ -193,11 +193,15 @@ pub(crate) fn player_movement(
                     transform.rotation *= Quat::from_rotation_z(time_offset);
                 }
                 shared::animations::AnimationState::WindDown => {
-                    transform.rotation *= Quat::from_rotation_y(time_offset);
-                    transform.rotation *= Quat::from_rotation_z(time_offset);
+                    transform.rotation *= Quat::from_rotation_x(time_offset);
                     transform.rotation *= Quat::from_rotation_x(time_offset);
                 }
                 shared::animations::AnimationState::Backswing => {
+                    transform.rotation *= Quat::from_rotation_x(time_offset);
+                    transform.rotation *= Quat::from_rotation_x(time_offset);
+                    transform.rotation *= Quat::from_rotation_x(time_offset);
+                    transform.rotation *= Quat::from_rotation_x(time_offset);
+                    transform.rotation *= Quat::from_rotation_x(time_offset);
                     transform.rotation *= Quat::from_rotation_x(time_offset);
                 }
                 shared::animations::AnimationState::Done => {} // no rotation

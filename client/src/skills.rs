@@ -123,12 +123,10 @@ fn tick_anim_timers(
     mut commands: Commands,
     time: Res<Time<Virtual>>,
 ) {
-
-
     for (ent, mut timer) in &mut all_timers {
         timer.0.tick(time.delta());
         if timer.0.finished() {
-            info!("Finished");
+            trace!("Finished backswing");
             commands.entity(ent).remove::<Cast>().remove::<AnimationTimer>();
         }
     }
@@ -136,18 +134,42 @@ fn tick_anim_timers(
 
 fn start_local_skill_cast_animation(
     mut ev_sa: EventReader<StartAnimation>,
-    player: Query<(Entity, Option<&AnimationTimer>), With<Player>>,
+    player: Query<(Entity, Option<(&AnimationTimer, &Cast)>), With<Player>>,
     mut commands: Commands,
 ) {
     for StartAnimation(cast) in ev_sa.read() {
-        let (player_ent, anim_timer) = player.single();
-        info!(?cast, ?anim_timer);
+        let (player_ent, existing_cast) = player.single();
+        trace!(?cast, ?existing_cast, "Attempting to cast");
+        let skill_data = cast.get_skill_info();
+
+        let mut can_cast = true;
+
+        // TODO check cooldown
+        if let Some((anim_timer, existing_cast_data)) = existing_cast {
+
+            let current_anim_state = existing_cast_data.get_current_animation(anim_timer.0.elapsed());
+            info!(?current_anim_state);
+            match current_anim_state {
+                shared::animations::AnimationState::FrontSwing => {},
+                shared::animations::AnimationState::WindUp => can_cast = false,
+                shared::animations::AnimationState::WindDown => can_cast = false,
+                shared::animations::AnimationState::Backswing => {},
+                shared::animations::AnimationState::Done => {},
+            }
+        }
+
+
+        if !can_cast {
+            warn!(?cast, "Could not cast because of existing cast animation");
+            continue;
+        }
+
         commands
             .entity(player_ent)
             .remove::<(AnimationTimer, Cast)>()
             .insert((
                 cast.clone(),
-                AnimationTimer(Timer::new(Duration::from_secs(5), TimerMode::Once)),
+                AnimationTimer(Timer::new(skill_data.get_total_duration(), TimerMode::Once)),
             ));
     }
 }
