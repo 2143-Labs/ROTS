@@ -1,8 +1,10 @@
 use std::time::Duration;
 
-use crate::event::server::Cast;
+use crate::event::{server::Cast, NetEntId, client::SomeoneCast};
 
 use bevy::prelude::*;
+
+pub mod systems;
 
 #[derive(Debug)]
 pub enum AnimationState {
@@ -30,6 +32,15 @@ pub struct SkillInfo {
 
 #[derive(Component, Debug)]
 pub struct AnimationTimer(pub Timer);
+
+#[derive(Component)]
+pub struct CastPointTimer(pub Timer);
+
+#[derive(Component)]
+pub struct CastNetId(pub NetEntId);
+
+#[derive(Event)]
+pub struct DoCast(pub SomeoneCast);
 
 macro_rules! skill_info {
     (cd $cd:expr => [ fs $fs:expr ; wu $wu:expr ; wd $wd:expr ; bs $bs: expr ]) => {

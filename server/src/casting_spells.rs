@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use bevy::{prelude::*, utils::HashSet};
 use shared::{
-    animations::AnimationTimer,
+    animations::{AnimationTimer, CastPointTimer, CastNetId, DoCast},
     casting::{CasterNetId, DespawnTime, SharedCastingPlugin},
     event::{
         client::{BulletHit, SomeoneCast, SomeoneUpdateComponent, UnitDie},
@@ -36,7 +36,7 @@ impl Plugin for CastingPlugin {
                     hit,
                     check_collision,
                     on_die,
-                    tick_casts,
+                    shared::animations::systems::tick_casts,
                     do_cast,
                 )
                     .run_if(in_state(ServerState::Running)),
@@ -44,54 +44,9 @@ impl Plugin for CastingPlugin {
     }
 }
 
-//TODOs:
-// - [ ] player can cancel casting their stuff
-// - [ ] server can stop a player from casting
-//
-///go until the cast point and then do the actual effect
-fn tick_casts(
-    mut casting_units: Query<(
-        Entity,
-        &NetEntId,
-        &mut CastPointTimer,
-        &mut AnimationTimer,
-        &Cast,
-        &CastNetId,
-    )>,
-    mut commands: Commands,
-    mut do_cast: EventWriter<DoCast>,
-    time: Res<Time<Virtual>>,
-) {
-    for (_unit_ent, _net_ent_id, mut cast_timer, mut anim_timer, cast, cast_net_id) in
-        &mut casting_units
-    {
-        cast_timer.0.tick(time.delta());
-        anim_timer.0.tick(time.delta());
-
-        if cast_timer.0.finished() {
-            do_cast.send(DoCast(SomeoneCast {
-                caster_id: *_net_ent_id,
-                cast_id: cast_net_id.0,
-                cast: cast.clone(),
-            }));
-        }
-
-        if anim_timer.0.finished() {
-            commands
-                .entity(_unit_ent)
-                .remove::<AnimationTimer>()
-                .remove::<CastPointTimer>()
-                .remove::<Cast>()
-                .remove::<CastNetId>();
-        }
-    }
-}
-
-#[derive(Event)]
-struct DoCast(SomeoneCast);
-
 fn do_cast(mut do_cast: EventReader<DoCast>, mut commands: Commands) {
     for DoCast(cast) in do_cast.read() {
+        info!(?cast, "Cast has completed");
         match cast.cast {
             shared::event::server::Cast::Teleport(_) => {} // TODO
             shared::event::server::Cast::Shoot(ref shot_data) => {
@@ -112,12 +67,6 @@ fn do_cast(mut do_cast: EventReader<DoCast>, mut commands: Commands) {
 
 /// TODO
 fn check_cancelled_casts() {}
-
-#[derive(Component)]
-struct CastPointTimer(Timer);
-
-#[derive(Component)]
-struct CastNetId(NetEntId);
 
 fn on_player_try_cast(
     mut casts: ERFE<shared::event::server::Cast>,
@@ -143,6 +92,7 @@ fn on_player_try_cast(
 
             for (casting_ent, net_ent_id, _current_cast) in &casting_units {
                 if net_ent_id == caster_net_id {
+                    info!("Adding the cast to the entity");
                     commands.entity(casting_ent).insert((
                         AnimationTimer(Timer::new(
                             cast.event.get_skill_info().get_total_duration(),
