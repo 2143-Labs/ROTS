@@ -47,7 +47,7 @@ pub enum YourCastResult {
     /// Go ahread with cast, but you had some extra cd to account for
     OffsetBy(Duration, NetEntId),
     /// You can't cast.
-    No,
+    No(Duration),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event, Hash, PartialEq, Eq)]

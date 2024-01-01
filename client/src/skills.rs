@@ -20,6 +20,7 @@ use shared::{
 
 use crate::cameras::chat::ChatState;
 use crate::cameras::ClientAimDirection;
+use crate::cameras::notifications::Notification;
 use crate::player::Player;
 use crate::states::GameState;
 
@@ -176,6 +177,7 @@ fn maybe_cancel_local_skill_animation(
     mut commands: Commands,
     player: Query<Entity, With<Player>>,
     mut skill_cast_results: ERFE<YourCastResult>,
+    mut notifs: EventWriter<Notification>,
 ) {
     for skill_cast_result in skill_cast_results.read() {
         match skill_cast_result.event {
@@ -184,7 +186,9 @@ fn maybe_cancel_local_skill_animation(
                 commands.entity(player.single()).insert(CastNetId(new_cast_id));
             },
             YourCastResult::OffsetBy(_, _) => todo!(),
-            YourCastResult::No => {
+            YourCastResult::No(tl) => {
+                notifs.send(Notification(format!("Skill is on cooldown! {tl:?}")));
+
                 // we got denied, stop casting, refund everything
                 commands
                     .entity(player.single())

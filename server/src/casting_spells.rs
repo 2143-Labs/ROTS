@@ -81,17 +81,17 @@ fn on_player_try_cast(
     endpoint_mapping: Res<EndpointToNetId>,
     clients: Query<(&PlayerEndpoint, &NetEntId)>,
     casting_units: Query<(Entity, &NetEntId, Option<(&AnimationTimer, &Cast)>), With<AnyUnit>>,
-    cooldowns: Query<&PlayerCooldown>,
+    cooldowns: Query<(&PlayerCooldown, &DespawnTime)>,
     sr: Res<ServerResources<EventToServer>>,
     mut commands: Commands,
 ) {
     'next_cast: for cast in casts.read() {
         if let Some(caster_net_id) = endpoint_mapping.map.get(&cast.endpoint) {
             // if it's on cd, deny it and don't tell anyone else.
-            for cd in &cooldowns {
+            for (cd, time_left) in &cooldowns {
                 if cd.1 == *caster_net_id && discriminant(&cast.event) == cd.0 {
                     info!(?cd, "denied cast for cooldown");
-                    let event = EventToClient::YourCastResult(YourCastResult::No);
+                    let event = EventToClient::YourCastResult(YourCastResult::No(time_left.0.remaining()));
                     send_event_to_server(&sr.handler, cast.endpoint, &event);
                     continue 'next_cast;
                 }

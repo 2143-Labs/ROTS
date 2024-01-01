@@ -103,25 +103,48 @@ fn do_cast_finish(
     }
 }
 
+/// Conains the cast id of the tp
+#[derive(Component)]
+struct TpCube(NetEntId);
+
 fn on_someone_cast(
     mut someone_cast: ERFE<SomeoneCast>,
     other_players: Query<(Entity, &NetEntId, &Transform, Has<Player>), With<AnyUnit>>,
     mut commands: Commands,
     //TODO dont actually spawn a cube on cast
-    //mut meshes: ResMut<Assets<Mesh>>,
-    //mut materials: ResMut<Assets<StandardMaterial>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
     //mut ev_w: EventWriter<WeTeleported>,
     //asset_server: Res<AssetServer>,
 ) {
     for cast in someone_cast.read() {
         for (casting_ent, net_ent_id, _caster_tfm, is_us) in &other_players {
             if &cast.event.caster_id == net_ent_id {
+                let cast_data = &cast.event.cast;
+
+                match cast.event.cast {
+                    shared::event::server::Cast::Teleport(targ) => {
+                        let cube = PbrBundle {
+                            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+                            material: materials.add(Color::rgb(0.7, 0.8, 0.9).into()),
+                            transform: Transform::from_translation(targ + Vec3::new(0.0, 0.5, 0.0)).with_scale(Vec3::new(0.5, 20.0, 0.5)),
+                            ..Default::default()
+                        };
+
+                        commands.spawn((
+                            cube,
+                            DespawnTime(Timer::new(cast_data.get_skill_info().get_free_point(), TimerMode::Once)),
+                            TpCube(cast.event.cast_id),
+                        ));
+                    },
+                    // Most skills do nothing when initially cast except start an animation
+                    _ => {}
+                }
                 if is_us {
                     // interp locally
                     continue;
                 }
 
-                let cast_data = &cast.event.cast;
                 commands.entity(casting_ent).insert((
                     AnimationTimer(Timer::new(
                         cast_data.get_skill_info().get_total_duration(),
