@@ -4,7 +4,9 @@ use bevy::{
     input::mouse::{MouseMotion, MouseWheel},
     prelude::*,
 };
-use shared::{unit::MovementIntention, Config, GameAction};
+use shared::{
+    animations::AnimationTimer, event::server::Cast, unit::MovementIntention, Config, GameAction,
+};
 
 use crate::{
     physics::Jumper,
@@ -110,8 +112,17 @@ pub fn wow_camera_system(
     }
 }
 
+#[derive(Debug)]
+pub(crate) struct LastMovement(pub Vec2);
+
+impl Default for LastMovement {
+    fn default() -> Self {
+        Self(Vec2::new(1.0, 0.0))
+    }
+}
+
 pub const PLAYER_SPEED: f32 = 25.;
-pub fn player_movement(
+pub(crate) fn player_movement(
     _commands: Commands,
     mut player_query: Query<(
         &mut Transform,
@@ -119,13 +130,18 @@ pub fn player_movement(
         &mut Jumper,
         &mut Player,
         &mut MovementIntention,
+        // are we casting anything?
+        Option<(&AnimationTimer, &Cast)>,
     )>,
     camera_query: Query<&CameraFollow>,
     keyboard_input: Res<Input<KeyCode>>,
     config: Res<Config>,
+    mut last_movement: Local<LastMovement>,
     time: Res<Time>,
 ) {
-    for (mut transform, _player_ent, mut jumper, _player, mut movement) in player_query.iter_mut() {
+    for (mut transform, _player_ent, mut jumper, _player, mut movement, casting) in
+        player_query.iter_mut()
+    {
         let mut move_vector = Vec2::ZERO;
         if config.pressed(&keyboard_input, GameAction::MoveForward) {
             move_vector += Vec2::new(1.0, 0.0);
@@ -152,17 +168,69 @@ pub fn player_movement(
         let final_move = if move_vector.length_squared() > 0.0 {
             let camera = camera_query.single();
             let rotation = Vec2::from_angle(-camera.yaw_radians);
-            let movem = move_vector.normalize().rotate(rotation);
+            // final intended movement
+            let mut movem = move_vector.normalize().rotate(rotation);
+
+            // If you are casting something, you will move slower
+            if let Some((anim_timer, cast)) = casting {
+                let anim_timer = &anim_timer.0;
+                let anim = cast.get_current_animation(anim_timer.elapsed());
+                match anim {
+                    shared::animations::AnimationState::FrontSwing => movem *= 0.75,
+                    shared::animations::AnimationState::WindUp => movem *= 0.25,
+                    shared::animations::AnimationState::WindDown => movem *= 0.5,
+                    shared::animations::AnimationState::Backswing => movem *= 0.75,
+                    shared::animations::AnimationState::Done => {}
+                }
+            }
 
             transform.translation +=
                 Vec3::new(movem.x, 0.0, movem.y) * PLAYER_SPEED * time.delta_seconds();
 
-            // point in the direction you are moving
-            transform.rotation = Quat::from_rotation_y(movem.x.atan2(movem.y));
+            last_movement.0 = movem;
 
             movem
         } else {
             move_vector
+        };
+
+        // point in the direction you are moving, offset by (animation sections * 1 turn per second)
+        let movem = last_movement.0;
+        transform.rotation = Quat::from_rotation_y(movem.x.atan2(movem.y));
+
+        // If we are casting, animate our model
+        if let Some((anim_timer, cast)) = casting {
+            let anim_timer = &anim_timer.0;
+            let anim = cast.get_current_animation(anim_timer.elapsed());
+            let time_offset = anim_timer.elapsed_secs() * PI * 2.0;
+
+            match anim {
+                shared::animations::AnimationState::FrontSwing => {
+                    // A forward spin
+                    transform.rotation *= Quat::from_rotation_x(time_offset);
+                }
+                shared::animations::AnimationState::WindUp => {
+                    // spinning in all directions
+                    transform.rotation *= Quat::from_rotation_z(time_offset);
+                    transform.rotation *= Quat::from_rotation_y(time_offset);
+                    transform.rotation *= Quat::from_rotation_x(time_offset);
+                }
+                shared::animations::AnimationState::WindDown => {
+                    // flipped upside down like a turtle
+                    transform.rotation *= Quat::from_rotation_x(PI);
+                    transform.rotation *= Quat::from_rotation_z(time_offset.sin() * 0.5);
+                    transform.rotation *= Quat::from_rotation_y(time_offset);
+                }
+                shared::animations::AnimationState::Backswing => {
+                    // slowly turn back up
+                    let si = cast.get_skill_info();
+                    let pct_recovered = (anim_timer.elapsed() - si.get_free_point()).as_secs_f32()
+                        / (si.get_total_duration() - si.get_free_point()).as_secs_f32();
+                    transform.rotation *= Quat::from_rotation_x(PI);
+                    transform.rotation *= Quat::from_rotation_x(pct_recovered * PI);
+                }
+                shared::animations::AnimationState::Done => {} // no rotation
+            }
         };
 
         let y = jumper.get_y() + 1.0;

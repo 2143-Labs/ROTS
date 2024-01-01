@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
+pub mod animations;
 pub mod casting;
 pub mod event;
 pub mod netlib;

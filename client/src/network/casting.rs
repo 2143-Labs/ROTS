@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 use shared::{
+    animations::{AnimationTimer, CastNetId, CastPointTimer, DoCast},
     casting::{CasterNetId, DespawnTime, SharedCastingPlugin},
     event::{
         client::{BulletHit, SomeoneCast},
@@ -21,9 +22,10 @@ impl Plugin for CastingNetworkPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(SharedCastingPlugin)
             .add_event::<WeTeleported>()
+            .add_event::<DoCast>()
             .add_systems(
                 Update,
-                (on_someone_cast, on_someone_hit, on_us_tp)
+                (on_someone_cast, on_someone_hit, on_us_tp, do_cast_finish)
                     .run_if(in_state(GameState::ClientConnected)),
             );
     }
@@ -41,6 +43,71 @@ fn on_us_tp(
     }
 }
 
+fn do_cast_finish(
+    mut do_cast: EventReader<DoCast>,
+    mut commands: Commands,
+    //mut units: Query<(&NetEntId, &mut Transform, ), With<AnyUnit>>,
+    local_player_ent_id: Query<&NetEntId, With<Player>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: Res<AssetServer>,
+    mut ev_w: EventWriter<WeTeleported>,
+) {
+    for DoCast(cast) in do_cast.read() {
+        info!(?cast, "Cast has completed");
+        //let mut maybe_caster = None;
+        //for (unit_ent, unit_tfm) {
+        //if
+        //}
+        match cast.cast {
+            shared::event::server::Cast::Teleport(target) => {
+                // Spawn a sound at both the source and dest
+                // TODO only play both if you go a far enough distance
+                for loc in &[target /* ply_tfm.translation */] {
+                    commands.spawn((
+                        TransformBundle::from_transform(Transform::from_translation(*loc)),
+                        //Transform::from_xyz(0.0, 0.0, 0.0),
+                        AudioBundle {
+                            source: asset_server.load("sounds/teleport.ogg"),
+                            settings: PlaybackSettings::DESPAWN.with_spatial(true),
+                            ..default()
+                        },
+                    ));
+                }
+
+                match local_player_ent_id.single() == &cast.caster_id {
+                    true => {
+                        ev_w.send(WeTeleported(target));
+                    }
+                    false => trace!("Someone else teleported"),
+                }
+            }
+            shared::event::server::Cast::Shoot(ref dat) => {
+                let cube = PbrBundle {
+                    mesh: meshes.add(Mesh::from(shape::Cube { size: 0.3 })),
+                    material: materials.add(Color::rgb(0.0, 0.3, 0.7).into()),
+                    transform: Transform::from_translation(dat.shot_from),
+                    ..Default::default()
+                };
+
+                trace!(?cast.cast_id, "Spawning a bullet with id");
+                commands.spawn((
+                    cube,
+                    dat.clone(),
+                    cast.cast_id,
+                    CasterNetId(cast.caster_id),
+                    DespawnTime(Timer::new(Duration::from_secs(5), TimerMode::Once)),
+                ));
+            }
+            _ => {}
+        }
+    }
+}
+
+/// Conains the cast id of the tp
+#[derive(Component)]
+struct TpCube(NetEntId);
+
 fn on_someone_cast(
     mut someone_cast: ERFE<SomeoneCast>,
     other_players: Query<(Entity, &NetEntId, &Transform, Has<Player>), With<AnyUnit>>,
@@ -48,55 +115,53 @@ fn on_someone_cast(
     //TODO dont actually spawn a cube on cast
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut ev_w: EventWriter<WeTeleported>,
-    asset_server: Res<AssetServer>,
+    //mut ev_w: EventWriter<WeTeleported>,
+    //asset_server: Res<AssetServer>,
 ) {
     for cast in someone_cast.read() {
-        for (_ply_ent, ply_net_ent, ply_tfm, is_us) in &other_players {
-            if &cast.event.caster_id == ply_net_ent {
-                match cast.event.cast {
-                    shared::event::server::Cast::Teleport(target) => {
-                        // Spawn a sound at both the source and dest
-                        // TODO only play both if you go a far enough distance
-                        for loc in &[target /* ply_tfm.translation */] {
-                            commands.spawn((
-                                TransformBundle::from_transform(Transform::from_translation(*loc)),
-                                //Transform::from_xyz(0.0, 0.0, 0.0),
-                                AudioBundle {
-                                    source: asset_server.load("sounds/teleport.ogg"),
-                                    settings: PlaybackSettings::DESPAWN.with_spatial(true),
-                                    ..default()
-                                },
-                            ));
-                        }
+        for (casting_ent, net_ent_id, _caster_tfm, is_us) in &other_players {
+            if &cast.event.caster_id == net_ent_id {
+                let cast_data = &cast.event.cast;
 
-                        match is_us {
-                            true => {
-                                ev_w.send(WeTeleported(target));
-                            }
-                            false => trace!("Someone else teleported"),
-                        }
-                    }
-                    shared::event::server::Cast::Shoot(ref dat) => {
+                match cast.event.cast {
+                    shared::event::server::Cast::Teleport(targ) => {
                         let cube = PbrBundle {
-                            mesh: meshes.add(Mesh::from(shape::Cube { size: 0.3 })),
-                            material: materials.add(Color::rgb(0.0, 0.3, 0.7).into()),
-                            transform: Transform::from_translation(ply_tfm.translation),
+                            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+                            material: materials.add(Color::rgb(0.7, 0.8, 0.9).into()),
+                            transform: Transform::from_translation(targ + Vec3::new(0.0, 0.5, 0.0))
+                                .with_scale(Vec3::new(0.5, 20.0, 0.5)),
                             ..Default::default()
                         };
 
-                        trace!(?cast.event.cast_id, "Spawning a bullet with id");
                         commands.spawn((
                             cube,
-                            dat.clone(),
-                            cast.event.cast_id,
-                            CasterNetId(cast.event.caster_id),
-                            DespawnTime(Timer::new(Duration::from_secs(5), TimerMode::Once)),
-                            // TODO Add a netentid for referencing this item later
+                            DespawnTime(Timer::new(
+                                cast_data.get_skill_info().get_free_point(),
+                                TimerMode::Once,
+                            )),
+                            TpCube(cast.event.cast_id),
                         ));
                     }
+                    // Most skills do nothing when initially cast except start an animation
                     _ => {}
                 }
+                if is_us {
+                    // interp locally
+                    continue;
+                }
+
+                commands.entity(casting_ent).insert((
+                    AnimationTimer(Timer::new(
+                        cast_data.get_skill_info().get_total_duration(),
+                        TimerMode::Once,
+                    )),
+                    CastPointTimer(Timer::new(
+                        cast_data.get_skill_info().get_cast_point(),
+                        TimerMode::Once,
+                    )),
+                    CastNetId(cast.event.cast_id),
+                    cast_data.clone(),
+                ));
             }
         }
     }
