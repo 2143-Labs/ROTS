@@ -73,4 +73,17 @@ pub struct UnitDie {
     pub id: NetEntId,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Event)]
+pub struct SpawnInteractable {
+    pub id: NetEntId,
+    pub location: Vec3,
+    // TODO
+    //pub interaction_type: T
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Event)]
+pub struct DespawnInteractable {
+    pub id: NetEntId,
+}
+
 include!(concat!(env!("OUT_DIR"), "/client_event.rs"));
