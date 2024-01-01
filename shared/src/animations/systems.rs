@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
-use crate::event::{NetEntId, server::Cast, client::SomeoneCast};
+use crate::event::{client::SomeoneCast, server::Cast, NetEntId};
 
-use super::{CastPointTimer, AnimationTimer, CastNetId, DoCast};
+use super::{AnimationTimer, CastNetId, CastPointTimer, DoCast};
 
 //TODOs:
 // - [ ] player can cancel casting their stuff
@@ -22,9 +22,7 @@ pub fn tick_casts(
     mut do_cast: EventWriter<DoCast>,
     time: Res<Time<Virtual>>,
 ) {
-    for (ent, net_ent_id, mut cast_timer, mut anim_timer, cast, cast_net_id) in
-        &mut casting_units
-    {
+    for (ent, net_ent_id, mut cast_timer, mut anim_timer, cast, cast_net_id) in &mut casting_units {
         cast_timer.0.tick(time.delta());
         anim_timer.0.tick(time.delta());
 

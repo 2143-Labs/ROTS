@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::event::{server::Cast, NetEntId, client::SomeoneCast};
+use crate::event::{client::SomeoneCast, server::Cast, NetEntId};
 
 use bevy::prelude::*;
 

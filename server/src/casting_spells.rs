@@ -1,8 +1,11 @@
-use std::{time::Duration, mem::{discriminant, Discriminant}};
+use std::{
+    mem::{discriminant, Discriminant},
+    time::Duration,
+};
 
 use bevy::{prelude::*, utils::HashSet};
 use shared::{
-    animations::{AnimationTimer, CastPointTimer, CastNetId, DoCast},
+    animations::{AnimationTimer, CastNetId, CastPointTimer, DoCast},
     casting::{CasterNetId, DespawnTime, SharedCastingPlugin},
     event::{
         client::{BulletHit, SomeoneCast, SomeoneUpdateComponent, UnitDie, YourCastResult},
@@ -53,7 +56,10 @@ fn do_cast(mut do_cast: EventReader<DoCast>, mut commands: Commands, _time: Res<
 
         commands.spawn((
             PlayerCooldown(discriminant(&cast.cast), cast.caster_id),
-            DespawnTime(Timer::new(cast.cast.get_skill_info().cooldown, TimerMode::Once)),
+            DespawnTime(Timer::new(
+                cast.cast.get_skill_info().cooldown,
+                TimerMode::Once,
+            )),
         ));
         match cast.cast {
             shared::event::server::Cast::Teleport(_) => {} // TODO
@@ -91,7 +97,8 @@ fn on_player_try_cast(
             for (cd, time_left) in &cooldowns {
                 if cd.1 == *caster_net_id && discriminant(&cast.event) == cd.0 {
                     info!(?cd, "denied cast for cooldown");
-                    let event = EventToClient::YourCastResult(YourCastResult::No(time_left.0.remaining()));
+                    let event =
+                        EventToClient::YourCastResult(YourCastResult::No(time_left.0.remaining()));
                     send_event_to_server(&sr.handler, cast.endpoint, &event);
                     continue 'next_cast;
                 }

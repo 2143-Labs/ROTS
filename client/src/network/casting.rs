@@ -2,12 +2,13 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 use shared::{
+    animations::{AnimationTimer, CastNetId, CastPointTimer, DoCast},
     casting::{CasterNetId, DespawnTime, SharedCastingPlugin},
     event::{
         client::{BulletHit, SomeoneCast},
         NetEntId, ERFE,
     },
-    AnyUnit, animations::{AnimationTimer, CastPointTimer, CastNetId, DoCast},
+    AnyUnit,
 };
 
 use crate::{
@@ -56,7 +57,7 @@ fn do_cast_finish(
         info!(?cast, "Cast has completed");
         //let mut maybe_caster = None;
         //for (unit_ent, unit_tfm) {
-            //if 
+        //if
         //}
         match cast.cast {
             shared::event::server::Cast::Teleport(target) => {
@@ -127,16 +128,20 @@ fn on_someone_cast(
                         let cube = PbrBundle {
                             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
                             material: materials.add(Color::rgb(0.7, 0.8, 0.9).into()),
-                            transform: Transform::from_translation(targ + Vec3::new(0.0, 0.5, 0.0)).with_scale(Vec3::new(0.5, 20.0, 0.5)),
+                            transform: Transform::from_translation(targ + Vec3::new(0.0, 0.5, 0.0))
+                                .with_scale(Vec3::new(0.5, 20.0, 0.5)),
                             ..Default::default()
                         };
 
                         commands.spawn((
                             cube,
-                            DespawnTime(Timer::new(cast_data.get_skill_info().get_free_point(), TimerMode::Once)),
+                            DespawnTime(Timer::new(
+                                cast_data.get_skill_info().get_free_point(),
+                                TimerMode::Once,
+                            )),
                             TpCube(cast.event.cast_id),
                         ));
-                    },
+                    }
                     // Most skills do nothing when initially cast except start an animation
                     _ => {}
                 }

@@ -1,5 +1,3 @@
-
-
 use bevy::input::common_conditions::input_just_pressed;
 use bevy::prelude::*;
 
@@ -19,8 +17,8 @@ use shared::{
 };
 
 use crate::cameras::chat::ChatState;
-use crate::cameras::ClientAimDirection;
 use crate::cameras::notifications::Notification;
+use crate::cameras::ClientAimDirection;
 use crate::player::Player;
 use crate::states::GameState;
 
@@ -183,8 +181,10 @@ fn maybe_cancel_local_skill_animation(
         match skill_cast_result.event {
             YourCastResult::Ok(new_cast_id) => {
                 // server says we can keep casting, insert the new id we got
-                commands.entity(player.single()).insert(CastNetId(new_cast_id));
-            },
+                commands
+                    .entity(player.single())
+                    .insert(CastNetId(new_cast_id));
+            }
             YourCastResult::OffsetBy(_, _) => todo!(),
             YourCastResult::No(tl) => {
                 notifs.send(Notification(format!("Skill is on cooldown! {tl:?}")));
@@ -193,7 +193,7 @@ fn maybe_cancel_local_skill_animation(
                 commands
                     .entity(player.single())
                     .remove::<(AnimationTimer, Cast, CastPointTimer)>();
-            },
+            }
         }
     }
 }

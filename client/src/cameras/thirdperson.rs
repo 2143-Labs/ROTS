@@ -220,7 +220,8 @@ pub(crate) fn player_movement(
                 shared::animations::AnimationState::Backswing => {
                     // slowly turn back up
                     let si = cast.get_skill_info();
-                    let pct_recovered = (anim_timer.elapsed() - si.get_free_point()).as_secs_f32() / (si.get_total_duration() - si.get_free_point()).as_secs_f32();
+                    let pct_recovered = (anim_timer.elapsed() - si.get_free_point()).as_secs_f32()
+                        / (si.get_total_duration() - si.get_free_point()).as_secs_f32();
                     transform.rotation *= Quat::from_rotation_x(PI);
                     transform.rotation *= Quat::from_rotation_x(pct_recovered * PI);
                 }
