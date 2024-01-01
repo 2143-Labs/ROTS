@@ -30,9 +30,11 @@ pub struct SkillInfo {
     pub cooldown: Duration,
 }
 
+/// The timer representing the entire cast, from start until end of backswing
 #[derive(Component, Debug)]
 pub struct AnimationTimer(pub Timer);
 
+/// The timer representing the time until the spell happens
 #[derive(Component)]
 pub struct CastPointTimer(pub Timer);
 
