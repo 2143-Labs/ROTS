@@ -1,8 +1,8 @@
 use bevy::prelude::*;
-use shared::event::{
+use shared::{event::{
     client::{DespawnInteractable, SpawnInteractable},
     NetEntId, ERFE,
-};
+}, interactable::Interactable};
 
 use crate::states::GameState;
 
@@ -15,9 +15,6 @@ impl Plugin for InteractablePlugin {
         );
     }
 }
-
-#[derive(Component)]
-pub struct Interactable;
 
 fn on_interact_spawn(
     mut pd: ERFE<SpawnInteractable>,

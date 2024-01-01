@@ -8,7 +8,7 @@ use shared::{
     animations::{AnimationTimer, CastNetId, CastPointTimer, DoCast},
     casting::{CasterNetId, DespawnTime, SharedCastingPlugin},
     event::{
-        client::{BulletHit, SomeoneCast, SomeoneUpdateComponent, UnitDie, YourCastResult},
+        client::{BulletHit, SomeoneCast, SomeoneUpdateComponent, UnitDie, YourCastResult, SpawnInteractable},
         server::Cast,
         spells::{ShootingData, NPC},
         NetEntId, ERFE,
@@ -18,7 +18,7 @@ use shared::{
         ServerResources,
     },
     stats::Health,
-    AnyUnit,
+    AnyUnit, interactable::Interactable,
 };
 
 use crate::{EndpointToNetId, PlayerEndpoint, ServerState};
@@ -30,6 +30,7 @@ impl Plugin for CastingPlugin {
         app.add_plugins(SharedCastingPlugin)
             .add_event::<BulletHit>()
             .add_event::<UnitDie>()
+            .add_event::<DoSpawnInteractable>()
             .add_event::<DoCast>()
             .insert_resource(HitList::default())
             .add_systems(
@@ -41,6 +42,7 @@ impl Plugin for CastingPlugin {
                     on_die,
                     shared::animations::systems::tick_casts,
                     do_cast,
+                    spawn_interactable,
                 )
                     .run_if(in_state(ServerState::Running)),
             );
@@ -215,32 +217,56 @@ fn hit(
     }
 }
 
-fn on_die(
-    mut death: EventReader<UnitDie>,
+#[derive(Event)]
+struct DoSpawnInteractable(Vec3);
+fn spawn_interactable(
+    mut do_spawns: EventReader<DoSpawnInteractable>,
     sr: Res<ServerResources<EventToServer>>,
-    ents: Query<(Entity, &NetEntId), With<AnyUnit>>,
     clients: Query<&PlayerEndpoint>,
     mut commands: Commands,
 ) {
-    let deaths: Vec<EventToClient> = death
-        .read()
-        .inspect(|x| {
-            // If we have a unit with this id, despawn it.
-            for (unit_ent, ent_id) in &ents {
-                if ent_id == &x.id {
-                    commands.entity(unit_ent).despawn_recursive();
-                }
-            }
-        })
-        .map(|x| {
-            // TODO add a method on EventToX that turns a struct into the wrapped variant
-            EventToClient::UnitDie(x.clone())
-        })
-        .collect();
+    for spawn in do_spawns.read() {
+        let new_id = NetEntId(rand::random());
+        let event = EventToClient::SpawnInteractable(SpawnInteractable {
+            id: new_id,
+            location: spawn.0,
+        });
 
-    if deaths.len() > 0 {
+        warn!("Spawn interactable ev!");
+        commands.spawn((
+            Transform::from_translation(spawn.0),
+            new_id,
+            Interactable,
+            // TODO look for interactions
+        ));
+
         for c_net_client in &clients {
-            send_event_to_server_batch(&sr.handler, c_net_client.0, &deaths)
+            send_event_to_server(&sr.handler, c_net_client.0, &event)
         }
+    }
+}
+
+fn on_die(
+    mut death: EventReader<UnitDie>,
+    sr: Res<ServerResources<EventToServer>>,
+    ents: Query<(Entity, &NetEntId, &Transform), With<AnyUnit>>,
+    clients: Query<&PlayerEndpoint>,
+    mut commands: Commands,
+    mut do_spawns: EventWriter<DoSpawnInteractable>,
+) {
+    for death in death.read() {
+        let event = EventToClient::UnitDie(death.clone());
+        for (unit_ent, unit_ent_id, unit_tfm) in &ents {
+            if unit_ent_id == &death.id {
+                do_spawns.send(DoSpawnInteractable(unit_tfm.translation));
+                warn!("Spawn interactable!");
+                commands.entity(unit_ent).despawn_recursive();
+            }
+        }
+
+        for c_net_client in &clients {
+            send_event_to_server(&sr.handler, c_net_client.0, &event)
+        }
+
     }
 }
