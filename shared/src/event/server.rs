@@ -19,13 +19,13 @@ pub struct SendChat {
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
 pub struct Heartbeat {}
 
-#[derive(Debug, Clone, Serialize, Deserialize, Event)]
+#[derive(Debug, Clone, Serialize, Deserialize, Event, Component)]
 pub enum Cast {
     Teleport(Vec3),
     Shoot(ShootingData),
     ShootTargeted(NetEntId),
-    Aoe(Vec3),
     Melee,
+    Aoe(Vec3),
     Buff,
 }
 

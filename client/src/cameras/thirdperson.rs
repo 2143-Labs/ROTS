@@ -8,7 +8,7 @@ use shared::{unit::MovementIntention, Config, GameAction};
 
 use crate::{
     physics::Jumper,
-    player::{Player, PrimaryUnitControl},
+    player::{Player, PrimaryUnitControl}, skills::AnimationTimer,
 };
 
 use super::{ClientAimDirection, FreeCamState};
@@ -119,13 +119,14 @@ pub fn player_movement(
         &mut Jumper,
         &mut Player,
         &mut MovementIntention,
+        Option<&AnimationTimer>,
     )>,
     camera_query: Query<&CameraFollow>,
     keyboard_input: Res<Input<KeyCode>>,
     config: Res<Config>,
     time: Res<Time>,
 ) {
-    for (mut transform, _player_ent, mut jumper, _player, mut movement) in player_query.iter_mut() {
+    for (mut transform, _player_ent, mut jumper, _player, mut movement, mut anim) in player_query.iter_mut() {
         let mut move_vector = Vec2::ZERO;
         if config.pressed(&keyboard_input, GameAction::MoveForward) {
             move_vector += Vec2::new(1.0, 0.0);
@@ -157,8 +158,14 @@ pub fn player_movement(
             transform.translation +=
                 Vec3::new(movem.x, 0.0, movem.y) * PLAYER_SPEED * time.delta_seconds();
 
+            let anim_offset = if let Some(a) = anim {
+                a.0.elapsed_secs()
+            } else {
+                0.0
+            };
+
             // point in the direction you are moving
-            transform.rotation = Quat::from_rotation_y(movem.x.atan2(movem.y));
+            transform.rotation = Quat::from_rotation_y(anim_offset + movem.x.atan2(movem.y));
 
             movem
         } else {
