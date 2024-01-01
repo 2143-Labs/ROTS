@@ -43,6 +43,10 @@ fn on_player_try_cast(
 ) {
     for cast in casts.read() {
         if let Some(caster_net_id) = endpoint_mapping.map.get(&cast.endpoint) {
+            //if !cooldown_check() {
+                //return
+            //}
+            
             // if we can cast, then send to all endpoints including us.
             let new_cast_id = NetEntId::random();
             let event = EventToClient::SomeoneCast(SomeoneCast {

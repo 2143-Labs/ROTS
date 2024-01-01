@@ -23,7 +23,6 @@ pub enum NPC {
 pub enum AIType {
     None,
     WalkToNearestPlayer,
-    //TurnToNearestPlayer,
 }
 
 impl NPC {
@@ -36,7 +35,6 @@ impl NPC {
     pub fn get_ai_component(&self) -> AIType {
         match self {
             NPC::Penguin => AIType::WalkToNearestPlayer,
-
         }
     }
 }

@@ -85,6 +85,7 @@ fn on_someone_cast(
                             ..Default::default()
                         };
 
+                        trace!(?cast.event.cast_id, "Spawning a bullet with id");
                         commands.spawn((
                             cube,
                             dat.clone(),
@@ -120,7 +121,11 @@ fn on_someone_hit(
         // if we dont know about the bullet, return
         let bullet_caster_id = match bullet_caster_id {
             Some(s) => s.0,
-            None => return warn!("Unknown bullet"),
+            // This happens when the bullet hit packet arrives before the "spawn bullet" packet.
+            // TODO! maybe add this to a queue of hit events that we poll every frame until we find
+            // the matching bullet
+            // eg. `Local<Vec<BulletHit>>`
+            None => return trace!(?hit.event.bullet, "Unknown bullet"),
         };
 
         let mut attacker_name = None;

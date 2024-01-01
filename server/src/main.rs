@@ -324,7 +324,7 @@ fn on_movement(
 
             for (c_net_client, c_net_ent, mut c_tfm, mut intent) in &mut clients {
                 if moved_net_id == c_net_ent {
-                    info!(?event);
+                    //info!(?event);
                     // If this person moved, update their transform serverside
                     match movement.event {
                         ChangeMovement::SetTransform(new_tfm) => *c_tfm = new_tfm,
