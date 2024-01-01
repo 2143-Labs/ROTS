@@ -130,6 +130,7 @@ pub(crate) fn player_movement(
         &mut Jumper,
         &mut Player,
         &mut MovementIntention,
+        // are we casting anything?
         Option<(&AnimationTimer, &Cast)>,
     )>,
     camera_query: Query<&CameraFollow>,
@@ -167,8 +168,10 @@ pub(crate) fn player_movement(
         let final_move = if move_vector.length_squared() > 0.0 {
             let camera = camera_query.single();
             let rotation = Vec2::from_angle(-camera.yaw_radians);
+            // final intended movement
             let mut movem = move_vector.normalize().rotate(rotation);
 
+            // If you are casting something, you will move slower
             if let Some((anim_timer, cast)) = casting {
                 let anim_timer = &anim_timer.0;
                 let anim = cast.get_current_animation(anim_timer.elapsed());
@@ -195,6 +198,7 @@ pub(crate) fn player_movement(
         let movem = last_movement.0;
         transform.rotation = Quat::from_rotation_y(movem.x.atan2(movem.y));
 
+        // If we are casting, animate our model
         if let Some((anim_timer, cast)) = casting {
             let anim_timer = &anim_timer.0;
             let anim = cast.get_current_animation(anim_timer.elapsed());
