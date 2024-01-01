@@ -47,7 +47,7 @@ impl Plugin for CastingPlugin {
 #[derive(Component, Debug)]
 pub(crate) struct PlayerCooldown(pub Discriminant<Cast>, pub NetEntId);
 
-fn do_cast(mut do_cast: EventReader<DoCast>, mut commands: Commands, time: Res<Time<Virtual>>) {
+fn do_cast(mut do_cast: EventReader<DoCast>, mut commands: Commands, _time: Res<Time<Virtual>>) {
     for DoCast(cast) in do_cast.read() {
         trace!(?cast, "Cast has completed");
 
