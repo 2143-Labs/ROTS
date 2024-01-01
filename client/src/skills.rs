@@ -180,10 +180,16 @@ fn maybe_cancel_local_skill_animation(
     for skill_cast_result in skill_cast_results.read() {
         match skill_cast_result.event {
             YourCastResult::Ok(new_cast_id) => {
+                // server says we can keep casting, insert the new id we got
                 commands.entity(player.single()).insert(CastNetId(new_cast_id));
             },
             YourCastResult::OffsetBy(_, _) => todo!(),
-            YourCastResult::No => todo!(),
+            YourCastResult::No => {
+                // we got denied, stop casting, refund everything
+                commands
+                    .entity(player.single())
+                    .remove::<(AnimationTimer, Cast, CastPointTimer)>();
+            },
         }
     }
 }

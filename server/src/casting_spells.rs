@@ -44,8 +44,8 @@ impl Plugin for CastingPlugin {
     }
 }
 
-#[derive(Component)]
-struct PlayerCooldown(Discriminant<Cast>, NetEntId);
+#[derive(Component, Debug)]
+pub(crate) struct PlayerCooldown(pub Discriminant<Cast>, pub NetEntId);
 
 fn do_cast(mut do_cast: EventReader<DoCast>, mut commands: Commands, time: Res<Time<Virtual>>) {
     for DoCast(cast) in do_cast.read() {
@@ -85,16 +85,17 @@ fn on_player_try_cast(
     sr: Res<ServerResources<EventToServer>>,
     mut commands: Commands,
 ) {
-    for cast in casts.read() {
+    'next_cast: for cast in casts.read() {
         if let Some(caster_net_id) = endpoint_mapping.map.get(&cast.endpoint) {
             for cd in &cooldowns {
                 if cd.1 == *caster_net_id && discriminant(&cast.event) == cd.0 {
-                    warn!("denied cast for cooldown");
+                    warn!(?cd, "denied cast for cooldown");
                     let event = EventToClient::YourCastResult(YourCastResult::No);
                     send_event_to_server(&sr.handler, cast.endpoint, &event);
-                    continue;
+                    continue 'next_cast;
                 }
             }
+
             // if we can cast, then send to all endpoints including us.
             let new_cast_id = NetEntId::random();
             let event = EventToClient::SomeoneCast(SomeoneCast {
@@ -113,7 +114,7 @@ fn on_player_try_cast(
 
             for (casting_ent, net_ent_id, _current_cast) in &casting_units {
                 if net_ent_id == caster_net_id {
-                    info!("Adding the cast to the entity");
+                    //info!("Adding the cast to the entity");
                     commands.entity(casting_ent).insert((
                         AnimationTimer(Timer::new(
                             cast.event.get_skill_info().get_total_duration(),

@@ -46,7 +46,7 @@ pub enum YourCastResult {
     Ok(NetEntId),
     /// Go ahread with cast, but you had some extra cd to account for
     OffsetBy(Duration, NetEntId),
-    /// no, cant cast
+    /// You can't cast.
     No,
 }
 
