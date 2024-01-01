@@ -1,3 +1,5 @@
+use std::mem::discriminant;
+
 use bevy::input::common_conditions::input_just_pressed;
 use bevy::prelude::*;
 
@@ -142,7 +144,14 @@ fn start_local_skill_cast_animation(
         if let Some((anim_timer, existing_cast_data)) = existing_cast {
             let current_anim_state =
                 existing_cast_data.get_current_animation(anim_timer.0.elapsed());
-            info!(?current_anim_state);
+
+            trace!(?current_anim_state, ?existing_cast_data);
+
+            // TODO should some skills be self-cancelling?
+            // cancel the skill if we are already casting it
+            if discriminant(existing_cast_data) == discriminant(cast) {
+                can_cast = false;
+            }
             match current_anim_state {
                 shared::animations::AnimationState::FrontSwing => {}
                 shared::animations::AnimationState::WindUp => can_cast = false,
@@ -178,6 +187,7 @@ fn maybe_cancel_local_skill_animation(
     mut notifs: EventWriter<Notification>,
 ) {
     for skill_cast_result in skill_cast_results.read() {
+        trace!(?skill_cast_result);
         match skill_cast_result.event {
             YourCastResult::Ok(new_cast_id) => {
                 // server says we can keep casting, insert the new id we got
