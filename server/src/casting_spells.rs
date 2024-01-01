@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{time::Duration, mem::{discriminant, Discriminant}};
 
 use bevy::{prelude::*, utils::HashSet};
 use shared::{
@@ -44,9 +44,17 @@ impl Plugin for CastingPlugin {
     }
 }
 
-fn do_cast(mut do_cast: EventReader<DoCast>, mut commands: Commands) {
+#[derive(Component)]
+struct PlayerCooldown(Discriminant<Cast>, NetEntId);
+
+fn do_cast(mut do_cast: EventReader<DoCast>, mut commands: Commands, time: Res<Time<Virtual>>) {
     for DoCast(cast) in do_cast.read() {
         info!(?cast, "Cast has completed");
+
+        commands.spawn((
+            PlayerCooldown(discriminant(&cast.cast), cast.caster_id),
+            DespawnTime(Timer::new(cast.cast.get_skill_info().cooldown, TimerMode::Once)),
+        ));
         match cast.cast {
             shared::event::server::Cast::Teleport(_) => {} // TODO
             shared::event::server::Cast::Shoot(ref shot_data) => {
@@ -73,11 +81,20 @@ fn on_player_try_cast(
     endpoint_mapping: Res<EndpointToNetId>,
     clients: Query<(&PlayerEndpoint, &NetEntId)>,
     casting_units: Query<(Entity, &NetEntId, Option<(&AnimationTimer, &Cast)>), With<AnyUnit>>,
+    cooldowns: Query<&PlayerCooldown>,
     sr: Res<ServerResources<EventToServer>>,
     mut commands: Commands,
 ) {
     for cast in casts.read() {
         if let Some(caster_net_id) = endpoint_mapping.map.get(&cast.endpoint) {
+            for cd in &cooldowns {
+                if cd.1 == *caster_net_id && discriminant(&cast.event) == cd.0 {
+                    warn!("denied cast for cooldown");
+                    let event = EventToClient::YourCastResult(YourCastResult::No);
+                    send_event_to_server(&sr.handler, cast.endpoint, &event);
+                    continue;
+                }
+            }
             // if we can cast, then send to all endpoints including us.
             let new_cast_id = NetEntId::random();
             let event = EventToClient::SomeoneCast(SomeoneCast {

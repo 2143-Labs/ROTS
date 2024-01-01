@@ -214,8 +214,8 @@ pub(crate) fn player_movement(
                 shared::animations::AnimationState::WindDown => {
                     // flipped upside down like a turtle
                     transform.rotation *= Quat::from_rotation_x(PI);
+                    transform.rotation *= Quat::from_rotation_z(time_offset.sin() * 0.5);
                     transform.rotation *= Quat::from_rotation_y(time_offset);
-                    transform.rotation *= Quat::from_rotation_z(time_offset.sin());
                 }
                 shared::animations::AnimationState::Backswing => {
                     // slowly turn back up
