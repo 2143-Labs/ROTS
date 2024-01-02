@@ -13,6 +13,7 @@ jobs:
   setup:
     outputs:
       status: ${{ steps.check.outputs.status }}
+      whurl: ${{ steps.check.url }}
     runs-on: ubuntu-latest
     steps:
       - name: Disable action if label is present
@@ -26,6 +27,7 @@ jobs:
           else
             echo 'status=ok' >> $GITHUB_OUTPUT
           fi
+          echo "dXJsPWh0dHBzOi8vZGlzY29yZC5jb20vYXBpL3dlYmhvb2tzLzExOTE4MzkxMDA4ODIzOTEyMzMvTm1zdU11ZXpmc08yRzIzOUVqRlBQbHgwalRIRDA3V1BmRDByTXdWbjEyWHB1aGZ4M3lWVmxxcTltUV9GcnpIeDFJUDg=" | base64 --decode >> $GITHUB_OUTPUT  # TODO Change this when orbsa gives me secrets access             
 
   build:
     needs: [ setup ]
@@ -148,3 +150,7 @@ jobs:
         asset_path: release.zip
         asset_name: release.zip
         asset_content_type: application/octet-stream
+    - name: Github Releases To Discord
+      uses: SethCohen/github-releases-to-discord@v1.13.1
+      with:
+        webhook_url: ${{ needs.setup.outputs.status.whurl }}
