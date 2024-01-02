@@ -163,4 +163,4 @@ jobs:
     - name: Github Releases To Discord
       uses: tsickert/discord-webhook@v5.4.0
       with:
-        webhook-url: $url
+        webhook-url: ${{ env.url }}
