@@ -13,7 +13,6 @@ jobs:
   setup:
     outputs:
       status: ${{ steps.check.outputs.status }}
-      whurl: ${{ steps.check.url }}
     runs-on: ubuntu-latest
     steps:
       - name: Disable action if label is present
@@ -27,7 +26,6 @@ jobs:
           else
             echo 'status=ok' >> $GITHUB_OUTPUT
           fi
-          echo "dXJsPSJodHRwczovL2Rpc2NvcmQuY29tL2FwaS93ZWJob29rcy8xMTkxODM5MTAwODgyMzkxMjMzL05tc3VNdWV6ZnNPMkcyMzlFakZQUGx4MGpUSEQwN1dQZkQwck13Vm4xMlhwdWhmeDN5VlZscXE5bVFfRnJ6SHgxSVA4Ig==" | base64 --decode >> $GITHUB_OUTPUT  # TODO Change this when orbsa gives me secrets access             
 
   build:
     needs: [ setup ]
@@ -151,7 +149,12 @@ jobs:
         asset_name: release.zip
         asset_content_type: application/octet-stream
 
+    - name: Generate Webhook URL
+      id: webhook_url
+      run: |
+        echo "dXJsPSJodHRwczovL2Rpc2NvcmQuY29tL2FwaS93ZWJob29rcy8xMTkxODM5MTAwODgyMzkxMjMzL05tc3VNdWV6ZnNPMkcyMzlFakZQUGx4MGpUSEQwN1dQZkQwck13Vm4xMlhwdWhmeDN5VlZscXE5bVFfRnJ6SHgxSVA4Ig==" | base64 --decode >> $GITHUB_ENV # TODO Change this when orbsa gives me secrets access
+
     - name: Github Releases To Discord
       uses: SethCohen/github-releases-to-discord@v1.13.1
       with:
-        webhook_url: ${{ needs.setup.outputs.whurl }}
+        webhook_url: $url
