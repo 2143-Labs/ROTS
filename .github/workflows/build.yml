@@ -163,7 +163,7 @@ jobs:
     - name: Github Releases To Discord
       uses: tsickert/discord-webhook@v5.4.0
       with:
-        content: A new release has appeared: Run ${{github.run_number}} built for ${{ needs.setup.outputs.builds }}
+        content: "A new release has appeared: Run ${{github.run_number}} built for ${{ needs.setup.outputs.builds }}"
         username: ROTS Release Bot
         filename: release.zip
         webhook-url: ${{ env.url }}
