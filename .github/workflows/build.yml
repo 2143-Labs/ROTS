@@ -89,7 +89,7 @@ jobs:
 
   create_release:
     runs-on: ubuntu-latest
-    needs: [ build, upload_assets_as_artifact ]
+    needs: [ setup, build, upload_assets_as_artifact ]
     permissions:
       contents: write
     #outputs:
@@ -120,8 +120,8 @@ jobs:
       with:
         tag_name: v${{ github.run_number }}
         release_name: "PR: ${{github.event.pull_request.title}} (v ${{github.run_number}} )"
-        draft: true
-        prerelease: ${{ ! contains(github.event.pull_request.labels.*.name, 'ready') }}
+        draft: ${{ ! contains(github.event.pull_request.labels.*.name, 'ready') }}
+        prerelease: true
 
     - name: Create Release
       if: github.event_name == 'push'
@@ -150,6 +150,7 @@ jobs:
         asset_path: release.zip
         asset_name: release.zip
         asset_content_type: application/octet-stream
+
     - name: Github Releases To Discord
       uses: SethCohen/github-releases-to-discord@v1.13.1
       with:
