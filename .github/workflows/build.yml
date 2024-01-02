@@ -157,5 +157,4 @@ jobs:
       with:
         content: "A new release has appeared: Run ${{github.run_number}} built for ${{ needs.setup.outputs.builds }}\n URL: ${{ steps.create_release_real && steps.create_release_real.outputs.url || steps.create_release_draft.outputs.url }}"
         username: ROTS Release Bot
-        filename: release.zip
         webhook-url: ${{ env.url }}
