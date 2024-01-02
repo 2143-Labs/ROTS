@@ -29,7 +29,7 @@ jobs:
             echo 'status=ok' >> $GITHUB_OUTPUT
           fi
 
-          if [ "$BUILD_WINDOWS" == "true" ];
+          if [ "$BUILD_WINDOWS" == "true" ]; then
             echo 'builds=["windows-latest", "ubuntu-latest"]' >> $GITHUB_OUTPUT
           else
             echo 'builds=["ubuntu-latest"]' >> $GITHUB_OUTPUT
