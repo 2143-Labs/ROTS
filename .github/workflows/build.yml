@@ -153,4 +153,4 @@ jobs:
     - name: Github Releases To Discord
       uses: SethCohen/github-releases-to-discord@v1.13.1
       with:
-        webhook_url: ${{ needs.setup.outputs.status.whurl }}
+        webhook_url: ${{ needs.setup.outputs.whurl }}
