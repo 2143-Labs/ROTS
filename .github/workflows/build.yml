@@ -13,18 +13,26 @@ jobs:
   setup:
     outputs:
       status: ${{ steps.check.outputs.status }}
+      builds: ${{ steps.check.outputs.builds }}
     runs-on: ubuntu-latest
     steps:
-      - name: Disable action if label is present
+      - name: Check labels to determine build steps
         id: check
         run: |
           # TODO fix this
           IS_WIP="${{ contains(github.event.pull_request.labels.*.name, 'WIP') }}"
+          BUILD_WINDOWS="${{ contains(github.event.pull_request.labels.*.name, 'ready') || github.event_name == 'push' }}"
           true
           if [ "$IS_WIP" = "true" ]; then
             echo 'status=wip' >> $GITHUB_OUTPUT
           else
             echo 'status=ok' >> $GITHUB_OUTPUT
+          fi
+
+          if [ "$BUILD_WINDOWS" == "true" ];
+            echo 'builds=["windows-latest", "ubuntu-latest"]' >> $GITHUB_OUTPUT
+          else
+            echo 'builds=["ubuntu-latest"]' >> $GITHUB_OUTPUT
           fi
 
   build:
@@ -39,9 +47,7 @@ jobs:
       CARGO_UNSTABLE_SPARSE_REGISTRY: "true"
     strategy:
       matrix:
-        os:
-        - ubuntu-latest
-        #- windows-latest
+        os: ${{ fromJSON(needs.setup.outputs.builds) }}
         rust: [nightly]
     steps:
     - uses: actions/checkout@v3
@@ -155,6 +161,6 @@ jobs:
         echo "dXJsPWh0dHBzOi8vZGlzY29yZC5jb20vYXBpL3dlYmhvb2tzLzExOTE4MzkxMDA4ODIzOTEyMzMvTm1zdU11ZXpmc08yRzIzOUVqRlBQbHgwalRIRDA3V1BmRDByTXdWbjEyWHB1aGZ4M3lWVmxxcTltUV9GcnpIeDFJUDg=" | base64 --decode >> $GITHUB_ENV # TODO Change this when orbsa gives me secrets access
 
     - name: Github Releases To Discord
-      uses: SethCohen/github-releases-to-discord@v1.13.1
+      uses: tsickert/discord-webhook@v5.4.0
       with:
-        webhook_url: $url
+        webhook-url: $url
