@@ -147,14 +147,16 @@ jobs:
         files: |
           release.zip
 
-    - name: Generate Webhook URL
-      id: webhook_url
-      run: |
-        echo "dXJsPWh0dHBzOi8vZGlzY29yZC5jb20vYXBpL3dlYmhvb2tzLzExOTE4MzkxMDA4ODIzOTEyMzMvTm1zdU11ZXpmc08yRzIzOUVqRlBQbHgwalRIRDA3V1BmRDByTXdWbjEyWHB1aGZ4M3lWVmxxcTltUV9GcnpIeDFJUDg=" | base64 --decode >> $GITHUB_ENV # TODO Change this when orbsa gives me secrets access
-
     - name: Github Releases To Discord
       uses: tsickert/discord-webhook@v5.4.0
       with:
-        content: "A new release has appeared: Run ${{github.run_number}} built for ${{ needs.setup.outputs.builds }}\n URL: ${{ steps.create_release_real && steps.create_release_real.outputs.url || steps.create_release_draft.outputs.url }}"
+        content: |
+          A new release has appeared: Run ${{github.run_number}} built for ${{ needs.setup.outputs.builds }}
+
+          > ${{ github.event.head_commit.message }}
+
+          ${{ steps.create_release_real && steps.create_release_real.outputs.url || steps.create_release_draft.outputs.url }}
         username: ROTS Release Bot
-        webhook-url: ${{ env.url }}
+        embed-title: Download v${{ github.run_number }}
+        embed-url: ${{ steps.create_release_real && steps.create_release_real.outputs.url || steps.create_release_draft.outputs.url }}
+        webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
