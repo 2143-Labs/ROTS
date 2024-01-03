@@ -13,18 +13,26 @@ jobs:
   setup:
     outputs:
       status: ${{ steps.check.outputs.status }}
+      builds: ${{ steps.check.outputs.builds }}
     runs-on: ubuntu-latest
     steps:
-      - name: Disable action if label is present
+      - name: Check labels to determine build steps
         id: check
         run: |
           # TODO fix this
           IS_WIP="${{ contains(github.event.pull_request.labels.*.name, 'WIP') }}"
+          BUILD_WINDOWS="${{ contains(github.event.pull_request.labels.*.name, 'ready') || github.event_name == 'push' }}"
           true
           if [ "$IS_WIP" = "true" ]; then
             echo 'status=wip' >> $GITHUB_OUTPUT
           else
             echo 'status=ok' >> $GITHUB_OUTPUT
+          fi
+
+          if [ "$BUILD_WINDOWS" == "true" ]; then
+            echo 'builds=["windows-latest", "ubuntu-latest"]' >> $GITHUB_OUTPUT
+          else
+            echo 'builds=["ubuntu-latest"]' >> $GITHUB_OUTPUT
           fi
 
   build:
@@ -39,9 +47,7 @@ jobs:
       CARGO_UNSTABLE_SPARSE_REGISTRY: "true"
     strategy:
       matrix:
-        os:
-        - ubuntu-latest
-        - windows-latest
+        os: ${{ fromJSON(needs.setup.outputs.builds) }}
         rust: [nightly]
     steps:
     - uses: actions/checkout@v3
@@ -87,7 +93,7 @@ jobs:
 
   create_release:
     runs-on: ubuntu-latest
-    needs: [ build, upload_assets_as_artifact ]
+    needs: [ setup, build, upload_assets_as_artifact ]
     permissions:
       contents: write
     #outputs:
@@ -109,42 +115,46 @@ jobs:
         bash -c "rm -rf ubuntu-latest || true"
         bash -c "chmod +x client server || true"
 
-    - name: Create Draft
-      if: github.event_name == 'pull_request'
-      id: create_release_draft
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: v${{ github.run_number }}
-        release_name: "PR: ${{github.event.pull_request.title}} (v ${{github.run_number}} )"
-        draft: true
-        prerelease: ${{ ! contains(github.event.pull_request.labels.*.name, 'ready') }}
-
-    - name: Create Release
-      if: github.event_name == 'push'
-      id: create_release_real
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: v${{ github.run_number }}
-        release_name: "Release ${{github.run_number}}"
-        draft: false
-        prerelease: false
-
     - name: Create Zip
       uses: thedoctor0/zip-release@0.7.1
       with:
         type: 'zip'
         filename: 'release.zip'
 
-    - name: Attach Executable to Release
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Create Draft
+      if: github.event_name == 'pull_request'
+      id: create_release_draft
+      uses: softprops/action-gh-release@v1
       with:
-        upload_url: ${{ steps.create_release_real && steps.create_release_real.outputs.upload_url || steps.create_release_draft.outputs.upload_url }}
-        asset_path: release.zip
-        asset_name: release.zip
-        asset_content_type: application/octet-stream
+        token: ${{ secrets.GITHUB_TOKEN }}
+        tag_name: v${{ github.run_number }}
+        name: "PR: ${{github.event.pull_request.title}} (v ${{github.run_number}} )"
+        draft: ${{ ! contains(github.event.pull_request.labels.*.name, 'ready') }}
+        prerelease: true
+        files: |
+          release.zip
+
+    - name: Create Release
+      if: github.event_name == 'push'
+      id: create_release_real
+      uses: softprops/action-gh-release@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        tag_name: v${{ github.run_number }}
+        name: "Release ${{github.run_number}}"
+        draft: false
+        prerelease: false
+        files: |
+          release.zip
+
+    - name: Generate Webhook URL
+      id: webhook_url
+      run: |
+        echo "dXJsPWh0dHBzOi8vZGlzY29yZC5jb20vYXBpL3dlYmhvb2tzLzExOTE4MzkxMDA4ODIzOTEyMzMvTm1zdU11ZXpmc08yRzIzOUVqRlBQbHgwalRIRDA3V1BmRDByTXdWbjEyWHB1aGZ4M3lWVmxxcTltUV9GcnpIeDFJUDg=" | base64 --decode >> $GITHUB_ENV # TODO Change this when orbsa gives me secrets access
+
+    - name: Github Releases To Discord
+      uses: tsickert/discord-webhook@v5.4.0
+      with:
+        content: "A new release has appeared: Run ${{github.run_number}} built for ${{ needs.setup.outputs.builds }}\n URL: ${{ steps.create_release_real && steps.create_release_real.outputs.url || steps.create_release_draft.outputs.url }}"
+        username: ROTS Release Bot
+        webhook-url: ${{ env.url }}
