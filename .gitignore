@@ -2,5 +2,5 @@ target/
 config.yaml
 .vscode/
 **/.cargo/*
-client/out/*.js
-client/out/*.wasm
+wasm_dist/*.js
+wasm_dist/*.wasm
