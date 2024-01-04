@@ -31,20 +31,20 @@ features = [
   "bevy_text",          # Text/font rendering
   "bevy_ui",            # UI toolkit
   "animation",          # Animation support
-  #"tonemapping_luts",   # Support different camera Tonemapping modes (enables KTX2+zstd)
+  "tonemapping_luts",   # Support different camera Tonemapping modes (enables KTX2+zstd)
   "default_font",       # Embed a minimal default font for text/UI
 
   # File formats:
-  # "png",    # PNG image format for simple 2D images
-  # "hdr",    # HDR images
-  # "ktx2",   # Preferred format for GPU textures
-  # "zstd",   # ZSTD compression support in KTX2 files
-  # "vorbis", # Audio: OGG Vorbis
+  "png",    # PNG image format for simple 2D images
+  "hdr",    # HDR images
+  "ktx2",   # Preferred format for GPU textures
+  "zstd",   # ZSTD compression support in KTX2 files
+  "vorbis", # Audio: OGG Vorbis
 
   # Platform-specific:
   # "x11",                   # Linux: Support X11 windowing system
   # "android_shared_stdcxx", # Android: use shared C++ library
-  "webgl2",                # Web: use WebGL2 instead of WebGPU
+  # "webgl2",                # Web: use WebGL2 instead of WebGPU
 
   ###########################################
   # These are other (non-default) features: #
@@ -110,5 +110,6 @@ noise = "0.8.2"
 
 [features]
 inspector = ["dep:bevy-inspector-egui"]
-mio-net = ["dep:message-io", "shared/mio-net"]
+mio-net = ["dep:message-io", "shared/mio-net", "bevy/x11"]
+web = ["bevy/webgl2"]
 default = ["mio-net"]
