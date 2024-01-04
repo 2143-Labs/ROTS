@@ -21,6 +21,9 @@ lr:
 
 
 web:
-	fish -c "cd client; cargo b --no-default-features --features web --target wasm32-unknown-unknown --bin client"
+	# requires wasm-bindgen-cli + binaryen
+	fish -c "cd client; cargo b --profile release-web --no-default-features --features web --target wasm32-unknown-unknown --bin client"
 	wasm-bindgen --no-typescript --target web --out-dir ./wasm_dist/ --out-name "rots" ./target/wasm32-unknown-unknown/debug/client.wasm
-	rsync -r ./wasm_dist/ server.local:john2143.com/pages/
+	mv ./wasm_dist/rots_bg.wasm ./wasm_dist/rots_bg.big.wasm
+	wasm-opt -Oz -o ./wasm_dist/rots_bg.wasm ./wasm_dist/rots_bg.big.wasm
+	rsync -r ./wasm_dist/ server.local:john2143.com/rots
