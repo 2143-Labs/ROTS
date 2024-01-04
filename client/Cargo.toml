@@ -111,5 +111,5 @@ noise = "0.8.2"
 [features]
 inspector = ["dep:bevy-inspector-egui"]
 mio-net = ["dep:message-io", "shared/mio-net", "bevy/x11"]
-web = ["bevy/webgl2"]
+web = []
 default = ["mio-net"]
