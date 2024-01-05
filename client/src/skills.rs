@@ -8,6 +8,7 @@ use shared::animations::CastNetId;
 use shared::animations::CastPointTimer;
 use shared::event::ERFE;
 
+use shared::event::NetEntId;
 use shared::event::client::YourCastResult;
 use shared::event::spells::ShootingData;
 use shared::netlib::EventToClient;
@@ -77,17 +78,27 @@ fn cast_skill_click(
     ev_sa.send(StartLocalAnimation(Cast::Melee));
 }
 
+#[derive(Component)]
+struct CurrentTargetingCursor(NetEntId);
+
 fn cast_skill_2(
     keyboard_input: Res<Input<KeyCode>>,
     config: Res<Config>,
-    player: Query<&Transform, With<Player>>,
+    player: Query<(&Transform, Option<&CurrentTargetingCursor>), With<Player>>,
     aim_dir: Query<&ClientAimDirection>,
     mut ev_sa: EventWriter<StartLocalAnimation>,
 ) {
-    let transform = player.single();
+    let (transform, target_ent) = player.single();
     let aim_dir = aim_dir.single().0;
 
-    if config.pressed(&keyboard_input, shared::GameAction::MoveBackward) {
+    if config.pressed(&keyboard_input, shared::GameAction::Mod1) {
+        if let Some(ent) = target_ent {
+            let event = Cast::ShootTargeted(ent.0);
+            ev_sa.send(StartLocalAnimation(event));
+        } else {
+            warn!("Not targeting anything, not sure what to shoot");
+        }
+    } else if config.pressed(&keyboard_input, shared::GameAction::MoveBackward) {
         let target = transform.translation
             + Vec3 {
                 x: aim_dir.cos(),
@@ -97,33 +108,42 @@ fn cast_skill_2(
 
         let event = Cast::Teleport(target);
         ev_sa.send(StartLocalAnimation(event));
+    } else {
+        let event = Cast::Aoe(transform.translation);
+        ev_sa.send(StartLocalAnimation(event));
     }
 }
 
 fn cast_skill_1(
-    //keyboard_input: Res<Input<KeyCode>>,
-    //config: Res<Config>,
+    keyboard_input: Res<Input<KeyCode>>,
+    config: Res<Config>,
     player: Query<&Transform, With<Player>>,
     aim_dir: Query<&ClientAimDirection>,
     mut ev_sa: EventWriter<StartLocalAnimation>,
 ) {
-    let transform = player.single();
 
-    let aim_dir = aim_dir.single().0;
+    if config.pressed(&keyboard_input, shared::GameAction::Mod1) {
+        let event = Cast::Buff;
+        ev_sa.send(StartLocalAnimation(event));
+    } else {
+        let transform = player.single();
 
-    let target = transform.translation
-        + Vec3 {
-            x: aim_dir.cos(),
-            y: 0.0,
-            z: -aim_dir.sin(),
+        let aim_dir = aim_dir.single().0;
+
+        let target = transform.translation
+            + Vec3 {
+                x: aim_dir.cos(),
+                y: 0.0,
+                z: -aim_dir.sin(),
+            };
+
+        let shooting_data = ShootingData {
+            shot_from: transform.translation,
+            target,
         };
-
-    let shooting_data = ShootingData {
-        shot_from: transform.translation,
-        target,
-    };
-    let event = Cast::Shoot(shooting_data);
-    ev_sa.send(StartLocalAnimation(event));
+        let event = Cast::Shoot(shooting_data);
+        ev_sa.send(StartLocalAnimation(event));
+    }
 }
 
 fn start_local_skill_cast_animation(
@@ -162,7 +182,7 @@ fn start_local_skill_cast_animation(
         }
 
         if !can_cast {
-            warn!(?cast, "Could not cast because of existing cast animation");
+            debug!(?cast, "Could not cast because of existing cast animation");
             continue;
         }
 

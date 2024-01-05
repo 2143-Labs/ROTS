@@ -54,7 +54,7 @@ fn do_cast_finish(
     mut ev_w: EventWriter<WeTeleported>,
 ) {
     for DoCast(cast) in do_cast.read() {
-        info!(?cast, "Cast has completed");
+        debug!(?cast, "Cast has completed");
         //let mut maybe_caster = None;
         //for (unit_ent, unit_tfm) {
         //if
@@ -81,7 +81,7 @@ fn do_cast_finish(
                     }
                     false => trace!("Someone else teleported"),
                 }
-            }
+            },
             shared::event::server::Cast::Shoot(ref dat) => {
                 let cube = PbrBundle {
                     mesh: meshes.add(Mesh::from(shape::Cube { size: 0.3 })),
@@ -98,8 +98,10 @@ fn do_cast_finish(
                     CasterNetId(cast.caster_id),
                     DespawnTime(Timer::new(Duration::from_secs(5), TimerMode::Once)),
                 ));
-            }
-            _ => {}
+            },
+            ref rest => {
+                trace!(?rest, "Cast event");
+            },
         }
     }
 }

@@ -98,7 +98,7 @@ fn on_player_try_cast(
             // if it's on cd, deny it and don't tell anyone else.
             for (cd, time_left) in &cooldowns {
                 if cd.1 == *caster_net_id && discriminant(&cast.event) == cd.0 {
-                    info!(?cd, "denied cast for cooldown");
+                    debug!(?cd, "denied cast for cooldown");
                     let event =
                         EventToClient::YourCastResult(YourCastResult::No(time_left.0.remaining()));
                     send_event_to_server(&sr.handler, cast.endpoint, &event);
