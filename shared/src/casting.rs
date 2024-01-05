@@ -33,7 +33,7 @@ fn update_casts(mut bullets: Query<(&mut Transform, &ShootingData, &DespawnTime)
         // normalized direction
         let offset = (shot_data.target - shot_data.shot_from).normalize();
         // speed up the bullets
-        let offset = offset * despawn_timer.0.elapsed_secs() * 10.0;
+        let offset = offset * despawn_timer.0.elapsed_secs() * 50.0;
 
         let new_bullet_loc = shot_data.shot_from + offset;
         bullet_tfm.translation = new_bullet_loc;
