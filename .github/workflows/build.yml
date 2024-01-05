@@ -60,8 +60,8 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get install libasound2-dev libudev-dev
 
-    - run: cargo test --release --no-default-features
-    - run: cargo build --release --no-default-features
+    - run: cargo test --release
+    - run: cargo build --release
 
     - name: Upload Executable
       uses: actions/upload-artifact@v3

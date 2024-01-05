@@ -1,11 +1,25 @@
 pub mod cameras;
 pub mod menu;
-pub mod network;
 pub mod physics;
 pub mod player;
 pub mod skills;
 pub mod states;
 pub mod worldgen;
+
+
+#[cfg(feature = "mio-net")]
+pub mod network;
+
+#[cfg(not(feature = "mio-net"))]
+pub mod network {
+    use bevy::prelude::*;
+    pub struct NetworkingPlugin;
+    impl Plugin for NetworkingPlugin {
+        fn build(&self, app: &mut App) {
+
+        }
+    }
+}
 
 mod cli;
 
