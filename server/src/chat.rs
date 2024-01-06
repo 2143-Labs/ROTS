@@ -20,7 +20,6 @@ use shared::{
         EventFromEndpoint, NetEntId, UnitData, ERFE,
     },
     netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
-    stats::Health,
     AnyUnit,
 };
 
