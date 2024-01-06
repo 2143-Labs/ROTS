@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::prelude::*;
 use shared::{
     animations::{AnimationTimer, CastNetId, CastPointTimer, DoCast},
-    casting::{CasterNetId, DespawnTime, SharedCastingPlugin},
+    casting::{CasterNetId, DespawnTime, SharedCastingPlugin, TargetedBullet},
     event::{
         client::{BulletHit, SomeoneCast},
         NetEntId, ERFE,
@@ -42,6 +42,9 @@ fn on_us_tp(
         local_player.single_mut().translation = ev.0;
     }
 }
+
+#[derive(Component)]
+struct ShootTargetProj;
 
 fn do_cast_finish(
     mut do_cast: EventReader<DoCast>,
@@ -97,6 +100,22 @@ fn do_cast_finish(
                     cast.cast_id,
                     CasterNetId(cast.caster_id),
                     DespawnTime(Timer::new(Duration::from_secs(5), TimerMode::Once)),
+                ));
+            },
+            shared::event::server::Cast::ShootTargeted(from_loc, ref net_id) => {
+                let cube = PbrBundle {
+                    mesh: meshes.add(Mesh::from(shape::Cube { size: 0.5 })),
+                    material: materials.add(Color::rgb(0.0, 0.3, 0.7).into()),
+                    transform: Transform::from_translation(from_loc),
+                    ..Default::default()
+                };
+
+                commands.spawn((
+                    cube,
+                    cast.cast_id,
+                    TargetedBullet(from_loc, *net_id),
+                    CasterNetId(cast.caster_id),
+                    DespawnTime(Timer::new(Duration::from_secs(1), TimerMode::Once)),
                 ));
             },
             ref rest => {

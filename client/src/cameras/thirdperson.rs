@@ -5,12 +5,12 @@ use bevy::{
     prelude::*,
 };
 use shared::{
-    animations::AnimationTimer, event::server::Cast, unit::MovementIntention, Config, GameAction,
+    animations::AnimationTimer, event::{server::Cast, NetEntId}, unit::MovementIntention, Config, GameAction, AnyUnit,
 };
 
 use crate::{
     physics::Jumper,
-    player::{Player, PrimaryUnitControl},
+    player::{Player, PrimaryUnitControl}, skills::CurrentTargetingCursor,
 };
 
 use super::{ClientAimDirection, FreeCamState};
@@ -242,5 +242,63 @@ pub(crate) fn player_movement(
         if movement.0 != final_move {
             movement.0 = final_move;
         }
+    }
+}
+
+#[derive(Component)]
+pub(crate) struct TargetingReticle;
+
+pub(crate) fn spawn_targeting(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    let cube = PbrBundle {
+        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+        material: materials.add(Color::rgb(0.0, 0.3, 0.5).into()),
+        transform: Transform::from_translation(Vec3::new(0.0, -1000.0, 0.0)),
+        ..Default::default()
+    };
+
+    commands.spawn((
+        cube,
+        TargetingReticle,
+    ));
+}
+
+pub(crate) fn update_targeting(
+    _commands: Commands,
+    mut player_query: Query<(
+        &Transform,
+        &mut CurrentTargetingCursor,
+    ), (With<Player>, Without<TargetingReticle>)>,
+    mut targeting_reticle: Query<&mut Transform, With<TargetingReticle>>,
+    _camera_query: Query<&CameraFollow>,
+    units: Query<(&Transform, &NetEntId), (With<AnyUnit>, Without<TargetingReticle>, Without<Player>)>,
+    //keyboard_input: Res<Input<KeyCode>>,
+    //config: Res<Config>,
+    //mut last_movement: Local<LastMovement>,
+    //time: Res<Time>,
+) {
+    let (player_tfm, mut maybe_cusor, ) = player_query.single_mut();
+
+    let mut dist = f32::MAX;
+    let mut close = None;
+    let mut close_tfm = None;
+    for (unit_tfm, unit_net_id) in &units {
+        // get nearest
+        let cur_dist = unit_tfm.translation.distance_squared(player_tfm.translation);
+        if cur_dist < dist {
+            dist = cur_dist;
+            close_tfm = Some(unit_tfm.translation);
+            close = Some(unit_net_id);
+        }
+    }
+
+    //info!(?close);
+    maybe_cusor.0 = close.copied();
+    if let Some(s) = close_tfm {
+        //info!(?s);
+        targeting_reticle.single_mut().translation = s + Vec3::new(0.0, 5.0, 0.0);
     }
 }

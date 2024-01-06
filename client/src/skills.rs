@@ -79,12 +79,12 @@ fn cast_skill_click(
 }
 
 #[derive(Component)]
-struct CurrentTargetingCursor(NetEntId);
+pub struct CurrentTargetingCursor(pub Option<NetEntId>);
 
 fn cast_skill_2(
     keyboard_input: Res<Input<KeyCode>>,
     config: Res<Config>,
-    player: Query<(&Transform, Option<&CurrentTargetingCursor>), With<Player>>,
+    player: Query<(&Transform, &CurrentTargetingCursor), With<Player>>,
     aim_dir: Query<&ClientAimDirection>,
     mut ev_sa: EventWriter<StartLocalAnimation>,
 ) {
@@ -92,8 +92,8 @@ fn cast_skill_2(
     let aim_dir = aim_dir.single().0;
 
     if config.pressed(&keyboard_input, shared::GameAction::Mod1) {
-        if let Some(ent) = target_ent {
-            let event = Cast::ShootTargeted(ent.0);
+        if let Some(ent) = target_ent.0 {
+            let event = Cast::ShootTargeted(transform.translation, ent);
             ev_sa.send(StartLocalAnimation(event));
         } else {
             warn!("Not targeting anything, not sure what to shoot");

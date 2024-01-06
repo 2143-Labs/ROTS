@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_xpbd_3d::prelude::{Collider, RigidBody};
 use shared::{unit::MovementIntention, AnyUnit};
 
-use crate::worldgen::ChunkPos;
+use crate::{worldgen::ChunkPos, skills::CurrentTargetingCursor};
 
 #[derive(Reflect, Component)]
 pub struct Player {
@@ -62,6 +62,7 @@ pub fn spawn_player_sprite(
         AnyUnit,
         PrimaryUnitControl,
         SpatialListener::new(1.0),
+        CurrentTargetingCursor(None),
     ));
 }
 
