@@ -56,7 +56,12 @@ impl Plugin for CastingPlugin {
 #[derive(Component, Debug)]
 pub(crate) struct PlayerCooldown(pub Discriminant<Cast>, pub NetEntId);
 
-fn do_cast(mut do_cast: EventReader<DoCast>, mut commands: Commands, _time: Res<Time<Virtual>>) {
+fn do_cast(
+    mut do_cast: EventReader<DoCast>,
+    mut commands: Commands,
+    all_unit_locations: Query<(&NetEntId, &Transform)>,
+    _time: Res<Time<Virtual>>,
+) {
     for DoCast(cast) in do_cast.read() {
         trace!(?cast, "Cast has completed");
 
@@ -67,9 +72,10 @@ fn do_cast(mut do_cast: EventReader<DoCast>, mut commands: Commands, _time: Res<
                 TimerMode::Once,
             )),
         ));
+
         match cast.cast {
-            shared::event::server::Cast::Teleport(_) => {} // TODO
-            shared::event::server::Cast::Shoot(ref shot_data) => {
+            Cast::Teleport(_) => {} // TODO
+            Cast::Shoot(ref shot_data) => {
                 commands.spawn((
                     Transform::from_translation(shot_data.shot_from),
                     shot_data.clone(),
@@ -79,6 +85,17 @@ fn do_cast(mut do_cast: EventReader<DoCast>, mut commands: Commands, _time: Res<
                     DespawnTime(Timer::new(Duration::from_secs(5), TimerMode::Once)),
                     // TODO Add a netentid for referencing this item later
                 ));
+            },
+            Cast::Melee => {
+                for (unit_ent_id, unit_tfm) in &all_unit_locations {
+                    if unit_ent_id == &cast.caster_id {
+                        for (unit_ent_id, other_unit_tfm) in &all_unit_locations {
+                            if other_unit_tfm.translation.distance(unit_tfm.translation) < 1.0 {
+                                //TODO also check angle of attach
+                            }
+                        }
+                    }
+                }
             }
             _ => {}
         }
@@ -167,6 +184,9 @@ fn check_collision(
             }
         }
     }
+}
+
+fn player_damage() {
 }
 
 #[derive(Resource, Default)]
