@@ -58,11 +58,24 @@ macro_rules! skill_info {
 }
 
 impl Cast {
+    pub fn get_damage(&self) -> f64 {
+        match self {
+            Cast::Teleport(_) => 0.0,
+            Cast::Buff => 0.0,
+            Cast::Shoot(_) => 10.0,
+            Cast::ShootTargeted(_, _) => 8.0,
+            Cast::Melee => 25.0,
+            Cast::Aoe(_) => 30.0,
+        }
+    }
+
     pub fn get_skill_info(&self) -> SkillInfo {
         match self {
             Cast::Teleport(_) => skill_info!(cd 5.0 => [ fs 1.0 ; wu 1.0 ; wd 1.0 ; bs 1.0 ]),
             Cast::Shoot(_) => skill_info!(cd 0.5 => [ fs 0.1 ; wu 0.1 ; wd 0.1 ; bs 0.2 ]),
-            Cast::ShootTargeted(_) => skill_info!(cd 1.0 => [ fs 0.5 ; wu 0.0 ; wd 0.1 ; bs 0.0 ]),
+            Cast::ShootTargeted(_, _) => {
+                skill_info!(cd 1.0 => [ fs 0.5 ; wu 0.0 ; wd 0.1 ; bs 0.0 ])
+            }
             Cast::Melee => skill_info!(cd 0.3 => [ fs 0.2 ; wu 0.0 ; wd 0.1 ; bs 0.3 ]),
             Cast::Aoe(_) => skill_info!(cd 5.0 => [ fs 1.0 ; wu 1.0 ; wd 1.0 ; bs 1.0 ]),
             Cast::Buff => skill_info!(cd 30.0 => [ fs 0.25 ; wu 0.75 ; wd 0.0 ; bs 0.0 ]),

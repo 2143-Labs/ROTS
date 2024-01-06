@@ -1,8 +1,11 @@
 use bevy::prelude::*;
-use shared::{event::{
-    client::{DespawnInteractable, SpawnInteractable},
-    NetEntId, ERFE,
-}, interactable::Interactable};
+use shared::{
+    event::{
+        client::{DespawnInteractable, SpawnInteractable},
+        NetEntId, ERFE,
+    },
+    interactable::Interactable,
+};
 
 use crate::states::GameState;
 

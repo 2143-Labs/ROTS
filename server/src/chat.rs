@@ -20,7 +20,6 @@ use shared::{
         EventFromEndpoint, NetEntId, UnitData, ERFE,
     },
     netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
-    stats::Health,
     AnyUnit,
 };
 
@@ -125,15 +124,17 @@ fn on_chat_command(
         };
 
         match &command.event.command {
-            ChatCommand::Spawn(_se) => {
+            ChatCommand::Spawn(unit) => {
                 spawn_npc.send(SpawnUnit {
                     data: UnitData {
                         unit: shared::event::UnitType::NPC {
-                            npc_type: NPC::Penguin,
+                            npc_type: unit.enemy_type.clone(),
                         },
                         ent_id: NetEntId(rand::random()),
-                        health: Health(5),
-                        transform: Transform::from_translation(runner_tfm.translation),
+                        health: unit.enemy_type.get_base_health(),
+                        transform: Transform::from_translation(
+                            runner_tfm.translation * Vec3::new(1., 0., 1.),
+                        ),
                     },
                 });
             }
