@@ -37,6 +37,7 @@ impl NPC {
     pub fn get_base_health(&self) -> Health {
         Health(match self {
             NPC::Penguin => 50,
+            NPC::Mage => 20
         })
     }
 
