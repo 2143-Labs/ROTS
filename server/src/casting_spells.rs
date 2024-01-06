@@ -14,7 +14,7 @@ use shared::{
         NetEntId, ERFE,
     },
     netlib::{
-        send_event_to_server, send_event_to_server_batch, EventToClient, EventToServer,
+        send_event_to_server, EventToClient, EventToServer,
         ServerResources,
     },
     stats::Health,

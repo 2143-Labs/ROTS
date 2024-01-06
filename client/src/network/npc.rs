@@ -10,7 +10,7 @@ use shared::{
 
 use crate::{
     network::{build_healthbar, OtherPlayer},
-    player::{PlayerName, PrimaryUnitControl},
+    player::{PlayerName, PrimaryUnitControl, Animation},
     states::GameState,
 };
 
@@ -66,6 +66,7 @@ fn on_npc_spawn(
                     .with_children(|s| build_healthbar(s, &mut meshes, &mut materials, Vec3::ZERO));
             }
             shared::event::UnitType::NPC { npc_type } => {
+                commands.insert_resource(Animation(asset_server.load("penguinwalk.gltf#Animation0")));
                 let cube = SceneBundle {
                     scene: asset_server.load(npc_type.model()),
                     transform: Transform::from_translation(ud.transform.translation),
