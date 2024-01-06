@@ -132,7 +132,9 @@ fn on_chat_command(
                         },
                         ent_id: NetEntId(rand::random()),
                         health: unit.enemy_type.get_base_health(),
-                        transform: Transform::from_translation(runner_tfm.translation),
+                        transform: Transform::from_translation(
+                            runner_tfm.translation * Vec3::new(1., 0., 1.),
+                        ),
                     },
                 });
             }

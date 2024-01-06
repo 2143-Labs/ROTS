@@ -29,7 +29,7 @@ impl Default for Player {
     }
 }
 #[derive(Resource)]
-pub struct Animation(Handle<AnimationClip>);
+pub struct Animation(pub Handle<AnimationClip>);
 
 #[derive(Component)]
 pub struct PrimaryUnitControl;

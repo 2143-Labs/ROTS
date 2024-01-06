@@ -28,7 +28,7 @@ pub enum AIType {
 impl NPC {
     pub fn model(&self) -> &'static str {
         match self {
-            NPC::Penguin => "penguin.gltf#Scene0",
+            NPC::Penguin => "penguinwalk.gltf#Scene0",
         }
     }
 
