@@ -23,7 +23,7 @@ pub struct Heartbeat {}
 pub enum Cast {
     Teleport(Vec3),
     Shoot(ShootingData),
-    ShootTargeted(NetEntId),
+    ShootTargeted(Vec3, NetEntId),
     Melee,
     Aoe(Vec3),
     Buff,

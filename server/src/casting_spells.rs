@@ -8,17 +8,21 @@ use shared::{
     animations::{AnimationTimer, CastNetId, CastPointTimer, DoCast},
     casting::{CasterNetId, DespawnTime, SharedCastingPlugin},
     event::{
-        client::{BulletHit, SomeoneCast, SomeoneUpdateComponent, UnitDie, YourCastResult, SpawnInteractable},
+        client::{
+            BulletHit, SomeoneCast, SomeoneUpdateComponent, SpawnInteractable, UnitDie,
+            YourCastResult,
+        },
         server::Cast,
         spells::{ShootingData, NPC},
         NetEntId, ERFE,
     },
+    interactable::Interactable,
     netlib::{
         send_event_to_server, EventToClient, EventToServer,
         ServerResources,
     },
     stats::Health,
-    AnyUnit, interactable::Interactable,
+    AnyUnit,
 };
 
 use crate::{EndpointToNetId, PlayerEndpoint, ServerState};
@@ -98,7 +102,7 @@ fn on_player_try_cast(
             // if it's on cd, deny it and don't tell anyone else.
             for (cd, time_left) in &cooldowns {
                 if cd.1 == *caster_net_id && discriminant(&cast.event) == cd.0 {
-                    info!(?cd, "denied cast for cooldown");
+                    debug!(?cd, "denied cast for cooldown");
                     let event =
                         EventToClient::YourCastResult(YourCastResult::No(time_left.0.remaining()));
                     send_event_to_server(&sr.handler, cast.endpoint, &event);
@@ -267,6 +271,5 @@ fn on_die(
         for c_net_client in &clients {
             send_event_to_server(&sr.handler, c_net_client.0, &event)
         }
-
     }
 }
