@@ -24,6 +24,7 @@ impl Plugin for MenuPlugin {
                 check_autoconnect_cli,
             ),
         )
+        //.add_systems()
         .add_systems(Update, animate_sprites)
         .add_systems(
             Update,
