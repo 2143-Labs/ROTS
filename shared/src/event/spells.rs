@@ -17,6 +17,7 @@ pub enum UpdateSharedComponent {
 #[non_exhaustive]
 pub enum NPC {
     Penguin,
+    Mage
 }
 
 #[derive(Component)]
@@ -29,12 +30,14 @@ impl NPC {
     pub fn model(&self) -> &'static str {
         match self {
             NPC::Penguin => "penguinwalk.gltf#Scene0",
+            NPC::Mage => "bookmageIdle.gltf#Scene0",
         }
     }
 
     pub fn get_ai_component(&self) -> AIType {
         match self {
             NPC::Penguin => AIType::WalkToNearestPlayer,
+            NPC::Mage => AIType::WalkToNearestPlayer
         }
     }
 }
