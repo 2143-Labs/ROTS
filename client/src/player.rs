@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_xpbd_3d::prelude::{Collider, RigidBody};
-use shared::{unit::MovementIntention, AnyUnit};
+use shared::{unit::MovementIntention, AnyUnit, event::{spells::NPC, NetEntId}};
 
 use crate::{skills::CurrentTargetingCursor, worldgen::ChunkPos};
 
@@ -28,8 +28,8 @@ impl Default for Player {
         }
     }
 }
-#[derive(Resource)]
-pub struct Animation(pub Handle<AnimationClip>);
+//#[derive(Resource)]
+//pub struct Animations(pub Vec<Handle<AnimationClip>>);
 
 #[derive(Component)]
 pub struct PrimaryUnitControl;
@@ -40,7 +40,12 @@ pub fn spawn_player_sprite(
     //mut meshes: ResMut<Assets<Mesh>>,
     //mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    commands.insert_resource(Animation(asset_server.load("tadpole.gltf#Animation0")));
+    //commands.insert_resource(Animations(vec![
+    //let _: Handle<AnimationClip> = asset_server.load("tadpole.gltf#Animation0");
+        //asset_server.load("bookmageIdle.gltf#Animation0")
+    //]));
+    //
+    NPC::load_all_animations(&mut commands, &asset_server);
 
     commands.spawn((
         SceneBundle {
@@ -74,10 +79,12 @@ pub fn spawn_player_sprite(
 
 // Once the scene is loaded, start the animation
 pub fn animate_sprites(
-    animations: Res<Animation>,
-    mut players: Query<&mut AnimationPlayer, Added<AnimationPlayer>>,
+    //animations: Res<Animation>,
+    asset_server: Res<AssetServer>,
+    mut players: Query<(&mut AnimationPlayer, Option<&NetEntId>), Added<AnimationPlayer>>,
 ) {
-    for mut player in &mut players {
-        player.play(animations.0.clone_weak()).repeat();
+    for (mut player, neid) in &mut players {
+        info!(?neid, "something spawned");
+        player.play(asset_server.load("tadpole.gltf#Animation0").clone_weak()).repeat();
     }
 }

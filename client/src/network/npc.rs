@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use shared::{
     event::{
         client::{SpawnUnit, UnitDie},
-        NetEntId, ERFE,
+        NetEntId, ERFE, spells::NPCAnimations,
     },
     unit::MovementIntention,
     AnyUnit,
@@ -10,7 +10,7 @@ use shared::{
 
 use crate::{
     network::{build_healthbar, OtherPlayer},
-    player::{PlayerName, PrimaryUnitControl, Animation},
+    player::{PlayerName, PrimaryUnitControl},
     states::GameState,
 };
 
@@ -36,6 +36,7 @@ fn on_npc_spawn(
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    npc_anims: Res<NPCAnimations>,
     //parent: Query<Entity, With<ChatContainer>>,
     //players: Query<(&NetEntId, &PlayerName), With<AnyPlayer>>,
     //mut er: EventReader<Chat>,
@@ -66,7 +67,8 @@ fn on_npc_spawn(
                     .with_children(|s| build_healthbar(s, &mut meshes, &mut materials, Vec3::ZERO));
             }
             shared::event::UnitType::NPC { npc_type } => {
-                commands.insert_resource(Animation(asset_server.load(npc_type.animation())));
+                let anim_handle = npc_anims.get_anim(npc_type.animation());
+                //commands.insert_resource(npc_anims.get_anim(npc_type.animation()));
                 let cube = SceneBundle {
                     scene: asset_server.load(npc_type.model()),
                     transform: Transform::from_translation(ud.transform.translation),
