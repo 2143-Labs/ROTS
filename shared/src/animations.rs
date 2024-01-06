@@ -44,6 +44,9 @@ pub struct CastNetId(pub NetEntId);
 #[derive(Event)]
 pub struct DoCast(pub SomeoneCast);
 
+#[derive(Event)]
+pub struct DoDamage(pub NetEntId, pub f64);
+
 macro_rules! skill_info {
     (cd $cd:expr => [ fs $fs:expr ; wu $wu:expr ; wd $wd:expr ; bs $bs: expr ]) => {
         SkillInfo {

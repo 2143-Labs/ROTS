@@ -5,7 +5,7 @@ use std::{
 
 use bevy::{prelude::*, utils::HashSet};
 use shared::{
-    animations::{AnimationTimer, CastNetId, CastPointTimer, DoCast},
+    animations::{AnimationTimer, CastNetId, CastPointTimer, DoCast, DoDamage},
     casting::{CasterNetId, DespawnTime, SharedCastingPlugin},
     event::{
         client::{
@@ -36,6 +36,7 @@ impl Plugin for CastingPlugin {
             .add_event::<UnitDie>()
             .add_event::<DoSpawnInteractable>()
             .add_event::<DoCast>()
+            .add_event::<DoDamage>()
             .insert_resource(HitList::default())
             .add_systems(
                 Update,
@@ -47,6 +48,7 @@ impl Plugin for CastingPlugin {
                     shared::animations::systems::tick_casts,
                     do_cast,
                     spawn_interactable,
+                    unit_damaged,
                 )
                     .run_if(in_state(ServerState::Running)),
             );
@@ -186,7 +188,36 @@ fn check_collision(
     }
 }
 
-fn player_damage() {
+fn unit_damaged(
+    mut damage_events: EventReader<DoDamage>,
+    mut death: EventWriter<UnitDie>,
+    clients: Query<&PlayerEndpoint>,
+    mut unit: Query<(&NetEntId, &mut Health), With<AnyUnit>>,
+    sr: Res<ServerResources<EventToServer>>,
+) {
+    for DoDamage(net_ent_id, damage) in damage_events.read() {
+        for (unit_net_id, mut ply_hp) in &mut unit {
+            if unit_net_id == net_ent_id {
+                info!(?net_ent_id, ?damage, "Unit took damage");
+                // Remove the damage from their hp & update all connected clients
+                ply_hp.0 = ply_hp.0.saturating_sub(*damage as _);
+
+                let hp_event = EventToClient::SomeoneUpdateComponent(
+                    SomeoneUpdateComponent {
+                        id: *net_ent_id,
+                        update: shared::event::spells::UpdateSharedComponent::Health(*ply_hp),
+                    },
+                );
+
+                for c_net_client in &clients {
+                    send_event_to_server(&sr.handler, c_net_client.0, &hp_event)
+                }
+                if ply_hp.0 <= 0 {
+                    death.send(UnitDie { id: *net_ent_id });
+                }
+            }
+        }
+    }
 }
 
 #[derive(Resource, Default)]
@@ -194,10 +225,9 @@ struct HitList(HashSet<BulletHit>);
 
 fn hit(
     mut ev_r: EventReader<BulletHit>,
-    mut death: EventWriter<UnitDie>,
+    mut damage_events: EventWriter<DoDamage>,
     clients: Query<&PlayerEndpoint>,
-    // todo make this into an event
-    mut unit: Query<(&NetEntId, &mut Health, Option<&NPC>), With<AnyUnit>>,
+    mut unit: Query<&NetEntId, With<AnyUnit>>,
     sr: Res<ServerResources<EventToServer>>,
     mut hit_list: ResMut<HitList>,
 ) {
@@ -207,31 +237,14 @@ fn hit(
         }
 
         hit_list.0.insert(e.clone());
-        let mut hp_event = None;
-        for (ent_id, mut ply_hp, npc_data) in &mut unit {
-            if ent_id == &e.player {
-                ply_hp.0 = ply_hp.0.saturating_sub(1);
-                hp_event = Some(EventToClient::SomeoneUpdateComponent(
-                    SomeoneUpdateComponent {
-                        id: *ent_id,
-                        update: shared::event::spells::UpdateSharedComponent::Health(*ply_hp),
-                    },
-                ));
 
-                if ply_hp.0 <= 0 {
-                    death.send(UnitDie { id: *ent_id });
-                    // They get respawned on the client
-                    if npc_data.is_none() {
-                        *ply_hp = Health::default();
-                    }
-                }
+        for ent_id in &mut unit {
+            if ent_id == &e.player {
+                damage_events.send(DoDamage(*ent_id, 1.0));
             }
         }
 
         for c_net_client in &clients {
-            if let Some(e) = &hp_event {
-                send_event_to_server(&sr.handler, c_net_client.0, e);
-            }
             send_event_to_server(
                 &sr.handler,
                 c_net_client.0,
