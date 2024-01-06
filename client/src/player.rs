@@ -1,8 +1,9 @@
 use bevy::prelude::*;
+use bevy_hanabi::{ParticleEffect, ParticleEffectBundle};
 use bevy_xpbd_3d::prelude::{Collider, RigidBody};
 use shared::{unit::MovementIntention, AnyUnit};
 
-use crate::worldgen::ChunkPos;
+use crate::{particles::EffectResources, worldgen::ChunkPos};
 
 #[derive(Reflect, Component)]
 pub struct Player {
@@ -39,30 +40,39 @@ pub fn spawn_player_sprite(
     asset_server: ResMut<AssetServer>,
     //mut meshes: ResMut<Assets<Mesh>>,
     //mut materials: ResMut<Assets<StandardMaterial>>,
+    effects: ResMut<EffectResources>,
 ) {
     commands.insert_resource(Animation(asset_server.load("tadpole.gltf#Animation0")));
 
-    commands.spawn((
-        SceneBundle {
-            scene: asset_server.load("tadpole.gltf#Scene0"),
-            transform: Transform::from_xyz(0., 1.0, 0.)
-                .with_rotation(Quat::from_rotation_y(std::f32::consts::PI))
-                .with_scale(Vec3::new(4., 4., 4.)),
-            ..default()
-        },
-        RigidBody::Dynamic,
-        Collider::cuboid(1., 1., 1.),
-        Name::new("Player"),
-        MovementIntention(Vec2::ZERO),
-        Player::default(),
-        crate::cameras::FaceCamera,
-        crate::physics::Jumper {
-            timer: Timer::from_seconds(1.05, TimerMode::Once),
-        },
-        AnyUnit,
-        PrimaryUnitControl,
-        SpatialListener::new(1.0),
-    ));
+    commands
+        .spawn((
+            SceneBundle {
+                scene: asset_server.load("tadpole.gltf#Scene0"),
+                transform: Transform::from_xyz(0., 1.0, 0.)
+                    .with_rotation(Quat::from_rotation_y(std::f32::consts::PI))
+                    .with_scale(Vec3::new(4., 4., 4.)),
+                ..default()
+            },
+            RigidBody::Dynamic,
+            Collider::cuboid(1., 1., 1.),
+            Name::new("Player"),
+            MovementIntention(Vec2::ZERO),
+            Player::default(),
+            crate::cameras::FaceCamera,
+            crate::physics::Jumper {
+                timer: Timer::from_seconds(1.05, TimerMode::Once),
+            },
+            AnyUnit,
+            PrimaryUnitControl,
+            SpatialListener::new(1.0),
+        ))
+        .with_children(|parent| {
+            parent.spawn(ParticleEffectBundle {
+                effect: ParticleEffect::new(effects.firework.clone()),
+                transform: Transform::from_translation(Vec3::Y),
+                ..Default::default()
+            });
+        });
 }
 
 //pub fn spawn_spectator_camera(

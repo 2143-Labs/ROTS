@@ -1,6 +1,7 @@
 pub mod cameras;
 pub mod menu;
 pub mod network;
+pub mod particles;
 pub mod physics;
 pub mod player;
 pub mod skills;
@@ -14,6 +15,7 @@ use bevy::{
     prelude::*,
     window::{Cursor, CursorGrabMode},
 };
+use bevy_hanabi::prelude::*;
 use clap::Parser;
 use shared::Config;
 
@@ -71,6 +73,8 @@ fn main() {
             skills::SkillsPlugin,
             network::NetworkingPlugin,
             worldgen::WorldGenPlugin,
+            HanabiPlugin,
+            particles::ParticlePlugin,
         ))
         .add_systems(Update, bevy::window::close_on_esc); // Close the window when you press escape
 
