@@ -47,4 +47,10 @@ impl NPC {
             NPC::Mage => AIType::WalkToNearestPlayer
         }
     }
+    pub fn animation(&self) -> &'static str {
+        match self {
+            NPC::Penguin => "penguinwalk.gltf#Animation0",
+            NPC::Mage => "bookmageIdle.gltf#Animation0",
+        }
+    }
 }
