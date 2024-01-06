@@ -25,8 +25,11 @@ impl Plugin for CameraPlugin {
             )
             .add_systems(
                 Update,
-                (thirdperson::player_movement, thirdperson::wow_camera_system, 
-                    thirdperson::update_targeting,)
+                (
+                    thirdperson::player_movement,
+                    thirdperson::wow_camera_system,
+                    thirdperson::update_targeting,
+                )
                     .distributive_run_if(in_state(FreeCamState::ThirdPersonLocked))
                     .distributive_run_if(in_state(chat::ChatState::NotChatting)),
             )

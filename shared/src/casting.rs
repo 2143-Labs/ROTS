@@ -16,7 +16,10 @@ pub struct SharedCastingPlugin;
 
 impl Plugin for SharedCastingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (update_casts, update_despawns, update_casts_targeted_bullet));
+        app.add_systems(
+            Update,
+            (update_casts, update_despawns, update_casts_targeted_bullet),
+        );
     }
 }
 
@@ -45,7 +48,10 @@ fn update_casts(mut bullets: Query<(&mut Transform, &ShootingData, &DespawnTime)
     }
 }
 
-fn update_casts_targeted_bullet(mut bullets: Query<(&mut Transform, &TargetedBullet, &DespawnTime)>, ents: Query<(&Transform, &NetEntId), (With<AnyUnit>, Without<TargetedBullet>)>) {
+fn update_casts_targeted_bullet(
+    mut bullets: Query<(&mut Transform, &TargetedBullet, &DespawnTime)>,
+    ents: Query<(&Transform, &NetEntId), (With<AnyUnit>, Without<TargetedBullet>)>,
+) {
     for (mut bullet_tfm, targeted_ent_data, despawn_timer) in &mut bullets {
         for (ent_tfm, ent_id) in &ents {
             if &targeted_ent_data.1 == ent_id {

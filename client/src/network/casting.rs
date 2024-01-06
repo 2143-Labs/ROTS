@@ -84,7 +84,7 @@ fn do_cast_finish(
                     }
                     false => trace!("Someone else teleported"),
                 }
-            },
+            }
             shared::event::server::Cast::Shoot(ref dat) => {
                 let cube = PbrBundle {
                     mesh: meshes.add(Mesh::from(shape::Cube { size: 0.3 })),
@@ -101,7 +101,7 @@ fn do_cast_finish(
                     CasterNetId(cast.caster_id),
                     DespawnTime(Timer::new(Duration::from_secs(5), TimerMode::Once)),
                 ));
-            },
+            }
             shared::event::server::Cast::ShootTargeted(from_loc, ref net_id) => {
                 let cube = PbrBundle {
                     mesh: meshes.add(Mesh::from(shape::Cube { size: 0.5 })),
@@ -117,10 +117,10 @@ fn do_cast_finish(
                     CasterNetId(cast.caster_id),
                     DespawnTime(Timer::new(Duration::from_secs(1), TimerMode::Once)),
                 ));
-            },
+            }
             ref rest => {
                 trace!(?rest, "Cast event");
-            },
+            }
         }
     }
 }

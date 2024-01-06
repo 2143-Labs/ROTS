@@ -8,17 +8,21 @@ use shared::{
     animations::{AnimationTimer, CastNetId, CastPointTimer, DoCast},
     casting::{CasterNetId, DespawnTime, SharedCastingPlugin},
     event::{
-        client::{BulletHit, SomeoneCast, SomeoneUpdateComponent, UnitDie, YourCastResult, SpawnInteractable},
+        client::{
+            BulletHit, SomeoneCast, SomeoneUpdateComponent, SpawnInteractable, UnitDie,
+            YourCastResult,
+        },
         server::Cast,
         spells::{ShootingData, NPC},
         NetEntId, ERFE,
     },
+    interactable::Interactable,
     netlib::{
         send_event_to_server, send_event_to_server_batch, EventToClient, EventToServer,
         ServerResources,
     },
     stats::Health,
-    AnyUnit, interactable::Interactable,
+    AnyUnit,
 };
 
 use crate::{EndpointToNetId, PlayerEndpoint, ServerState};
@@ -267,6 +271,5 @@ fn on_die(
         for c_net_client in &clients {
             send_event_to_server(&sr.handler, c_net_client.0, &event)
         }
-
     }
 }

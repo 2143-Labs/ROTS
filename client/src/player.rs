@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_xpbd_3d::prelude::{Collider, RigidBody};
 use shared::{unit::MovementIntention, AnyUnit};
 
-use crate::{worldgen::ChunkPos, skills::CurrentTargetingCursor};
+use crate::{skills::CurrentTargetingCursor, worldgen::ChunkPos};
 
 #[derive(Reflect, Component)]
 pub struct Player {

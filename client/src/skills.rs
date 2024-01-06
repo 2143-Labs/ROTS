@@ -8,9 +8,9 @@ use shared::animations::CastNetId;
 use shared::animations::CastPointTimer;
 use shared::event::ERFE;
 
-use shared::event::NetEntId;
 use shared::event::client::YourCastResult;
 use shared::event::spells::ShootingData;
+use shared::event::NetEntId;
 use shared::netlib::EventToClient;
 use shared::netlib::EventToServer;
 use shared::{
@@ -121,7 +121,6 @@ fn cast_skill_1(
     aim_dir: Query<&ClientAimDirection>,
     mut ev_sa: EventWriter<StartLocalAnimation>,
 ) {
-
     if config.pressed(&keyboard_input, shared::GameAction::Mod1) {
         let event = Cast::Buff;
         ev_sa.send(StartLocalAnimation(event));
