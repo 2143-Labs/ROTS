@@ -127,9 +127,9 @@ fn do_cast(
                     //bullets have a net ent id + a caster.
                     cast.cast_id,
                     CasterNetId(cast.caster_id),
+                    // TODO hardcoded proj duration
                     SpellProj(Timer::new(Duration::from_secs(1), TimerMode::Once), cast.cast.clone()),
                     SpellTarget(target_net_ent_id),
-                    // TODO Add a netentid for referencing this item later
                 ));
             }
             Cast::Buff => {
@@ -137,7 +137,7 @@ fn do_cast(
                     // find everything in an aoe around the caster
                     if unit_ent_id == &cast.caster_id {
                         for (other_unit_ent_id, other_unit_tfm) in &all_unit_locations {
-                            if other_unit_tfm.translation.distance(unit_tfm.translation) < 25.0 && unit_ent_id != other_unit_ent_id {
+                            if other_unit_tfm.translation.distance(unit_tfm.translation) < 25.0 {
                                 //TODO buff the units here
                                 warn!(?other_unit_ent_id, "Buff was cast on");
                             }

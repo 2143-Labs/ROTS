@@ -115,6 +115,7 @@ fn do_cast_finish(
                     cast.cast_id,
                     TargetedBullet(from_loc, *net_id),
                     CasterNetId(cast.caster_id),
+                    // TODO hardcoded proj duration
                     DespawnTime(Timer::new(Duration::from_secs(1), TimerMode::Once)),
                 ));
             }
