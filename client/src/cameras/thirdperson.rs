@@ -301,10 +301,14 @@ pub(crate) fn update_targeting(
         }
     }
 
-    //info!(?close);
-    maybe_cusor.0 = close.copied();
-    if let Some(s) = close_tfm {
-        //info!(?s);
-        targeting_reticle.single_mut().translation = s + Vec3::new(0.0, 5.0, 0.0);
+    if let Ok(mut targeting_reticle) = targeting_reticle.get_single_mut() {
+        //info!(?close);
+        maybe_cusor.0 = close.copied();
+        if let Some(s) = close_tfm {
+            //info!(?s);
+            targeting_reticle.translation = s + Vec3::new(0.0, 5.0, 0.0);
+        } else {
+            targeting_reticle.translation = Vec3::new(0.0, -1000.0, 0.0);
+        }
     }
 }

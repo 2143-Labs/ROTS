@@ -78,6 +78,6 @@ pub fn animate_sprites(
     mut players: Query<&mut AnimationPlayer, Added<AnimationPlayer>>,
 ) {
     for mut player in &mut players {
-        player.play(animations.0.clone_weak()).repeat();
+        //player.play(animations.0.clone_weak()).repeat();
     }
 }

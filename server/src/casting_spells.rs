@@ -49,6 +49,7 @@ impl Plugin for CastingPlugin {
                     do_cast,
                     spawn_interactable,
                     unit_damaged,
+                    tick_spell_proj,
                 )
                     .run_if(in_state(ServerState::Running)),
             );
@@ -58,11 +59,31 @@ impl Plugin for CastingPlugin {
 #[derive(Component, Debug)]
 pub(crate) struct PlayerCooldown(pub Discriminant<Cast>, pub NetEntId);
 
+#[derive(Component, Debug)]
+pub(crate) struct SpellProj(pub Timer, pub Cast);
+
+#[derive(Component, Debug)]
+pub(crate) struct SpellTarget(pub NetEntId);
+
+fn tick_spell_proj(
+    mut projectiles: Query<(&mut SpellProj, &SpellTarget)>,
+    mut damage_events: EventWriter<DoDamage>,
+    time: Res<Time<Virtual>>,
+) {
+    for (mut sp, target_id) in &mut projectiles {
+        sp.0.tick(time.delta());
+        if sp.0.finished() {
+            damage_events.send(DoDamage(target_id.0, sp.1.get_damage()));
+        }
+    }
+}
+
 fn do_cast(
     mut do_cast: EventReader<DoCast>,
     mut commands: Commands,
     all_unit_locations: Query<(&NetEntId, &Transform)>,
     _time: Res<Time<Virtual>>,
+    mut damage_events: EventWriter<DoDamage>,
 ) {
     for DoCast(cast) in do_cast.read() {
         trace!(?cast, "Cast has completed");
@@ -90,10 +111,35 @@ fn do_cast(
             },
             Cast::Melee => {
                 for (unit_ent_id, unit_tfm) in &all_unit_locations {
+                    // find everything in an aoe around the caster
                     if unit_ent_id == &cast.caster_id {
-                        for (unit_ent_id, other_unit_tfm) in &all_unit_locations {
-                            if other_unit_tfm.translation.distance(unit_tfm.translation) < 1.0 {
+                        for (other_unit_ent_id, other_unit_tfm) in &all_unit_locations {
+                            if other_unit_tfm.translation.distance(unit_tfm.translation) < 5.0 && unit_ent_id != other_unit_ent_id {
                                 //TODO also check angle of attach
+                                damage_events.send(DoDamage(*other_unit_ent_id, cast.cast.get_damage()));
+                            }
+                        }
+                    }
+                }
+            }
+            Cast::ShootTargeted(_, target_net_ent_id) => {
+                commands.spawn((
+                    //bullets have a net ent id + a caster.
+                    cast.cast_id,
+                    CasterNetId(cast.caster_id),
+                    SpellProj(Timer::new(Duration::from_secs(1), TimerMode::Once), cast.cast.clone()),
+                    SpellTarget(target_net_ent_id),
+                    // TODO Add a netentid for referencing this item later
+                ));
+            }
+            Cast::Buff => {
+                for (unit_ent_id, unit_tfm) in &all_unit_locations {
+                    // find everything in an aoe around the caster
+                    if unit_ent_id == &cast.caster_id {
+                        for (other_unit_ent_id, other_unit_tfm) in &all_unit_locations {
+                            if other_unit_tfm.translation.distance(unit_tfm.translation) < 25.0 && unit_ent_id != other_unit_ent_id {
+                                //TODO buff the units here
+                                warn!(?other_unit_ent_id, "Buff was cast on");
                             }
                         }
                     }
@@ -103,9 +149,6 @@ fn do_cast(
         }
     }
 }
-
-/// TODO
-fn check_cancelled_casts() {}
 
 fn on_player_try_cast(
     mut casts: ERFE<shared::event::server::Cast>,
