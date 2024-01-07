@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{prelude::*};
 
 pub struct GamePlugin;
 impl Plugin for GamePlugin {
@@ -18,12 +18,9 @@ impl Plugin for GamePlugin {
 use rand::Rng;
 use shared::{
     event::{
-        client::{Chat, SpawnUnit},
-        spells::NPC,
-        EventFromEndpoint, NetEntId, UnitData,
+        client::{SpawnUnit},
+        spells::NPC, NetEntId, UnitData,
     },
-    netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
-    AnyUnit,
 };
 
 #[derive(Resource, Clone, Debug)]
