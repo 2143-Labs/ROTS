@@ -102,10 +102,10 @@ pub fn setup_shared<T: NetworkingEvent>(
 
     let con_str = (ip, port);
     if is_listener {
-        let (_, addr) = handler.network().listen(Transport::Udp, con_str).unwrap();
+        let (_, addr) = handler.network().listen(Transport::FramedTcp, con_str).unwrap();
         info!(?addr, "Listening")
     } else {
-        let (endpoint, addr) = handler.network().connect(Transport::Udp, con_str).unwrap();
+        let (endpoint, addr) = handler.network().connect(Transport::FramedTcp, con_str).unwrap();
         commands.insert_resource(MainServerEndpoint(endpoint));
         info!(?addr, "Connected");
     }
