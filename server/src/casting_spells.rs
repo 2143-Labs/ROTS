@@ -256,7 +256,7 @@ fn unit_damaged(
     for DoDamage(net_ent_id, damage) in damage_events.read() {
         for (unit_net_id, mut ply_hp) in &mut unit {
             if unit_net_id == net_ent_id {
-                info!(?net_ent_id, ?damage, "Unit took damage");
+                debug!(?net_ent_id, ?damage, "Unit took damage");
                 // Remove the damage from their hp & update all connected clients
                 ply_hp.0 = ply_hp.0.saturating_sub(*damage as _);
 
@@ -327,7 +327,7 @@ fn spawn_interactable(
             location: spawn.0,
         });
 
-        warn!("Spawn interactable ev!");
+        //warn!("Spawn interactable ev!");
         commands.spawn((
             Transform::from_translation(spawn.0),
             new_id,
@@ -354,7 +354,7 @@ fn on_die(
         for (unit_ent, unit_ent_id, unit_tfm) in &ents {
             if unit_ent_id == &death.id {
                 do_spawns.send(DoSpawnInteractable(unit_tfm.translation));
-                warn!("Spawn interactable!");
+                //warn!("Spawn interactable!");
                 commands.entity(unit_ent).despawn_recursive();
             }
         }

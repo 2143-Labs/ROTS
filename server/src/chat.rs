@@ -23,13 +23,15 @@ use shared::{
     AnyUnit,
 };
 
-use crate::{ConnectedPlayerName, EndpointToNetId, PlayerEndpoint, ServerState};
+use crate::{ConnectedPlayerName, EndpointToNetId, PlayerEndpoint, ServerState, game_manager::GameManagerState};
 #[derive(Parser, Debug, Event)]
 #[command(name = "chat_command")]
 #[command(bin_name = "/")]
 pub enum ChatCommand {
     Spawn(CmdSpawnUnit),
     List(CmdListUnits),
+    Start,
+    Stop,
 }
 
 /// Spawn a unit
@@ -113,6 +115,8 @@ fn on_chat_command(
     list_player_query: Query<(&NetEntId, &ConnectedPlayerName), With<AnyUnit>>,
     sr: Res<ServerResources<EventToServer>>,
     mut spawn_npc: EventWriter<SpawnUnit>,
+    mut next_game_manager_state: ResMut<NextState<GameManagerState>>,
+    cur_game_manager_state: Res<State<GameManagerState>>,
 ) {
     for command in cmd.read() {
         let (_runner_ent, runner_tfm, _runner_net_ent, _runner_name) = match players
@@ -151,9 +155,16 @@ fn on_chat_command(
 
                 let event = EventToClient::Chat(Chat {
                     source: None,
-                    text: format!("Players: {:?} || NPCs: {:?}", player_names, enemies),
+                    text: format!("{cur_game_manager_state:?}: Players: {:?} || NPCs: {:?}", player_names, enemies),
                 });
                 send_event_to_server(&sr.handler, command.endpoint, &event);
+            }
+            ChatCommand::Start => {
+                info!("gaming");
+                next_game_manager_state.set(GameManagerState::Playing);
+            }
+            ChatCommand::Stop => {
+                next_game_manager_state.set(GameManagerState::NotPlaying);
             }
         }
     }

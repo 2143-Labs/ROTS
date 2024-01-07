@@ -66,7 +66,7 @@ fn on_notification(
     time: Res<Time>,
 ) {
     for e in er.read() {
-        info!("Got a notification... {}", e.0);
+        debug!("Got a notification... {}", e.0);
         let parent = parent.single();
         commands.entity(parent).with_children(|p| {
             p.spawn((
