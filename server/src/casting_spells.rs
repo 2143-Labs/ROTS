@@ -66,14 +66,16 @@ pub(crate) struct SpellProj(pub Timer, pub Cast);
 pub(crate) struct SpellTarget(pub NetEntId);
 
 fn tick_spell_proj(
-    mut projectiles: Query<(&mut SpellProj, &SpellTarget)>,
+    mut projectiles: Query<(Entity, &mut SpellProj, &SpellTarget)>,
     mut damage_events: EventWriter<DoDamage>,
     time: Res<Time<Virtual>>,
+    mut commands: Commands,
 ) {
-    for (mut sp, target_id) in &mut projectiles {
+    for (ent, mut sp, target_id) in &mut projectiles {
         sp.0.tick(time.delta());
         if sp.0.finished() {
             damage_events.send(DoDamage(target_id.0, sp.1.get_damage()));
+            commands.entity(ent).despawn_recursive();
         }
     }
 }
