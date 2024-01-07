@@ -66,7 +66,7 @@ fn on_npc_spawn(
                     .with_children(|s| build_healthbar(s, &mut meshes, &mut materials, Vec3::ZERO));
             }
             shared::event::UnitType::NPC { npc_type } => {
-                commands.insert_resource(Animation(asset_server.load(npc_type.animation())));
+                //commands.insert_resource(Animation(asset_server.load(npc_type.animation())));
                 let cube = SceneBundle {
                     scene: asset_server.load(npc_type.model()),
                     transform: Transform::from_translation(ud.transform.translation),
