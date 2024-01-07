@@ -109,6 +109,14 @@ fn do_cast(
                     // TODO Add a netentid for referencing this item later
                 ));
             },
+            Cast::Aoe(loc) => {
+                for (other_unit_ent_id, other_unit_tfm) in &all_unit_locations {
+                    if other_unit_tfm.translation.distance(loc) < 25.0 && &cast.caster_id != other_unit_ent_id {
+                        //TODO also check angle of attach
+                        damage_events.send(DoDamage(*other_unit_ent_id, cast.cast.get_damage()));
+                    }
+                }
+            }
             Cast::Melee => {
                 for (unit_ent_id, unit_tfm) in &all_unit_locations {
                     // find everything in an aoe around the caster
