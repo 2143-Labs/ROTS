@@ -5,7 +5,7 @@ use std::{
 
 use bevy::{prelude::*, utils::HashSet};
 use shared::{
-    animations::{AnimationTimer, CastNetId, CastPointTimer, DoCast},
+    animations::{AnimationTimer, CastNetId, CastPointTimer, DoCast, DoDamage},
     casting::{CasterNetId, DespawnTime, SharedCastingPlugin},
     event::{
         client::{
@@ -13,14 +13,11 @@ use shared::{
             YourCastResult,
         },
         server::Cast,
-        spells::{ShootingData, NPC},
+        spells::ShootingData,
         NetEntId, ERFE,
     },
     interactable::Interactable,
-    netlib::{
-        send_event_to_server, EventToClient, EventToServer,
-        ServerResources,
-    },
+    netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
     stats::Health,
     AnyUnit,
 };
@@ -36,6 +33,7 @@ impl Plugin for CastingPlugin {
             .add_event::<UnitDie>()
             .add_event::<DoSpawnInteractable>()
             .add_event::<DoCast>()
+            .add_event::<DoDamage>()
             .insert_resource(HitList::default())
             .add_systems(
                 Update,
@@ -47,6 +45,8 @@ impl Plugin for CastingPlugin {
                     shared::animations::systems::tick_casts,
                     do_cast,
                     spawn_interactable,
+                    unit_damaged,
+                    tick_spell_proj,
                 )
                     .run_if(in_state(ServerState::Running)),
             );
@@ -56,7 +56,34 @@ impl Plugin for CastingPlugin {
 #[derive(Component, Debug)]
 pub(crate) struct PlayerCooldown(pub Discriminant<Cast>, pub NetEntId);
 
-fn do_cast(mut do_cast: EventReader<DoCast>, mut commands: Commands, _time: Res<Time<Virtual>>) {
+#[derive(Component, Debug)]
+pub(crate) struct SpellProj(pub Timer, pub Cast);
+
+#[derive(Component, Debug)]
+pub(crate) struct SpellTarget(pub NetEntId);
+
+fn tick_spell_proj(
+    mut projectiles: Query<(Entity, &mut SpellProj, &SpellTarget)>,
+    mut damage_events: EventWriter<DoDamage>,
+    time: Res<Time<Virtual>>,
+    mut commands: Commands,
+) {
+    for (ent, mut sp, target_id) in &mut projectiles {
+        sp.0.tick(time.delta());
+        if sp.0.finished() {
+            damage_events.send(DoDamage(target_id.0, sp.1.get_damage()));
+            commands.entity(ent).despawn_recursive();
+        }
+    }
+}
+
+fn do_cast(
+    mut do_cast: EventReader<DoCast>,
+    mut commands: Commands,
+    all_unit_locations: Query<(&NetEntId, &Transform)>,
+    _time: Res<Time<Virtual>>,
+    mut damage_events: EventWriter<DoDamage>,
+) {
     for DoCast(cast) in do_cast.read() {
         trace!(?cast, "Cast has completed");
 
@@ -67,9 +94,10 @@ fn do_cast(mut do_cast: EventReader<DoCast>, mut commands: Commands, _time: Res<
                 TimerMode::Once,
             )),
         ));
+
         match cast.cast {
-            shared::event::server::Cast::Teleport(_) => {} // TODO
-            shared::event::server::Cast::Shoot(ref shot_data) => {
+            Cast::Teleport(_) => {} // TODO
+            Cast::Shoot(ref shot_data) => {
                 commands.spawn((
                     Transform::from_translation(shot_data.shot_from),
                     shot_data.clone(),
@@ -80,13 +108,62 @@ fn do_cast(mut do_cast: EventReader<DoCast>, mut commands: Commands, _time: Res<
                     // TODO Add a netentid for referencing this item later
                 ));
             }
+            Cast::Aoe(loc) => {
+                for (other_unit_ent_id, other_unit_tfm) in &all_unit_locations {
+                    if other_unit_tfm.translation.distance(loc) < 25.0
+                        && &cast.caster_id != other_unit_ent_id
+                    {
+                        //TODO also check angle of attach
+                        damage_events.send(DoDamage(*other_unit_ent_id, cast.cast.get_damage()));
+                    }
+                }
+            }
+            Cast::Melee => {
+                for (unit_ent_id, unit_tfm) in &all_unit_locations {
+                    // find everything in an aoe around the caster
+                    if unit_ent_id == &cast.caster_id {
+                        for (other_unit_ent_id, other_unit_tfm) in &all_unit_locations {
+                            if other_unit_tfm.translation.distance(unit_tfm.translation) < 5.0
+                                && unit_ent_id != other_unit_ent_id
+                            {
+                                //TODO also check angle of attach
+                                damage_events
+                                    .send(DoDamage(*other_unit_ent_id, cast.cast.get_damage()));
+                            }
+                        }
+                    }
+                }
+            }
+            Cast::ShootTargeted(_, target_net_ent_id) => {
+                commands.spawn((
+                    //bullets have a net ent id + a caster.
+                    cast.cast_id,
+                    CasterNetId(cast.caster_id),
+                    // TODO hardcoded proj duration
+                    SpellProj(
+                        Timer::new(Duration::from_secs(1), TimerMode::Once),
+                        cast.cast.clone(),
+                    ),
+                    SpellTarget(target_net_ent_id),
+                ));
+            }
+            Cast::Buff => {
+                for (unit_ent_id, unit_tfm) in &all_unit_locations {
+                    // find everything in an aoe around the caster
+                    if unit_ent_id == &cast.caster_id {
+                        for (other_unit_ent_id, other_unit_tfm) in &all_unit_locations {
+                            if other_unit_tfm.translation.distance(unit_tfm.translation) < 25.0 {
+                                //TODO buff the units here
+                                warn!(?other_unit_ent_id, "Buff was cast on");
+                            }
+                        }
+                    }
+                }
+            }
             _ => {}
         }
     }
 }
-
-/// TODO
-fn check_cancelled_casts() {}
 
 fn on_player_try_cast(
     mut casts: ERFE<shared::event::server::Cast>,
@@ -169,15 +246,44 @@ fn check_collision(
     }
 }
 
+fn unit_damaged(
+    mut damage_events: EventReader<DoDamage>,
+    mut death: EventWriter<UnitDie>,
+    clients: Query<&PlayerEndpoint>,
+    mut unit: Query<(&NetEntId, &mut Health), With<AnyUnit>>,
+    sr: Res<ServerResources<EventToServer>>,
+) {
+    for DoDamage(net_ent_id, damage) in damage_events.read() {
+        for (unit_net_id, mut ply_hp) in &mut unit {
+            if unit_net_id == net_ent_id {
+                info!(?net_ent_id, ?damage, "Unit took damage");
+                // Remove the damage from their hp & update all connected clients
+                ply_hp.0 = ply_hp.0.saturating_sub(*damage as _);
+
+                let hp_event = EventToClient::SomeoneUpdateComponent(SomeoneUpdateComponent {
+                    id: *net_ent_id,
+                    update: shared::event::spells::UpdateSharedComponent::Health(*ply_hp),
+                });
+
+                for c_net_client in &clients {
+                    send_event_to_server(&sr.handler, c_net_client.0, &hp_event)
+                }
+                if ply_hp.0 <= 0 {
+                    death.send(UnitDie { id: *net_ent_id });
+                }
+            }
+        }
+    }
+}
+
 #[derive(Resource, Default)]
 struct HitList(HashSet<BulletHit>);
 
 fn hit(
     mut ev_r: EventReader<BulletHit>,
-    mut death: EventWriter<UnitDie>,
+    mut damage_events: EventWriter<DoDamage>,
     clients: Query<&PlayerEndpoint>,
-    // todo make this into an event
-    mut unit: Query<(&NetEntId, &mut Health, Option<&NPC>), With<AnyUnit>>,
+    mut unit: Query<&NetEntId, With<AnyUnit>>,
     sr: Res<ServerResources<EventToServer>>,
     mut hit_list: ResMut<HitList>,
 ) {
@@ -187,31 +293,16 @@ fn hit(
         }
 
         hit_list.0.insert(e.clone());
-        let mut hp_event = None;
-        for (ent_id, mut ply_hp, npc_data) in &mut unit {
-            if ent_id == &e.player {
-                ply_hp.0 = ply_hp.0.saturating_sub(1);
-                hp_event = Some(EventToClient::SomeoneUpdateComponent(
-                    SomeoneUpdateComponent {
-                        id: *ent_id,
-                        update: shared::event::spells::UpdateSharedComponent::Health(*ply_hp),
-                    },
-                ));
 
-                if ply_hp.0 <= 0 {
-                    death.send(UnitDie { id: *ent_id });
-                    // They get respawned on the client
-                    if npc_data.is_none() {
-                        *ply_hp = Health::default();
-                    }
-                }
+        let bullet_damage = { Cast::Shoot(ShootingData::default()).get_damage() };
+
+        for ent_id in &mut unit {
+            if ent_id == &e.player {
+                damage_events.send(DoDamage(*ent_id, bullet_damage));
             }
         }
 
         for c_net_client in &clients {
-            if let Some(e) = &hp_event {
-                send_event_to_server(&sr.handler, c_net_client.0, e);
-            }
             send_event_to_server(
                 &sr.handler,
                 c_net_client.0,

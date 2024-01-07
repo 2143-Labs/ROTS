@@ -6,6 +6,6 @@ pub struct Health(pub u32);
 
 impl Default for Health {
     fn default() -> Self {
-        Self(3)
+        Self(100)
     }
 }

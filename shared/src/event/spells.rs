@@ -2,7 +2,8 @@ use crate::stats::Health;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize, Component)]
+// Default derive is used to just cheapy make a variant of the cast object
+#[derive(Debug, Clone, Serialize, Deserialize, Component, Default)]
 pub struct ShootingData {
     pub shot_from: Vec3,
     pub target: Vec3,
@@ -17,7 +18,7 @@ pub enum UpdateSharedComponent {
 #[non_exhaustive]
 pub enum NPC {
     Penguin,
-    Mage
+    Mage,
 }
 
 #[derive(Component)]
@@ -37,14 +38,14 @@ impl NPC {
     pub fn get_base_health(&self) -> Health {
         Health(match self {
             NPC::Penguin => 50,
-            NPC::Mage => 20
+            NPC::Mage => 20,
         })
     }
 
     pub fn get_ai_component(&self) -> AIType {
         match self {
             NPC::Penguin => AIType::WalkToNearestPlayer,
-            NPC::Mage => AIType::WalkToNearestPlayer
+            NPC::Mage => AIType::WalkToNearestPlayer,
         }
     }
     pub fn animation(&self) -> &'static str {

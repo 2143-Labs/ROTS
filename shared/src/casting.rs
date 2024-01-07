@@ -57,6 +57,7 @@ fn update_casts_targeted_bullet(
             if &targeted_ent_data.1 == ent_id {
                 let source_location = targeted_ent_data.0;
                 let target_location = ent_tfm.translation;
+                // TODO hardcoded proj duration
                 // bullets take exactly 1 second
                 let pct_time = despawn_timer.0.elapsed_secs();
                 let distance = (target_location - source_location) * pct_time;
