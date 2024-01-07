@@ -130,8 +130,8 @@ pub fn on_node_event<T: NetworkingEvent>(res: &ServerResources<T>, event: NodeEv
         NetEvent::Message(endpoint, data) => {
             let event: EventGroupingOwned<T> = match postcard::from_bytes(data) {
                 Ok(e) => e,
-                Err(_) => {
-                    warn!(?endpoint, "Got invalid json from endpoint");
+                Err(p) => {
+                    warn!(?endpoint, ?p, "Got invalid json from endpoint");
                     return;
                 }
             };
