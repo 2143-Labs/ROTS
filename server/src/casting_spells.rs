@@ -13,14 +13,11 @@ use shared::{
             YourCastResult,
         },
         server::Cast,
-        spells::{ShootingData, NPC},
+        spells::ShootingData,
         NetEntId, ERFE,
     },
     interactable::Interactable,
-    netlib::{
-        send_event_to_server, EventToClient, EventToServer,
-        ServerResources,
-    },
+    netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
     stats::Health,
     AnyUnit,
 };
@@ -110,10 +107,12 @@ fn do_cast(
                     DespawnTime(Timer::new(Duration::from_secs(5), TimerMode::Once)),
                     // TODO Add a netentid for referencing this item later
                 ));
-            },
+            }
             Cast::Aoe(loc) => {
                 for (other_unit_ent_id, other_unit_tfm) in &all_unit_locations {
-                    if other_unit_tfm.translation.distance(loc) < 25.0 && &cast.caster_id != other_unit_ent_id {
+                    if other_unit_tfm.translation.distance(loc) < 25.0
+                        && &cast.caster_id != other_unit_ent_id
+                    {
                         //TODO also check angle of attach
                         damage_events.send(DoDamage(*other_unit_ent_id, cast.cast.get_damage()));
                     }
@@ -124,9 +123,12 @@ fn do_cast(
                     // find everything in an aoe around the caster
                     if unit_ent_id == &cast.caster_id {
                         for (other_unit_ent_id, other_unit_tfm) in &all_unit_locations {
-                            if other_unit_tfm.translation.distance(unit_tfm.translation) < 5.0 && unit_ent_id != other_unit_ent_id {
+                            if other_unit_tfm.translation.distance(unit_tfm.translation) < 5.0
+                                && unit_ent_id != other_unit_ent_id
+                            {
                                 //TODO also check angle of attach
-                                damage_events.send(DoDamage(*other_unit_ent_id, cast.cast.get_damage()));
+                                damage_events
+                                    .send(DoDamage(*other_unit_ent_id, cast.cast.get_damage()));
                             }
                         }
                     }
@@ -138,7 +140,10 @@ fn do_cast(
                     cast.cast_id,
                     CasterNetId(cast.caster_id),
                     // TODO hardcoded proj duration
-                    SpellProj(Timer::new(Duration::from_secs(1), TimerMode::Once), cast.cast.clone()),
+                    SpellProj(
+                        Timer::new(Duration::from_secs(1), TimerMode::Once),
+                        cast.cast.clone(),
+                    ),
                     SpellTarget(target_net_ent_id),
                 ));
             }
@@ -255,12 +260,10 @@ fn unit_damaged(
                 // Remove the damage from their hp & update all connected clients
                 ply_hp.0 = ply_hp.0.saturating_sub(*damage as _);
 
-                let hp_event = EventToClient::SomeoneUpdateComponent(
-                    SomeoneUpdateComponent {
-                        id: *net_ent_id,
-                        update: shared::event::spells::UpdateSharedComponent::Health(*ply_hp),
-                    },
-                );
+                let hp_event = EventToClient::SomeoneUpdateComponent(SomeoneUpdateComponent {
+                    id: *net_ent_id,
+                    update: shared::event::spells::UpdateSharedComponent::Health(*ply_hp),
+                });
 
                 for c_net_client in &clients {
                     send_event_to_server(&sr.handler, c_net_client.0, &hp_event)
@@ -291,9 +294,7 @@ fn hit(
 
         hit_list.0.insert(e.clone());
 
-        let bullet_damage = {
-            Cast::Shoot(ShootingData::default()).get_damage()
-        };
+        let bullet_damage = { Cast::Shoot(ShootingData::default()).get_damage() };
 
         for ent_id in &mut unit {
             if ent_id == &e.player {

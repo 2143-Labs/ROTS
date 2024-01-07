@@ -10,7 +10,7 @@ use shared::{
 
 use crate::{
     network::{build_healthbar, OtherPlayer},
-    player::{PlayerName, PrimaryUnitControl, Animation},
+    player::{PlayerName, PrimaryUnitControl},
     states::GameState,
 };
 

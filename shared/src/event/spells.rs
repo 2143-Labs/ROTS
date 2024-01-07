@@ -18,7 +18,7 @@ pub enum UpdateSharedComponent {
 #[non_exhaustive]
 pub enum NPC {
     Penguin,
-    Mage
+    Mage,
 }
 
 #[derive(Component)]
@@ -38,14 +38,14 @@ impl NPC {
     pub fn get_base_health(&self) -> Health {
         Health(match self {
             NPC::Penguin => 50,
-            NPC::Mage => 20
+            NPC::Mage => 20,
         })
     }
 
     pub fn get_ai_component(&self) -> AIType {
         match self {
             NPC::Penguin => AIType::WalkToNearestPlayer,
-            NPC::Mage => AIType::WalkToNearestPlayer
+            NPC::Mage => AIType::WalkToNearestPlayer,
         }
     }
     pub fn animation(&self) -> &'static str {
