@@ -150,8 +150,10 @@ fn send_networked_npc_move(
     }
 
     if all_events.len() > 0 {
-        for endpoint in &clients {
-            send_event_to_server_batch(&sr.handler, endpoint.0, all_events.as_slice());
+        for event_list in all_events.chunks(250) {
+            for endpoint in &clients {
+                send_event_to_server_batch(&sr.handler, endpoint.0, event_list);
+            }
         }
     }
 }
