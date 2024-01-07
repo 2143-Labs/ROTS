@@ -281,9 +281,13 @@ fn hit(
 
         hit_list.0.insert(e.clone());
 
+        let bullet_damage = {
+            Cast::Shoot(ShootingData::default()).get_damage()
+        };
+
         for ent_id in &mut unit {
             if ent_id == &e.player {
-                damage_events.send(DoDamage(*ent_id, 1.0));
+                damage_events.send(DoDamage(*ent_id, bullet_damage));
             }
         }
 
