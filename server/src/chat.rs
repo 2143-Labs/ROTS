@@ -23,7 +23,10 @@ use shared::{
     AnyUnit,
 };
 
-use crate::{ConnectedPlayerName, EndpointToNetId, PlayerEndpoint, ServerState, game_manager::GameManagerState};
+use crate::{
+    game_manager::GameManagerState, ConnectedPlayerName, EndpointToNetId, PlayerEndpoint,
+    ServerState,
+};
 #[derive(Parser, Debug, Event)]
 #[command(name = "chat_command")]
 #[command(bin_name = "/")]
@@ -155,7 +158,10 @@ fn on_chat_command(
 
                 let event = EventToClient::Chat(Chat {
                     source: None,
-                    text: format!("{cur_game_manager_state:?}: Players: {:?} || NPCs: {:?}", player_names, enemies),
+                    text: format!(
+                        "{cur_game_manager_state:?}: Players: {:?} || NPCs: {:?}",
+                        player_names, enemies
+                    ),
                 });
                 send_event_to_server(&sr.handler, command.endpoint, &event);
             }

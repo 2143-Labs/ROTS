@@ -65,8 +65,8 @@ struct PlayerDisconnect {
 
 pub mod casting_spells;
 pub mod chat;
-pub mod npc;
 pub mod game_manager;
+pub mod npc;
 
 fn main() {
     info!("Main Start");
