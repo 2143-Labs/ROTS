@@ -65,6 +65,7 @@ struct PlayerDisconnect {
 
 pub mod casting_spells;
 pub mod chat;
+pub mod game_manager;
 pub mod npc;
 
 fn main() {
@@ -85,6 +86,7 @@ fn main() {
             casting_spells::CastingPlugin,
             chat::ChatPlugin,
             npc::NPCPlugin,
+            game_manager::GamePlugin,
             //StatusPlugin,
         ))
         .add_state::<ServerState>()

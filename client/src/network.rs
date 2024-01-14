@@ -301,12 +301,11 @@ fn go_movement_intents(
 
 fn on_connect(
     mut c_info: ERFE<SpawnUnit>,
-    mut notif: EventWriter<Notification>,
-
+    //mut notif: EventWriter<Notification>,
     mut local_spawn_unit: EventWriter<SpawnUnit>,
 ) {
     for event in c_info.read() {
-        notif.send(Notification(format!("{:?}", event.event)));
+        //notif.send(Notification(format!("{:?}", event.event)));
         local_spawn_unit.send(event.event.clone());
     }
 }

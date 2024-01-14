@@ -135,8 +135,9 @@ fn send_networked_npc_move(
     clients: Query<&PlayerEndpoint, With<ConnectedPlayerName>>,
     sr: Res<ServerResources<EventToServer>>,
 ) {
+    let mut all_events = vec![];
     for (&movement, mi, &id) in &npcs {
-        let events = &[
+        all_events.extend([
             EventToClient::SomeoneMoved(SomeoneMoved {
                 id,
                 movement: shared::event::server::ChangeMovement::SetTransform(movement),
@@ -145,9 +146,14 @@ fn send_networked_npc_move(
                 id,
                 movement: shared::event::server::ChangeMovement::Move2d(mi.0),
             }),
-        ];
-        for endpoint in &clients {
-            send_event_to_server_batch(&sr.handler, endpoint.0, events);
+        ]);
+    }
+
+    if all_events.len() > 0 {
+        for event_list in all_events.chunks(250) {
+            for endpoint in &clients {
+                send_event_to_server_batch(&sr.handler, endpoint.0, event_list);
+            }
         }
     }
 }
