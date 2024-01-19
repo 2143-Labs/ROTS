@@ -8,17 +8,17 @@ default-run = "client"
 
 [dependencies]
 bevy = "0.12.1"
-serde_yaml = "0.9.27"
-serde_json = "1.0.108"
-serde = { version = "1.0.193", features = ["derive"] }
+serde_yaml = "0.9.30"
+serde_json = "1.0.111"
+serde = { version = "1.0.195", features = ["derive"] }
 rand = "0.8.5"
 message-io = "0.18.0"
 shared = { path = "../shared" }
-bevy_xpbd_3d = "0.3.2"
+bevy_xpbd_3d = "0.3.3"
 postcard = { version = "1.0.8", features = ["use-std", "alloc"] }
 
-bevy-inspector-egui = { version = "0.21.0", optional = true }
-clap = { version = "4.4.11", features = ["derive"] }
+bevy-inspector-egui = { version = "0.22.1", optional = true }
+clap = { version = "4.4.18", features = ["derive"] } #
 noise = "0.8.2"
 
 [features]
