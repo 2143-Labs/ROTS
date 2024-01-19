@@ -21,7 +21,7 @@ pub const HEIGHT: f32 = 720.0;
 pub const WIDTH: f32 = 1280.0;
 
 fn main() {
-    let args = cli::CliArgs::parse();
+    let mut args = cli::CliArgs::parse();
 
     if args.print_binds {
         println!("{:?}", Config::load_from_main_dir().keybindings);
@@ -31,6 +31,11 @@ fn main() {
     if args.print_config {
         println!("{}", Config::default_config_str());
         return;
+    }
+
+    // If we are building a static release, then just add the autoconnect argument by default
+    if args.autoconnect.is_none() && std::option_env!("BUILD_CTX") == Some("action") {
+        args.autoconnect = Some("main".to_string());
     }
 
     let mut app = App::new();

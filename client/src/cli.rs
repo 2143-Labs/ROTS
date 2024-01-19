@@ -10,7 +10,7 @@ pub enum Optimizations {
 
 #[derive(clap::Parser, Resource, Debug)]
 pub struct CliArgs {
-    /// Automatically connect to this ip and port (no name resolution, must be an ip.)
+    /// Automatically connect to this p and port (no name resolution, must be an ip.)
     #[arg(short, long, name = "IP")]
     pub autoconnect: Option<String>,
 
