@@ -45,6 +45,8 @@ jobs:
       SCCACHE_GHA_ENABLED: "true"
       RUSTC_WRAPPER: "sccache"
       CARGO_UNSTABLE_SPARSE_REGISTRY: "true"
+      # used in main.rs to decide the default cmdline arguments
+      BUILD_CTX: "action"
     strategy:
       matrix:
         os: ${{ fromJSON(needs.setup.outputs.builds) }}
