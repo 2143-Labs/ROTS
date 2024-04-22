@@ -35,7 +35,7 @@ pub enum GameAction {
 
 impl GameAction {
     /// Run condition that returns true if this keycode was just pressed
-    pub const fn just_pressed(&'static self) -> impl Fn(Res<Input<KeyCode>>, Res<Config>) -> bool {
+    pub const fn just_pressed(&'static self) -> impl Fn(Res<ButtonInput<KeyCode>>, Res<Config>) -> bool {
         move |keyboard_input, config| config.just_pressed(&keyboard_input, self.clone())
     }
 }
@@ -82,35 +82,35 @@ impl Config {
         false
     }
 
-    pub fn just_pressed(&self, keyboard_input: &Res<Input<KeyCode>>, ga: GameAction) -> bool {
+    pub fn just_pressed(&self, keyboard_input: &Res<ButtonInput<KeyCode>>, ga: GameAction) -> bool {
         self.pressing_keybind(|x| keyboard_input.just_pressed(x), ga)
     }
 
-    pub fn pressed(&self, keyboard_input: &Res<Input<KeyCode>>, ga: GameAction) -> bool {
+    pub fn pressed(&self, keyboard_input: &Res<ButtonInput<KeyCode>>, ga: GameAction) -> bool {
         self.pressing_keybind(|x| keyboard_input.pressed(x), ga)
     }
 
-    pub fn just_released(&self, keyboard_input: &Res<Input<KeyCode>>, ga: GameAction) -> bool {
+    pub fn just_released(&self, keyboard_input: &Res<ButtonInput<KeyCode>>, ga: GameAction) -> bool {
         self.pressing_keybind(|x| keyboard_input.just_released(x), ga)
     }
 }
 
 static DEFAULT_BINDS: Lazy<Keybinds> = Lazy::new(|| {
     HashMap::from([
-        (GameAction::MoveForward, vec![KeyCode::W]),
-        (GameAction::MoveBackward, vec![KeyCode::S]),
-        (GameAction::StrafeLeft, vec![KeyCode::A]),
-        (GameAction::StrafeRight, vec![KeyCode::D]),
-        (GameAction::RotateLeft, vec![KeyCode::Q]),
-        (GameAction::RotateRight, vec![KeyCode::E]),
+        (GameAction::MoveForward, vec![KeyCode::KeyW]),
+        (GameAction::MoveBackward, vec![KeyCode::KeyS]),
+        (GameAction::StrafeLeft, vec![KeyCode::KeyA]),
+        (GameAction::StrafeRight, vec![KeyCode::KeyD]),
+        (GameAction::RotateLeft, vec![KeyCode::KeyQ]),
+        (GameAction::RotateRight, vec![KeyCode::KeyE]),
         (GameAction::Jump, vec![KeyCode::Space]),
-        (GameAction::Use, vec![KeyCode::F]),
-        (GameAction::ChangeCamera, vec![KeyCode::C]),
-        (GameAction::UnlockCursor, vec![KeyCode::X]),
-        (GameAction::Fire1, vec![KeyCode::T]),
-        (GameAction::Fire2, vec![KeyCode::E]),
+        (GameAction::Use, vec![KeyCode::KeyF]),
+        (GameAction::ChangeCamera, vec![KeyCode::KeyC]),
+        (GameAction::UnlockCursor, vec![KeyCode::KeyX]),
+        (GameAction::Fire1, vec![KeyCode::KeyT]),
+        (GameAction::Fire2, vec![KeyCode::KeyE]),
         (GameAction::Mod1, vec![KeyCode::ShiftLeft]),
-        (GameAction::Chat, vec![KeyCode::Return]),
+        (GameAction::Chat, vec![KeyCode::Enter]),
     ])
 });
 
