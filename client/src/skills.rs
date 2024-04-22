@@ -69,7 +69,7 @@ pub type GameTime = f64;
 struct StartLocalAnimation(Cast);
 
 fn cast_skill_click(
-    //keyboard_input: Res<Input<KeyCode>>,
+    //keyboard_input: Res<ButtonInput<KeyCode>>,
     //config: Res<Config>,
     //aim_dir: Query<&ClientAimDirection>,
     mut ev_sa: EventWriter<StartLocalAnimation>,
@@ -82,7 +82,7 @@ fn cast_skill_click(
 pub struct CurrentTargetingCursor(pub Option<NetEntId>);
 
 fn cast_skill_2(
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     config: Res<Config>,
     player: Query<(&Transform, &CurrentTargetingCursor), With<Player>>,
     aim_dir: Query<&ClientAimDirection>,
@@ -115,7 +115,7 @@ fn cast_skill_2(
 }
 
 fn cast_skill_1(
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     config: Res<Config>,
     player: Query<&Transform, With<Player>>,
     aim_dir: Query<&ClientAimDirection>,

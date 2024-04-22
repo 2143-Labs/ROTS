@@ -44,7 +44,7 @@ impl Default for CameraFollow {
 }
 
 pub fn q_e_rotate_cam(
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     mut camera_query: Query<&mut CameraFollow>,
     time: Res<Time>,
     config: Res<Config>,
@@ -65,11 +65,11 @@ pub fn q_e_rotate_cam(
 pub fn wow_camera_system(
     mut mouse_wheel_events: EventReader<MouseWheel>,
     mut mouse_events: EventReader<MouseMotion>,
-    mouse_input: Res<Input<MouseButton>>,
+    mouse_input: Res<ButtonInput<MouseButton>>,
     mut camera_query: Query<(&mut Transform, &mut CameraFollow), With<Camera3d>>,
     mut client_aim_direction: Query<&mut ClientAimDirection>,
     current_unit: Query<&Transform, (With<PrimaryUnitControl>, Without<CameraFollow>)>,
-    _keyboard_input: Res<Input<KeyCode>>,
+    _keyboard_input: Res<ButtonInput<KeyCode>>,
     camera_type: Res<State<FreeCamState>>,
     config: Res<Config>,
 ) {
@@ -138,7 +138,7 @@ pub(crate) fn player_movement(
         Option<(&AnimationTimer, &Cast)>,
     )>,
     camera_query: Query<&CameraFollow>,
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     config: Res<Config>,
     mut last_movement: Local<LastMovement>,
     time: Res<Time>,

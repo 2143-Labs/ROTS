@@ -23,7 +23,7 @@ pub enum ChatState {
 pub struct ChatPlugin;
 impl Plugin for ChatPlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<ChatState>()
+        app.init_state::<ChatState>()
             .add_event::<Chat>()
             .add_event::<WeChat>()
             .insert_resource(ChatHistory::default())
@@ -107,7 +107,7 @@ fn on_chat_toggle(
 struct WeChat(String);
 
 fn on_chat_type(
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     mut typed_chars: EventReader<ReceivedCharacter>,
     mut typed_text: Query<&mut Text, With<ChatTypeContainer>>,
     mut chat_history_ptr: ResMut<ChatHistoryPtr>,
@@ -117,11 +117,11 @@ fn on_chat_type(
     let mut chatbox = chatbox.as_mut();
     let cur_text = chatbox.get_text();
 
-    if keyboard_input.just_pressed(KeyCode::Back) {
+    if keyboard_input.just_pressed(KeyCode::Backspace) {
         cur_text.pop();
     }
 
-    if keyboard_input.just_pressed(KeyCode::Up) {
+    if keyboard_input.just_pressed(KeyCode::ArrowUp) {
         if chat_history.0.len() >= 1 {
             let new_ptr = chat_history_ptr
                 .0
@@ -133,7 +133,7 @@ fn on_chat_type(
         }
     }
 
-    if keyboard_input.just_pressed(KeyCode::Down) {
+    if keyboard_input.just_pressed(KeyCode::ArrowDown) {
         if let Some(cur_ptr) = chat_history_ptr.0 {
             let new_ptr = (cur_ptr + 1).min(chat_history.0.len() - 1);
 

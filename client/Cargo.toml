@@ -14,7 +14,6 @@ serde = { version = "1.0.198", features = ["derive"] }
 rand = "0.8.5"
 message-io = "0.18.1"
 shared = { path = "../shared" }
-bevy_xpbd_3d = "0.4.2"
 postcard = { version = "1.0.8", features = ["use-std", "alloc"] }
 
 bevy-inspector-egui = { version = "0.24.0", optional = true }

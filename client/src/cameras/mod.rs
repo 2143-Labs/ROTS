@@ -76,7 +76,7 @@ pub enum FreeCamState {
 pub fn toggle_camera_mode(
     cam_state: Res<State<FreeCamState>>,
     mut next_state: ResMut<NextState<FreeCamState>>,
-    input: Res<Input<KeyCode>>,
+    input: Res<ButtonInput<KeyCode>>,
     mut windows_query: Query<&mut Window>,
     config: Res<Config>,
 ) {

@@ -1,5 +1,5 @@
 use bevy::{prelude::*, render::mesh::shape::Plane};
-use bevy_xpbd_3d::components::Collider;
+//use bevy_xpbd_3d::components::Collider;
 use noise::{NoiseFn, Simplex};
 use std::collections::HashMap;
 
@@ -210,7 +210,7 @@ fn update_chunks(
                                     ),
                                     ..Default::default()
                                 },
-                                Collider::cuboid(CHUNK_SIZE as f32, 0.002, CHUNK_SIZE as f32),
+                                //Collider::cuboid(CHUNK_SIZE as f32, 0.002, CHUNK_SIZE as f32),
                                 Name::new(format!("Chunk: {}", chunk_pos_vec3)),
                             ))
                             .id();
