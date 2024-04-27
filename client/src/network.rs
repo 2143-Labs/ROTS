@@ -178,7 +178,7 @@ fn receive_world_data(
                     color: Color::rgb(0.4, 0.5, 0.75),
                 },
             )
-            .with_text_alignment(TextAlignment::Center)
+            .with_text_justify(JustifyText::Center)
             .with_style(Style {
                 position_type: PositionType::Absolute,
                 right: Val::Px(10.0),
@@ -196,7 +196,7 @@ fn receive_world_data(
                     color: Color::rgb(0.9, 0.2, 0.2),
                 },
             )
-            .with_text_alignment(TextAlignment::Center)
+            .with_text_justify(JustifyText::Center)
             .with_style(Style {
                 position_type: PositionType::Absolute,
                 right: Val::Px(10.0),

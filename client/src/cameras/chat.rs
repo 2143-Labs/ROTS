@@ -183,7 +183,7 @@ fn setup_panel(mut commands: Commands, asset_server: Res<AssetServer>) {
                         color: Color::WHITE,
                     },
                 )])
-                .with_text_alignment(TextAlignment::Left)
+                .with_text_justify(JustifyText::Left)
                 .with_style(Style { ..default() }),
                 ChatTypeContainer,
             ));
@@ -265,7 +265,7 @@ fn on_chat(
                         },
                     ),
                 ])
-                .with_text_alignment(TextAlignment::Left)
+                .with_text_justify(JustifyText::Left)
                 .with_style(Style { ..default() }),
                 DespawnTime(Timer::new(Duration::from_millis(15000), TimerMode::Once)),
             ));

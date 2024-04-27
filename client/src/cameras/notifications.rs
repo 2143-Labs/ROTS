@@ -78,7 +78,7 @@ fn on_notification(
                         color: Color::WHITE,
                     },
                 )
-                .with_text_alignment(TextAlignment::Right)
+                .with_text_justify(JustifyText::Right)
                 .with_style(Style { ..default() }),
                 NotificationElement(e.0.clone()),
                 DespawnTime(Timer::new(Duration::from_millis(10000), TimerMode::Once)),
