@@ -43,8 +43,8 @@ fn on_us_tp(
     }
 }
 
-#[derive(Component)]
-struct ShootTargetProj;
+//#[derive(Component)]
+//struct ShootTargetProj;
 
 fn do_cast_finish(
     mut do_cast: EventReader<DoCast>,
@@ -128,7 +128,7 @@ fn do_cast_finish(
 
 /// Conains the cast id of the tp
 #[derive(Component)]
-struct TpCube(NetEntId);
+pub struct TpCube(pub NetEntId);
 
 fn on_someone_cast(
     mut someone_cast: ERFE<SomeoneCast>,

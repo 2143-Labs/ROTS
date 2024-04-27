@@ -23,7 +23,7 @@ use shared::{
 
 use shared::unit::MovementIntention;
 
-mod casting;
+pub mod casting;
 mod interactable;
 pub mod npc;
 pub mod stats;
