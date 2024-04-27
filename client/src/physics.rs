@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_xpbd_3d::prelude::PhysicsPlugins;
+//use bevy_xpbd_3d::prelude::PhysicsPlugins;
 
 #[derive(Reflect, Component)]
 pub struct Jumper {
@@ -23,7 +23,7 @@ pub struct PhysPlugin;
 
 impl Plugin for PhysPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(PhysicsPlugins::default())
-            .register_type::<Jumper>();
+        //app.add_plugins(PhysicsPlugins::default())
+        app.register_type::<Jumper>();
     }
 }
