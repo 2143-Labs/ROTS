@@ -25,6 +25,7 @@ function unlaunch
 end
 
 
+# Main loop: keep exactly 1 istance of server alive, restart it on git pull
 launch
 while true do;
     echo (last_pid)
