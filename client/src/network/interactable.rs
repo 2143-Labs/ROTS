@@ -29,7 +29,7 @@ fn on_interact_spawn(
         let event = &event.event;
         let cube = PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::rgb(0.7, 0.7, 0.0).into()),
+            material: materials.add(Color::rgb(0.7, 0.7, 0.0)),
             transform: Transform::from_translation(event.location),
             ..Default::default()
         };

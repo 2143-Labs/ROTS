@@ -104,7 +104,7 @@ fn build_healthbar(
     // spawn their hp bar
     let mut hp_bar = PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-        material: materials.add(Color::rgb(0.9, 0.3, 0.0).into()),
+        material: materials.add(Color::rgb(0.9, 0.3, 0.0)),
         transform: Transform::from_translation(Vec3::new(0.0, 0.4, 0.0) + offset),
         ..Default::default()
     };
