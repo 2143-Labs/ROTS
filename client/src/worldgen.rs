@@ -59,11 +59,12 @@ fn init_mats(
 ) {
     world.material_grass = materials.add(Color::rgb(0.06, 0.687, 0.238));
     world.material_grass_dark = materials.add(Color::rgb(0.04, 0.48, 0.164));
+    // TODO resize this again
     world.ground_mesh = meshes.add(Mesh::from(Plane3d {
         normal: Direction3d::Y
     }));
 
-    world.tree_mesh = meshes.add(Mesh::from(shape::Box::new(0.65, TREE_HEIGHT, 0.65)));
+    world.tree_mesh = meshes.add(Mesh::from(Cuboid { half_size: Vec3::new(0.30, TREE_HEIGHT, 0.30) } ));
     world.material_tree = materials.add(Color::rgb(0.4, 0.2, 0.0));
 
     if args.optimize_floor() {
