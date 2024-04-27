@@ -87,8 +87,8 @@ fn do_cast_finish(
             }
             shared::event::server::Cast::Shoot(ref dat) => {
                 let cube = PbrBundle {
-                    mesh: meshes.add(Mesh::from(shape::Cube { size: 0.3 })),
-                    material: materials.add(Color::rgb(0.0, 0.3, 0.7).into()),
+                    mesh: meshes.add(Mesh::from(Cuboid { half_size: Vec3::splat(0.15) })),
+                    material: materials.add(Color::rgb(0.0, 0.3, 0.7)),
                     transform: Transform::from_translation(dat.shot_from),
                     ..Default::default()
                 };
@@ -104,8 +104,8 @@ fn do_cast_finish(
             }
             shared::event::server::Cast::ShootTargeted(from_loc, ref net_id) => {
                 let cube = PbrBundle {
-                    mesh: meshes.add(Mesh::from(shape::Cube { size: 0.5 })),
-                    material: materials.add(Color::rgb(0.0, 0.3, 0.7).into()),
+                    mesh: meshes.add(Mesh::from(Cuboid { half_size: Vec3::splat(0.25) })),
+                    material: materials.add(Color::rgb(0.0, 0.3, 0.7)),
                     transform: Transform::from_translation(from_loc),
                     ..Default::default()
                 };
@@ -148,8 +148,8 @@ fn on_someone_cast(
                 match cast.event.cast {
                     shared::event::server::Cast::Teleport(targ) => {
                         let cube = PbrBundle {
-                            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-                            material: materials.add(Color::rgb(0.7, 0.8, 0.9).into()),
+                            mesh: meshes.add(Mesh::from(Cuboid { half_size: Vec3::splat(0.5) })),
+                            material: materials.add(Color::rgb(0.7, 0.8, 0.9)),
                             transform: Transform::from_translation(targ + Vec3::new(0.0, 0.5, 0.0))
                                 .with_scale(Vec3::new(0.5, 20.0, 0.5)),
                             ..Default::default()

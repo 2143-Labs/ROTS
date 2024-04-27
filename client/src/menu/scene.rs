@@ -32,8 +32,8 @@ impl MenuButton {
     ) {
         commands.spawn((
             PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Cube { size: 0.5 })),
-                material: materials.add(Color::hex("#3090b0").unwrap().into()),
+                mesh: meshes.add(Mesh::from(Cuboid { half_size: Vec3::splat(0.5)  })),
+                material: materials.add(Color::hex("#3090b0").unwrap()),
                 transform,
                 ..default()
             },
@@ -138,7 +138,7 @@ pub fn spawn_menu_scene(
                 color: Color::WHITE,
             },
         )
-        .with_text_alignment(TextAlignment::Center)
+        .with_text_justify(JustifyText::Center)
         .with_style(Style {
             position_type: PositionType::Absolute,
             left: Val::Px(10.0),
@@ -165,7 +165,7 @@ fn _test_sub_render(
                 color: Color::WHITE,
             },
         )
-        .with_text_alignment(TextAlignment::Center)
+        .with_text_justify(JustifyText::Center)
         .with_style(Style {
             position_type: PositionType::Absolute,
             left: Val::Px(10.0),

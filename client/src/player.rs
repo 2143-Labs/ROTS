@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_xpbd_3d::prelude::{Collider, RigidBody};
+//use bevy_xpbd_3d::prelude::{Collider, RigidBody};
 use shared::{unit::MovementIntention, AnyUnit};
 
 use crate::{skills::CurrentTargetingCursor, worldgen::ChunkPos};
@@ -50,8 +50,8 @@ pub fn spawn_player_sprite(
                 .with_scale(Vec3::new(4., 4., 4.)),
             ..default()
         },
-        RigidBody::Dynamic,
-        Collider::cuboid(1., 1., 1.),
+        //RigidBody::Dynamic,
+        //Collider::cuboid(1., 1., 1.),
         Name::new("Player"),
         MovementIntention(Vec2::ZERO),
         Player::default(),

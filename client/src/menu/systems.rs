@@ -47,7 +47,7 @@ pub fn check_autoconnect_cli(
 }
 
 pub fn menu_select(
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     _config: Res<shared::Config>,
     mut game_state: ResMut<NextState<GameState>>,
     buttons: Query<&MenuButton, With<SelectedButton>>,

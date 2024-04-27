@@ -1,5 +1,5 @@
 use bevy::{prelude::*, render::mesh::shape::Plane};
-use bevy_xpbd_3d::components::Collider;
+//use bevy_xpbd_3d::components::Collider;
 use noise::{NoiseFn, Simplex};
 use std::collections::HashMap;
 
@@ -57,15 +57,15 @@ fn init_mats(
     mut commands: Commands,
     args: Res<CliArgs>,
 ) {
-    world.material_grass = materials.add(Color::rgb(0.06, 0.687, 0.238).into());
-    world.material_grass_dark = materials.add(Color::rgb(0.04, 0.48, 0.164).into());
+    world.material_grass = materials.add(Color::rgb(0.06, 0.687, 0.238));
+    world.material_grass_dark = materials.add(Color::rgb(0.04, 0.48, 0.164));
     world.ground_mesh = meshes.add(Mesh::from(shape::Plane {
         size: CHUNK_SIZE as f32,
         subdivisions: 0,
     }));
 
     world.tree_mesh = meshes.add(Mesh::from(shape::Box::new(0.65, TREE_HEIGHT, 0.65)));
-    world.material_tree = materials.add(Color::rgb(0.4, 0.2, 0.0).into());
+    world.material_tree = materials.add(Color::rgb(0.4, 0.2, 0.0));
 
     if args.optimize_floor() {
         commands.spawn((PbrBundle {
@@ -74,7 +74,7 @@ fn init_mats(
                 size: (CHUNK_SIZE * 100) as f32,
                 subdivisions: 1,
             })),
-            material: materials.add(Color::hex("#1f7840").unwrap().into()),
+            material: materials.add(Color::hex("#1f7840").unwrap()),
             ..Default::default()
         },));
     }
@@ -95,7 +95,7 @@ fn spawn_chunk_objects(
     let tree_width = CHUNK_SIZE / 4;
     for x in 0..tree_width {
         for y in 0..tree_width {
-            _ = spawn_tree_in_tile(
+            spawn_tree_in_tile(
                 chunk,
                 commands,
                 &chunk_pos,
@@ -103,7 +103,7 @@ fn spawn_chunk_objects(
                 noise,
                 world_assets.tree_mesh.clone(),
                 world_assets.material_tree.clone(),
-            )
+            );
         }
     }
 }
@@ -136,7 +136,7 @@ fn spawn_tree_in_tile(
                     material: tree_material,
                     transform: Transform::from_translation(Vec3::new(
                         -(CHUNK_SIZE / 2) as f32 + tile_pos.x + 0.5 + tree_width as f32 / 2.0,
-                        TREE_HEIGHT / 2 as f32,
+                        TREE_HEIGHT / 2_f32,
                         -(CHUNK_SIZE / 2) as f32 + tile_pos.y + 0.5 + tree_width as f32 / 2.0,
                     )),
                     ..Default::default()
@@ -199,7 +199,7 @@ fn update_chunks(
                                 PbrBundle {
                                     mesh: world_assets.ground_mesh.clone(),
                                     // random color for chunks
-                                    material: material,
+                                    material,
                                     transform: Transform::from_translation(
                                         chunk_pos_vec3 * CHUNK_SIZE as f32
                                             + Vec3::new(
@@ -210,7 +210,7 @@ fn update_chunks(
                                     ),
                                     ..Default::default()
                                 },
-                                Collider::cuboid(CHUNK_SIZE as f32, 0.002, CHUNK_SIZE as f32),
+                                //Collider::cuboid(CHUNK_SIZE as f32, 0.002, CHUNK_SIZE as f32),
                                 Name::new(format!("Chunk: {}", chunk_pos_vec3)),
                             ))
                             .id();
@@ -229,8 +229,8 @@ fn update_chunks(
         // Despawn old chunks
         world.chunks.retain(|pos, entity| {
             // Calculate the distance from this chunk to the player's chunk
-            let dx = pos.0 as f32 - player_chunk_pos.x as f32;
-            let dz = pos.2 as f32 - player_chunk_pos.z as f32;
+            let dx = pos.0 as f32 - player_chunk_pos.x;
+            let dz = pos.2 as f32 - player_chunk_pos.z;
             let distance = (dx.powi(2) + dz.powi(2)).sqrt();
 
             if distance <= view_distance as f32 {

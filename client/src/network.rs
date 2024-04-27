@@ -103,8 +103,8 @@ fn build_healthbar(
     let player_id = s.parent_entity();
     // spawn their hp bar
     let mut hp_bar = PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-        material: materials.add(Color::rgb(0.9, 0.3, 0.0).into()),
+        mesh: meshes.add(Mesh::from(Cuboid { half_size: Vec3::splat(0.5)  })),
+        material: materials.add(Color::rgb(0.9, 0.3, 0.0)),
         transform: Transform::from_translation(Vec3::new(0.0, 0.4, 0.0) + offset),
         ..Default::default()
     };
@@ -178,7 +178,7 @@ fn receive_world_data(
                     color: Color::rgb(0.4, 0.5, 0.75),
                 },
             )
-            .with_text_alignment(TextAlignment::Center)
+            .with_text_justify(JustifyText::Center)
             .with_style(Style {
                 position_type: PositionType::Absolute,
                 right: Val::Px(10.0),
@@ -196,7 +196,7 @@ fn receive_world_data(
                     color: Color::rgb(0.9, 0.2, 0.2),
                 },
             )
-            .with_text_alignment(TextAlignment::Center)
+            .with_text_justify(JustifyText::Center)
             .with_style(Style {
                 position_type: PositionType::Absolute,
                 right: Val::Px(10.0),
@@ -234,7 +234,7 @@ fn send_movement(
     if let Ok((transform, some_intent)) = our_transform.get_single() {
         let mut events = vec![];
         events.push(EventToServer::ChangeMovement(ChangeMovement::SetTransform(
-            transform.clone(),
+            *transform,
         )));
 
         if let Some(intent) = some_intent {

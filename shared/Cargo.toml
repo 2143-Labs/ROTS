@@ -6,36 +6,36 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies.bevy]
-version = "0.12.1"
+version = "0.13.2"
 default-features = false
 features = ["serialize"]
 
 [dependencies]
-message-io = "0.18.0"
-serde_yaml = "0.9.30"
-serde_json = "1.0.111"
-serde = { version = "1.0.195", features = ["derive"] }
+message-io = "0.18.1"
+serde_yaml = "0.9.34"
+serde_json = "1.0.116"
+serde = { version = "1.0.199", features = ["derive"] }
 once_cell = "1.19.0"
 rand = "0.8.5"
 
 # Everything that server has, we also have
-bevy_ecs = "0.12.1"
-bevy_app = "0.12.1"
-bevy_log = "0.12.1"
-bevy_core = "0.12.1"
-bevy_time = "0.12.1"
-bevy_transform = "0.12.1"
-bevy_hierarchy = "0.12.1"
-bevy_diagnostic = "0.12.1"
+bevy_ecs = "0.13.2"
+bevy_app = "0.13.2"
+bevy_log = "0.13.2"
+bevy_core = "0.13.2"
+bevy_time = "0.13.2"
+bevy_transform = "0.13.2"
+bevy_hierarchy = "0.13.2"
+bevy_diagnostic = "0.13.2"
 phf = { version = "0.11.2", features = ["macros"] }
 postcard = { version = "1.0.8", features = ["use-std", "alloc"] }
-clap = { version = "4.4.18" }
+clap = { version = "4.5.4" }
 
 [dev-dependencies]
 tungstenite = "0.21.0"
 
 [build-dependencies]
-quote = "1.0.35"
-prettyplease = "0.2.16"
-regex = "1.10.2"
-syn = "2.0.48"
+quote = "1.0.36"
+prettyplease = "0.2.19"
+regex = "1.10.4"
+syn = "2.0.60"

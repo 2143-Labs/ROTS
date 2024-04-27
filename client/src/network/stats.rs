@@ -89,7 +89,7 @@ fn on_hp_change(
                 match ind_type {
                     HPIndicator::HP => {
                         // TODO no hp indication hud for now
-                        *text_section = format!("");
+                        *text_section = String::new();
                         //*text_section = format!("{} HP", hp.0);
                     }
                     HPIndicator::Deaths => match *total_deaths {

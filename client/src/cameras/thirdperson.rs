@@ -44,7 +44,7 @@ impl Default for CameraFollow {
 }
 
 pub fn q_e_rotate_cam(
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     mut camera_query: Query<&mut CameraFollow>,
     time: Res<Time>,
     config: Res<Config>,
@@ -65,11 +65,11 @@ pub fn q_e_rotate_cam(
 pub fn wow_camera_system(
     mut mouse_wheel_events: EventReader<MouseWheel>,
     mut mouse_events: EventReader<MouseMotion>,
-    mouse_input: Res<Input<MouseButton>>,
+    mouse_input: Res<ButtonInput<MouseButton>>,
     mut camera_query: Query<(&mut Transform, &mut CameraFollow), With<Camera3d>>,
     mut client_aim_direction: Query<&mut ClientAimDirection>,
     current_unit: Query<&Transform, (With<PrimaryUnitControl>, Without<CameraFollow>)>,
-    _keyboard_input: Res<Input<KeyCode>>,
+    _keyboard_input: Res<ButtonInput<KeyCode>>,
     camera_type: Res<State<FreeCamState>>,
     config: Res<Config>,
 ) {
@@ -138,7 +138,7 @@ pub(crate) fn player_movement(
         Option<(&AnimationTimer, &Cast)>,
     )>,
     camera_query: Query<&CameraFollow>,
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     config: Res<Config>,
     mut last_movement: Local<LastMovement>,
     time: Res<Time>,
@@ -161,12 +161,10 @@ pub(crate) fn player_movement(
         }
 
         jumper.timer.tick(time.delta());
-        if config.pressed(&keyboard_input, GameAction::Jump) {
-            if jumper.timer.finished() {
-                // TODO does this reset with the overflow from the extra time.delta()?
-                // or are we really jumping at slightly slower rate?
-                jumper.timer.reset();
-            }
+        if config.pressed(&keyboard_input, GameAction::Jump) && jumper.timer.finished() {
+            // TODO does this reset with the overflow from the extra time.delta()?
+            // or are we really jumping at slightly slower rate?
+            jumper.timer.reset();
         }
 
         let final_move = if move_vector.length_squared() > 0.0 {
@@ -258,8 +256,8 @@ pub(crate) fn spawn_targeting(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let cube = PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-        material: materials.add(Color::rgb(0.0, 0.3, 0.5).into()),
+        mesh: meshes.add(Mesh::from(Cuboid { half_size: Vec3::splat(0.5)  })),
+        material: materials.add(Color::rgb(0.0, 0.3, 0.5)),
         transform: Transform::from_translation(Vec3::new(0.0, -1000.0, 0.0)),
         ..Default::default()
     };

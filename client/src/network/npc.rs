@@ -19,7 +19,7 @@ pub struct NPCPlugin;
 impl Plugin for NPCPlugin {
     fn build(&self, app: &mut App) {
         app
-            //.add_state::<ChatState>()
+            //.init_state::<ChatState>()
             //.add_event::<Chat>()
             //.add_systems(Startup, setup_panel)
             //.add_systems(Update, on_chat_toggle.run_if(shared::GameAction::Chat.just_pressed()))

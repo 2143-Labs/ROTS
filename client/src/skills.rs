@@ -35,21 +35,21 @@ impl Plugin for SkillsPlugin {
                 cast_skill_1
                     .run_if(shared::GameAction::Fire1.just_pressed())
                     .run_if(in_state(ChatState::NotChatting))
-                    .run_if(any_with_component::<Player>()),
+                    .run_if(any_with_component::<Player>),
             )
             .add_systems(
                 Update,
                 cast_skill_2
                     .run_if(shared::GameAction::Fire2.just_pressed())
                     .run_if(in_state(ChatState::NotChatting))
-                    .run_if(any_with_component::<Player>()),
+                    .run_if(any_with_component::<Player>),
             )
             .add_systems(
                 Update,
                 cast_skill_click
                     .run_if(input_just_pressed(MouseButton::Left))
                     .run_if(in_state(ChatState::NotChatting))
-                    .run_if(any_with_component::<Player>()),
+                    .run_if(any_with_component::<Player>),
             )
             .add_systems(
                 Update,
@@ -69,7 +69,7 @@ pub type GameTime = f64;
 struct StartLocalAnimation(Cast);
 
 fn cast_skill_click(
-    //keyboard_input: Res<Input<KeyCode>>,
+    //keyboard_input: Res<ButtonInput<KeyCode>>,
     //config: Res<Config>,
     //aim_dir: Query<&ClientAimDirection>,
     mut ev_sa: EventWriter<StartLocalAnimation>,
@@ -82,7 +82,7 @@ fn cast_skill_click(
 pub struct CurrentTargetingCursor(pub Option<NetEntId>);
 
 fn cast_skill_2(
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     config: Res<Config>,
     player: Query<(&Transform, &CurrentTargetingCursor), With<Player>>,
     aim_dir: Query<&ClientAimDirection>,
@@ -115,7 +115,7 @@ fn cast_skill_2(
 }
 
 fn cast_skill_1(
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     config: Res<Config>,
     player: Query<&Transform, With<Player>>,
     aim_dir: Query<&ClientAimDirection>,

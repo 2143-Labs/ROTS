@@ -23,7 +23,7 @@ pub enum ChatState {
 pub struct ChatPlugin;
 impl Plugin for ChatPlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<ChatState>()
+        app.init_state::<ChatState>()
             .add_event::<Chat>()
             .add_event::<WeChat>()
             .insert_resource(ChatHistory::default())
@@ -82,7 +82,7 @@ fn on_chat_toggle(
     match cur_chat_state.get() {
         ChatState::Chatting => {
             let chat = std::mem::take(cur_text);
-            if chat.len() > 0 {
+            if !chat.is_empty() {
                 // If this is a new chat, push it to the front
                 if chat_history.0.last() != Some(&chat) {
                     chat_history.0.push(chat.clone());
@@ -107,7 +107,7 @@ fn on_chat_toggle(
 struct WeChat(String);
 
 fn on_chat_type(
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     mut typed_chars: EventReader<ReceivedCharacter>,
     mut typed_text: Query<&mut Text, With<ChatTypeContainer>>,
     mut chat_history_ptr: ResMut<ChatHistoryPtr>,
@@ -117,23 +117,21 @@ fn on_chat_type(
     let mut chatbox = chatbox.as_mut();
     let cur_text = chatbox.get_text();
 
-    if keyboard_input.just_pressed(KeyCode::Back) {
+    if keyboard_input.just_pressed(KeyCode::Backspace) {
         cur_text.pop();
     }
 
-    if keyboard_input.just_pressed(KeyCode::Up) {
-        if chat_history.0.len() >= 1 {
-            let new_ptr = chat_history_ptr
-                .0
-                .unwrap_or(chat_history.0.len())
-                .saturating_sub(1);
+    if keyboard_input.just_pressed(KeyCode::ArrowUp) && !chat_history.0.is_empty() {
+        let new_ptr = chat_history_ptr
+            .0
+            .unwrap_or(chat_history.0.len())
+            .saturating_sub(1);
 
-            *chat_history_ptr = ChatHistoryPtr(Some(new_ptr));
-            *cur_text = chat_history.0[new_ptr].clone();
-        }
+        *chat_history_ptr = ChatHistoryPtr(Some(new_ptr));
+        *cur_text = chat_history.0[new_ptr].clone();
     }
 
-    if keyboard_input.just_pressed(KeyCode::Down) {
+    if keyboard_input.just_pressed(KeyCode::ArrowDown) {
         if let Some(cur_ptr) = chat_history_ptr.0 {
             let new_ptr = (cur_ptr + 1).min(chat_history.0.len() - 1);
 
@@ -143,8 +141,10 @@ fn on_chat_type(
     }
 
     for typed_char in typed_chars.read() {
-        if !typed_char.char.is_control() {
-            cur_text.push(typed_char.char);
+        for c in typed_char.char.chars() {
+            if !c.is_control() {
+                cur_text.push(c);
+            }
         }
     }
 }
@@ -181,7 +181,7 @@ fn setup_panel(mut commands: Commands, asset_server: Res<AssetServer>) {
                         color: Color::WHITE,
                     },
                 )])
-                .with_text_alignment(TextAlignment::Left)
+                .with_text_justify(JustifyText::Left)
                 .with_style(Style { ..default() }),
                 ChatTypeContainer,
             ));
@@ -231,7 +231,7 @@ fn on_chat(
             p.spawn((
                 TextBundle::from_sections([
                     TextSection::new(
-                        &format!("{:03.3} ", time.elapsed_seconds()),
+                        format!("{:03.3} ", time.elapsed_seconds()),
                         TextStyle {
                             font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
                             font_size: 14.0,
@@ -247,7 +247,7 @@ fn on_chat(
                         },
                     ),
                     TextSection::new(
-                        &format!(": "),
+                        ": ".to_string(),
                         TextStyle {
                             font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
                             font_size: 16.0,
@@ -263,7 +263,7 @@ fn on_chat(
                         },
                     ),
                 ])
-                .with_text_alignment(TextAlignment::Left)
+                .with_text_justify(JustifyText::Left)
                 .with_style(Style { ..default() }),
                 DespawnTime(Timer::new(Duration::from_millis(15000), TimerMode::Once)),
             ));

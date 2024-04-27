@@ -18,7 +18,7 @@ impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(chat::ChatPlugin)
             .add_systems(Startup, (spawn_camera, spawn_targeting))
-            .add_state::<FreeCamState>()
+            .init_state::<FreeCamState>()
             .add_systems(
                 Update,
                 (toggle_camera_mode.run_if(in_state(chat::ChatState::NotChatting)),),
@@ -76,7 +76,7 @@ pub enum FreeCamState {
 pub fn toggle_camera_mode(
     cam_state: Res<State<FreeCamState>>,
     mut next_state: ResMut<NextState<FreeCamState>>,
-    input: Res<Input<KeyCode>>,
+    input: Res<ButtonInput<KeyCode>>,
     mut windows_query: Query<&mut Window>,
     config: Res<Config>,
 ) {

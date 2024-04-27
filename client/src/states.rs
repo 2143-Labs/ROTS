@@ -16,7 +16,7 @@ pub struct StatePlugin;
 
 impl Plugin for StatePlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<GameState>()
+        app.init_state::<GameState>()
             .add_systems(OnEnter(GameState::Quit), quit_event);
     }
 }

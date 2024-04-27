@@ -71,14 +71,14 @@ fn on_notification(
         commands.entity(parent).with_children(|p| {
             p.spawn((
                 TextBundle::from_section(
-                    &format!("{:03.3}: {}", time.elapsed_seconds(), e.0),
+                    format!("{:03.3}: {}", time.elapsed_seconds(), e.0),
                     TextStyle {
                         font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
                         font_size: 14.0,
                         color: Color::WHITE,
                     },
                 )
-                .with_text_alignment(TextAlignment::Right)
+                .with_text_justify(JustifyText::Right)
                 .with_style(Style { ..default() }),
                 NotificationElement(e.0.clone()),
                 DespawnTime(Timer::new(Duration::from_millis(10000), TimerMode::Once)),

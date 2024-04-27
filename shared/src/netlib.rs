@@ -126,7 +126,9 @@ pub fn on_node_event<T: NetworkingEvent>(res: &ServerResources<T>, event: NodeEv
 
     match net_event {
         NetEvent::Connected(endpoint, v) => info!(?endpoint, ?v, "Network Connected"),
-        NetEvent::Accepted(endpoint, listener) => info!(?endpoint, ?listener, "Connection Accepted"),
+        NetEvent::Accepted(endpoint, listener) => {
+            info!(?endpoint, ?listener, "Connection Accepted")
+        }
         NetEvent::Message(endpoint, data) => {
             let event: EventGroupingOwned<T> = match postcard::from_bytes(data) {
                 Ok(e) => e,

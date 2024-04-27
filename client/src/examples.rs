@@ -1,6 +1,6 @@
 
 pub fn kb_input(
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     config: Res<Config>,
 ) {
     if config.pressing_keybind(|x| keyboard_input.pressed(x), shared::GameAction::MoveBackward) {

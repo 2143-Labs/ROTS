@@ -89,7 +89,7 @@ fn main() {
             game_manager::GamePlugin,
             //StatusPlugin,
         ))
-        .add_state::<ServerState>()
+        .init_state::<ServerState>()
         .add_systems(
             Startup,
             (
