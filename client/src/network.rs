@@ -234,7 +234,7 @@ fn send_movement(
     if let Ok((transform, some_intent)) = our_transform.get_single() {
         let mut events = vec![];
         events.push(EventToServer::ChangeMovement(ChangeMovement::SetTransform(
-            transform.clone(),
+            *transform,
         )));
 
         if let Some(intent) = some_intent {

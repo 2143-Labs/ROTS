@@ -82,7 +82,7 @@ fn on_chat_toggle(
     match cur_chat_state.get() {
         ChatState::Chatting => {
             let chat = std::mem::take(cur_text);
-            if chat.len() > 0 {
+            if !chat.is_empty() {
                 // If this is a new chat, push it to the front
                 if chat_history.0.last() != Some(&chat) {
                     chat_history.0.push(chat.clone());
@@ -121,16 +121,14 @@ fn on_chat_type(
         cur_text.pop();
     }
 
-    if keyboard_input.just_pressed(KeyCode::ArrowUp) {
-        if chat_history.0.len() >= 1 {
-            let new_ptr = chat_history_ptr
-                .0
-                .unwrap_or(chat_history.0.len())
-                .saturating_sub(1);
+    if keyboard_input.just_pressed(KeyCode::ArrowUp) && !chat_history.0.is_empty() {
+        let new_ptr = chat_history_ptr
+            .0
+            .unwrap_or(chat_history.0.len())
+            .saturating_sub(1);
 
-            *chat_history_ptr = ChatHistoryPtr(Some(new_ptr));
-            *cur_text = chat_history.0[new_ptr].clone();
-        }
+        *chat_history_ptr = ChatHistoryPtr(Some(new_ptr));
+        *cur_text = chat_history.0[new_ptr].clone();
     }
 
     if keyboard_input.just_pressed(KeyCode::ArrowDown) {
@@ -233,7 +231,7 @@ fn on_chat(
             p.spawn((
                 TextBundle::from_sections([
                     TextSection::new(
-                        &format!("{:03.3} ", time.elapsed_seconds()),
+                        format!("{:03.3} ", time.elapsed_seconds()),
                         TextStyle {
                             font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
                             font_size: 14.0,
@@ -249,7 +247,7 @@ fn on_chat(
                         },
                     ),
                     TextSection::new(
-                        &format!(": "),
+                        ": ".to_string(),
                         TextStyle {
                             font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
                             font_size: 16.0,

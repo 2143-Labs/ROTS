@@ -161,12 +161,10 @@ pub(crate) fn player_movement(
         }
 
         jumper.timer.tick(time.delta());
-        if config.pressed(&keyboard_input, GameAction::Jump) {
-            if jumper.timer.finished() {
-                // TODO does this reset with the overflow from the extra time.delta()?
-                // or are we really jumping at slightly slower rate?
-                jumper.timer.reset();
-            }
+        if config.pressed(&keyboard_input, GameAction::Jump) && jumper.timer.finished() {
+            // TODO does this reset with the overflow from the extra time.delta()?
+            // or are we really jumping at slightly slower rate?
+            jumper.timer.reset();
         }
 
         let final_move = if move_vector.length_squared() > 0.0 {

@@ -71,7 +71,7 @@ fn on_notification(
         commands.entity(parent).with_children(|p| {
             p.spawn((
                 TextBundle::from_section(
-                    &format!("{:03.3}: {}", time.elapsed_seconds(), e.0),
+                    format!("{:03.3}: {}", time.elapsed_seconds(), e.0),
                     TextStyle {
                         font: asset_server.load("fonts/ttf/JetBrainsMono-Regular.ttf"),
                         font_size: 14.0,

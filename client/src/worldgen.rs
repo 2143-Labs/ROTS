@@ -95,7 +95,7 @@ fn spawn_chunk_objects(
     let tree_width = CHUNK_SIZE / 4;
     for x in 0..tree_width {
         for y in 0..tree_width {
-            _ = spawn_tree_in_tile(
+            spawn_tree_in_tile(
                 chunk,
                 commands,
                 &chunk_pos,
@@ -103,7 +103,7 @@ fn spawn_chunk_objects(
                 noise,
                 world_assets.tree_mesh.clone(),
                 world_assets.material_tree.clone(),
-            )
+            );
         }
     }
 }
@@ -136,7 +136,7 @@ fn spawn_tree_in_tile(
                     material: tree_material,
                     transform: Transform::from_translation(Vec3::new(
                         -(CHUNK_SIZE / 2) as f32 + tile_pos.x + 0.5 + tree_width as f32 / 2.0,
-                        TREE_HEIGHT / 2 as f32,
+                        TREE_HEIGHT / 2_f32,
                         -(CHUNK_SIZE / 2) as f32 + tile_pos.y + 0.5 + tree_width as f32 / 2.0,
                     )),
                     ..Default::default()
@@ -199,7 +199,7 @@ fn update_chunks(
                                 PbrBundle {
                                     mesh: world_assets.ground_mesh.clone(),
                                     // random color for chunks
-                                    material: material,
+                                    material,
                                     transform: Transform::from_translation(
                                         chunk_pos_vec3 * CHUNK_SIZE as f32
                                             + Vec3::new(
@@ -229,8 +229,8 @@ fn update_chunks(
         // Despawn old chunks
         world.chunks.retain(|pos, entity| {
             // Calculate the distance from this chunk to the player's chunk
-            let dx = pos.0 as f32 - player_chunk_pos.x as f32;
-            let dz = pos.2 as f32 - player_chunk_pos.z as f32;
+            let dx = pos.0 as f32 - player_chunk_pos.x;
+            let dz = pos.2 as f32 - player_chunk_pos.z;
             let distance = (dx.powi(2) + dz.powi(2)).sqrt();
 
             if distance <= view_distance as f32 {
