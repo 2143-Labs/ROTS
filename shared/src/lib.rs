@@ -35,7 +35,9 @@ pub enum GameAction {
 
 impl GameAction {
     /// Run condition that returns true if this keycode was just pressed
-    pub const fn just_pressed(&'static self) -> impl Fn(Res<ButtonInput<KeyCode>>, Res<Config>) -> bool {
+    pub const fn just_pressed(
+        &'static self,
+    ) -> impl Fn(Res<ButtonInput<KeyCode>>, Res<Config>) -> bool {
         move |keyboard_input, config| config.just_pressed(&keyboard_input, self.clone())
     }
 }
@@ -90,7 +92,11 @@ impl Config {
         self.pressing_keybind(|x| keyboard_input.pressed(x), ga)
     }
 
-    pub fn just_released(&self, keyboard_input: &Res<ButtonInput<KeyCode>>, ga: GameAction) -> bool {
+    pub fn just_released(
+        &self,
+        keyboard_input: &Res<ButtonInput<KeyCode>>,
+        ga: GameAction,
+    ) -> bool {
         self.pressing_keybind(|x| keyboard_input.just_released(x), ga)
     }
 }
