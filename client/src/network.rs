@@ -103,7 +103,7 @@ fn build_healthbar(
     let player_id = s.parent_entity();
     // spawn their hp bar
     let mut hp_bar = PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+        mesh: meshes.add(Mesh::from(Cuboid { half_size: Vec3::splat(0.5)  })),
         material: materials.add(Color::rgb(0.9, 0.3, 0.0)),
         transform: Transform::from_translation(Vec3::new(0.0, 0.4, 0.0) + offset),
         ..Default::default()
