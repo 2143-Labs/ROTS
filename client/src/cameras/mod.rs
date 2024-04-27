@@ -18,7 +18,7 @@ impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(chat::ChatPlugin)
             .add_systems(Startup, (spawn_camera, spawn_targeting))
-            .add_state::<FreeCamState>()
+            .init_state::<FreeCamState>()
             .add_systems(
                 Update,
                 (toggle_camera_mode.run_if(in_state(chat::ChatState::NotChatting)),),

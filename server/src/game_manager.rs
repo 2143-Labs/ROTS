@@ -5,7 +5,7 @@ use bevy::prelude::*;
 pub struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<GameManagerState>()
+        app.init_state::<GameManagerState>()
             .insert_resource(SpawnTimer(Timer::new(
                 Duration::from_secs(1),
                 TimerMode::Repeating,
