@@ -14,7 +14,7 @@ pub enum UpdateSharedComponent {
     Health(Health),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, clap::ValueEnum, Component, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Component, Hash, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum NPC {
     Penguin,
