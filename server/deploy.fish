@@ -34,6 +34,6 @@ while true do;
         git pull
         launch
     else
-        sleep 1
+        sleep 10
     end
 end
