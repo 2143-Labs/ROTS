@@ -1,4 +1,5 @@
 #!/usr/bin/env fish
+cargo r --release &
 while true do;
     echo "fetching"
     git fetch
@@ -8,5 +9,7 @@ while true do;
         kill $pid
         git pull
         cargo r --release &
+    else
+        sleep 5
     end
 end
