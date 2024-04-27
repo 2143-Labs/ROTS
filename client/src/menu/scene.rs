@@ -220,10 +220,9 @@ fn _test_sub_render(
         ..default()
     });
 
-    let cube_size = 1.0;
-    let cube_handle = meshes.add(Mesh::from(shape::Plane {
-        size: cube_size,
-        subdivisions: 4,
+    //let cube_size = 1.0;
+    let cube_handle = meshes.add(Mesh::from(Plane3d {
+        normal: Direction3d::Y
     }));
 
     // Main pass cube, with material containing the rendered first pass texture.

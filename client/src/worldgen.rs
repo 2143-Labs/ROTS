@@ -59,9 +59,8 @@ fn init_mats(
 ) {
     world.material_grass = materials.add(Color::rgb(0.06, 0.687, 0.238));
     world.material_grass_dark = materials.add(Color::rgb(0.04, 0.48, 0.164));
-    world.ground_mesh = meshes.add(Mesh::from(shape::Plane {
-        size: CHUNK_SIZE as f32,
-        subdivisions: 0,
+    world.ground_mesh = meshes.add(Mesh::from(Plane3d {
+        normal: Direction3d::Y
     }));
 
     world.tree_mesh = meshes.add(Mesh::from(shape::Box::new(0.65, TREE_HEIGHT, 0.65)));
@@ -69,10 +68,10 @@ fn init_mats(
 
     if args.optimize_floor() {
         commands.spawn((PbrBundle {
-            transform: Transform::from_xyz(0.0, -0.01, 0.0),
-            mesh: meshes.add(Mesh::from(Plane {
-                size: (CHUNK_SIZE * 100) as f32,
-                subdivisions: 1,
+            transform: Transform::from_xyz(0.0, -0.01, 0.0).with_scale(Vec3::splat(1000.0)),
+
+            mesh: meshes.add(Mesh::from(Plane3d {
+                normal: Direction3d::Y
             })),
             material: materials.add(Color::hex("#1f7840").unwrap()),
             ..Default::default()
