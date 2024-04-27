@@ -9,10 +9,10 @@ pub struct Notification(pub String);
 //type NotificationPointer = u64;
 
 #[derive(Component)]
-pub struct NotificationElement(String);
+pub struct NotificationElement(pub String);
 
 #[derive(Component)]
-pub struct NotificationExpiresAt(f32);
+pub struct NotificationExpiresAt(pub f32);
 
 pub struct NotificationPlugin;
 
