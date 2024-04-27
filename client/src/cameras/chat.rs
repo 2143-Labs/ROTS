@@ -143,8 +143,10 @@ fn on_chat_type(
     }
 
     for typed_char in typed_chars.read() {
-        if !typed_char.char.is_control() {
-            cur_text.push(typed_char.char);
+        for c in typed_char.char.chars() {
+            if !c.is_control() {
+                cur_text.push(c);
+            }
         }
     }
 }
