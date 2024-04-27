@@ -98,7 +98,7 @@ fn on_chat_toggle(
         ChatState::NotChatting => {
             *cur_text = "".into();
             chat_state.set(ChatState::Chatting);
-            *chat_bg_color.single_mut() = Color::WHITE.with_a(0.10).into();
+            *chat_bg_color.single_mut() = Color::WHITE.with_a(1.00).into();
         }
     }
 }
@@ -165,9 +165,17 @@ fn setup_panel(mut commands: Commands, asset_server: Res<AssetServer>) {
                     position_type: PositionType::Relative,
                     ..default()
                 },
-                background_color: Color::WHITE.with_a(0.00).into(),
+                background_color: Color::WHITE.into(),
                 ..default()
             },
+            UiImage::new(asset_server.load("textures/Chat_BG.png")),
+            ImageScaleMode::Sliced(TextureSlicer {
+                // The image borders are 20 pixels in every direction
+                border: BorderRect::square(80.0),
+                // we don't stretch the corners more than their actual size (20px)
+                max_corner_scale: 2.0,
+                ..default()
+            }),
             ChatContainer,
         ))
         .with_children(|parent| {
@@ -182,7 +190,7 @@ fn setup_panel(mut commands: Commands, asset_server: Res<AssetServer>) {
                     },
                 )])
                 .with_text_justify(JustifyText::Left)
-                .with_style(Style { ..default() }),
+                .with_style(Style { top: Val::Px(15.) , left: Val::Px(15.),..default() }),
                 ChatTypeContainer,
             ));
         });
@@ -210,7 +218,7 @@ fn on_local_chat_send(
 fn on_chat(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    parent: Query<Entity, With<ChatContainer>>,
+    chat_box: Query<Entity, With<ChatContainer>>,
     players: Query<(&NetEntId, &PlayerName), With<AnyUnit>>,
     mut er: EventReader<Chat>,
     time: Res<Time>,
@@ -226,7 +234,7 @@ fn on_chat(
             None => "Server",
         };
 
-        let parent = parent.single();
+        let parent = chat_box.single();
         commands.entity(parent).with_children(|p| {
             p.spawn((
                 TextBundle::from_sections([
@@ -264,7 +272,7 @@ fn on_chat(
                     ),
                 ])
                 .with_text_justify(JustifyText::Left)
-                .with_style(Style { ..default() }),
+                .with_style(Style { top: Val::Px(20.) , left: Val::Px(20.), ..default() }),
                 DespawnTime(Timer::new(Duration::from_millis(15000), TimerMode::Once)),
             ));
         });
