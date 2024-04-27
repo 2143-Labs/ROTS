@@ -28,13 +28,13 @@ end
 # Main loop: keep exactly 1 istance of server alive, restart it on git pull
 launch
 while true do;
-    echo (last_pid)
+    echo "Updating server ... "(last_pid)
     git fetch
-    if not test (git rev-parse HEAD) = (git rev-parse @{u});
+    if test (git rev-parse HEAD) = (git rev-parse @{u});
+        sleep 5
+    else
         unlaunch
         git pull
         launch
-    else
-        sleep 10
     end
 end
