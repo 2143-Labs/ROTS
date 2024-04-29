@@ -1482,6 +1482,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "shared",
+ "tracing",
 ]
 
 [[package]]

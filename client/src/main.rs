@@ -9,6 +9,8 @@ pub mod worldgen;
 
 mod cli;
 
+use std::sync::atomic::{AtomicBool, AtomicU64};
+
 use bevy::{
     diagnostic::FrameTimeDiagnosticsPlugin,
     prelude::*,
