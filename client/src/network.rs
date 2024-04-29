@@ -83,13 +83,18 @@ fn send_connect_packet(
     args: Res<CliArgs>,
     mse: Res<MainServerEndpoint>,
     config: Res<Config>,
+    mut notif: EventWriter<Notification>,
     local_player: Query<&Transform, With<Player>>,
 ) {
     let my_location = *local_player.single();
+    let name = args.name_override.clone().or(config.name.clone());
     let event = EventToServer::ConnectRequest(ConnectRequest {
-        name: args.name_override.clone().or(config.name.clone()),
+        name: name.clone(),
         my_location,
     });
+    notif.send(Notification(format!(
+        "Connecting server={} name={name:?}", mse.0.addr(),
+    )));
     send_event_to_server(&sr.handler, mse.0, &event);
     info!("Sent connection packet to {}", mse.0);
 }
