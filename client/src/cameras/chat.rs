@@ -192,7 +192,7 @@ fn setup_panel(mut commands: Commands, asset_server: Res<AssetServer>) {
                     },
                 )])
                 .with_text_justify(JustifyText::Left)
-                .with_style(Style { position_type: PositionType::Absolute, bottom : Val::Px(8.) , left: Val::Px(32.), ..default() }),
+                .with_style(Style { position_type: PositionType::Absolute, bottom : Val::Px(6.) , left: Val::Px(32.), ..default() }),
                 ChatTypeContainer,
             ));
         });
