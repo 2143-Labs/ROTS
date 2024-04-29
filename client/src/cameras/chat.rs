@@ -67,6 +67,7 @@ struct ChatHistory(Vec<String>);
 #[derive(Resource, Debug, Default)]
 struct ChatHistoryPtr(Option<usize>);
 
+
 fn on_chat_toggle(
     cur_chat_state: Res<State<ChatState>>,
     mut chat_state: ResMut<NextState<ChatState>>,
@@ -78,7 +79,7 @@ fn on_chat_toggle(
 ) {
     let mut chatbox = typed_text.single_mut();
     let mut chatbox = chatbox.as_mut();
-    let cur_text = chatbox.get_text();
+    let cur_text: &mut String = chatbox.get_text();
     match cur_chat_state.get() {
         ChatState::Chatting => {
             let chat = std::mem::take(cur_text);
@@ -165,13 +166,15 @@ fn setup_panel(mut commands: Commands, asset_server: Res<AssetServer>) {
                     position_type: PositionType::Relative,
                     ..default()
                 },
-                background_color: Color::WHITE.into(),
+                background_color: Color::WHITE.with_a(0.).into(),
                 ..default()
             },
-            UiImage::new(asset_server.load("textures/Chat_BG.png")),
+            UiImage::new(asset_server.load("textures/Chat_RS.png")),
             ImageScaleMode::Sliced(TextureSlicer {
                 // The image borders are 20 pixels in every direction
-                border: BorderRect::square(80.0),
+                border: BorderRect::square(21.0),
+                center_scale_mode: SliceScaleMode::Tile{ stretch_value: 4.0},
+                sides_scale_mode: SliceScaleMode::Tile { stretch_value: 4.0},
                 // we don't stretch the corners more than their actual size (20px)
                 max_corner_scale: 2.0,
                 ..default()
