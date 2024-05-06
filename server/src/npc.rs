@@ -25,7 +25,7 @@ impl Plugin for NPCPlugin {
             .add_systems(
                 Update,
                 (on_ai_tick, apply_npc_movement_intents, on_unit_spawn)
-                    .run_if(on_timer(Duration::from_millis(10)))
+                    //.run_if(on_timer(Duration::from_millis(10)))
                     .run_if(in_state(ServerState::Running)),
             )
             .add_systems(
@@ -122,11 +122,11 @@ fn apply_npc_movement_intents(
 ) {
     // Apply all the movement
     for (mut ply_tfm, ply_intent) in &mut npcs {
-        //let delta_target = Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * 25.0 * time.delta_seconds();
-        //ply_tfm.translation += delta_target;
+        let delta_target = Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * 25.0 * time.delta_seconds();
+        ply_tfm.translation += delta_target;
     }
 
-    for i in 0..1 {
+    for i in 0..100 {
         let mut has_corrected = false;
 
         let mut all_npc_positions = Vec::with_capacity(npcs.iter().len());
@@ -142,18 +142,17 @@ fn apply_npc_movement_intents(
         for (mut ply_tfm, ply_intent) in &mut npcs {
             let pos_delta =
                 Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * 25.0 * time.delta_seconds();
+
             let new_pos = ply_tfm.translation;
             let _old_pos = new_pos - pos_delta;
             for &other_unit in all_positions() {
-                const HITBOX_SIZE: f32 = 5.0;
+                const HITBOX_SIZE: f32 = 3.0;
                 let dist = new_pos.xz().distance_squared(other_unit.xz());
                 if dist <= 0.005 {
                     // This is too close, just let it stay here (minecraft mob stacking style)
                     continue;
                 } else if dist <= HITBOX_SIZE * HITBOX_SIZE {
                     let diff = other_unit - new_pos;
-                    info!(%diff, "Dist");
-
                     let diff_xz = -diff.xz();
                     let correction_2d = (diff_xz.normalize() * HITBOX_SIZE) - diff_xz;
 

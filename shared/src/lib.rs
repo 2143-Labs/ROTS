@@ -58,6 +58,8 @@ pub struct Config {
     pub sens: f32,
     //#[serde(default="default_qe_sens")]
     pub qe_sens: f32,
+    /// Should sound play on hits?
+    pub sound: Option<bool>,
 
     pub keybindings: Keybinds, // TODO rust_phf
 }
@@ -128,8 +130,15 @@ impl Default for Config {
             sens: 0.003,
             qe_sens: 3.0,
             name: None,
+            sound: Some(false),
             keybindings: DEFAULT_BINDS.clone(),
         }
+    }
+}
+
+impl Config {
+    pub fn sound(&self) -> bool {
+        self.sound.unwrap_or(false)
     }
 }
 
