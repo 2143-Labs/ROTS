@@ -1,3 +1,5 @@
+use std::fs::OpenOptions;
+
 use bevy::{prelude::*, utils::HashMap};
 
 pub struct ChatPlugin;
@@ -6,21 +8,18 @@ impl Plugin for ChatPlugin {
         app.add_event::<EventFromEndpoint<RunChatCommand>>()
             .add_systems(
                 Update,
-                (on_chat, on_chat_command).run_if(in_state(ServerState::Running)),
+                (on_chat, on_chat_command, on_save_savestate, on_load_savestate).run_if(in_state(ServerState::Running)),
             );
     }
 }
 
 use clap::{Args, Parser};
+use message_io::{network::Endpoint, node::NodeHandler};
+use serde::{Deserialize, Serialize};
 use shared::{
     event::{
-        client::{Chat, SpawnUnit},
-        server::SendChat,
-        spells::NPC,
-        EventFromEndpoint, NetEntId, UnitData, ERFE,
-    },
-    netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
-    AnyUnit,
+        client::{Chat, SpawnUnit}, server::SendChat, spells::NPC, EventFromEndpoint, NetEntId, UnitData, UnitType, ERFE
+    }, netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources}, stats::Health, AnyUnit
 };
 
 use crate::{
@@ -33,6 +32,11 @@ use crate::{
 pub enum ChatCommand {
     Spawn(CmdSpawnUnit),
     List(CmdListUnits),
+    ///SaveState
+    S,
+    ///StateState Load
+    L,
+
     Start,
     Stop,
 }
@@ -111,6 +115,95 @@ fn on_chat(
     }
 }
 
+#[derive(Event, Clone, Debug)]
+struct LoadSaveState(SaveStateData);
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct SaveStateData {
+    npcs: Vec<SaveStateUnit>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct SaveStateUnit {
+    hp: Health,
+    unit: UnitType,
+    transform: Transform,
+}
+
+type NPCSavestateQuery<'a> = (&'a NPC, &'a Health, &'a Transform);
+impl From<NPCSavestateQuery<'_>> for SaveStateUnit {
+    fn from(value: NPCSavestateQuery<'_>) -> Self {
+        Self {
+            hp: value.1.clone(),
+            unit: UnitType::NPC { npc_type: value.0.clone() },
+            transform: value.2.clone(),
+        }
+    }
+}
+
+/// This represents a sendable connection to a client
+#[derive(Clone)]
+struct NetworkableClientEndpoint {
+    endpoint: Endpoint,
+    handler: NodeHandler<()>,
+
+}
+
+#[derive(Event, Clone)]
+struct SaveSaveState(NetworkableClientEndpoint);
+
+fn on_save_savestate(
+    mut cmd: EventReader<SaveSaveState>,
+    cur_npc_query: Query<NPCSavestateQuery<'_>, With<AnyUnit>>,
+    // TODO capture players?
+) {
+    for save_state_request in cmd.read() {
+        let npcs: Vec<_> = cur_npc_query.iter().map(|x| SaveStateUnit::from(x)).collect();
+
+        let all_data = SaveStateData {
+            npcs,
+        };
+
+        let location = "./save.json";
+        let file = OpenOptions::new().write(true).truncate(true).create(true).open(location).unwrap();
+        serde_json::to_writer_pretty(file, &all_data).unwrap();
+
+        let event = EventToClient::Chat(Chat {
+            source: None,
+            text: format!(
+                "Saved state: {}", location,
+            ),
+        });
+        send_event_to_server(&save_state_request.0.handler, save_state_request.0.endpoint, &event);
+    }
+}
+
+fn on_load_savestate(
+    mut commands: Commands,
+    mut cmd: EventReader<LoadSaveState>,
+    cur_npc_query: Query<(Entity, &NPC), With<AnyUnit>>,
+    mut spawn_npc: EventWriter<SpawnUnit>,
+) {
+    for save_data in cmd.read() {
+        // Remove all current entities
+        for (npc_ent, _) in &cur_npc_query {
+            commands.entity(npc_ent).despawn_recursive();
+        }
+
+        for unit in save_data.0.npcs.clone() {
+            spawn_npc.send(SpawnUnit {
+                data: UnitData {
+                    unit: unit.unit,
+                    health: unit.hp,
+                    transform: unit.transform,
+                    ent_id: NetEntId(rand::random()),
+                }
+            });
+        }
+    }
+}
+
+
 fn on_chat_command(
     mut cmd: EventReader<EventFromEndpoint<RunChatCommand>>,
     players: Query<(Entity, &Transform, &NetEntId, &ConnectedPlayerName)>,
@@ -118,6 +211,8 @@ fn on_chat_command(
     list_player_query: Query<(&NetEntId, &ConnectedPlayerName), With<AnyUnit>>,
     sr: Res<ServerResources<EventToServer>>,
     mut spawn_npc: EventWriter<SpawnUnit>,
+    mut load_savestate: EventWriter<LoadSaveState>,
+    mut save_savestate: EventWriter<SaveSaveState>,
     mut next_game_manager_state: ResMut<NextState<GameManagerState>>,
     cur_game_manager_state: Res<State<GameManagerState>>,
 ) {
@@ -171,6 +266,29 @@ fn on_chat_command(
             }
             ChatCommand::Stop => {
                 next_game_manager_state.set(GameManagerState::NotPlaying);
+            }
+            ChatCommand::S => {
+                info!("Saving State");
+                save_savestate.send(SaveSaveState(NetworkableClientEndpoint {
+                    endpoint: command.endpoint,
+                    handler: sr.handler.clone(),
+                }));
+
+            }
+            ChatCommand::L => {
+                let location = "./save.json";
+                let file = OpenOptions::new().read(true).open(location).unwrap();
+                let data: SaveStateData = serde_json::from_reader(file).unwrap();
+                load_savestate.send(LoadSaveState(data));
+
+                let event = EventToClient::Chat(Chat {
+                    source: None,
+                    text: format!(
+                        "Loaded savestate: {}",
+                        location,
+                    ),
+                });
+                send_event_to_server(&sr.handler, command.endpoint, &event);
             }
         }
     }
