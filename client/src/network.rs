@@ -93,7 +93,8 @@ fn send_connect_packet(
         my_location,
     });
     notif.send(Notification(format!(
-        "Connecting server={} name={name:?}", mse.0.addr(),
+        "Connecting server={} name={name:?}",
+        mse.0.addr(),
     )));
     send_event_to_server(&sr.handler, mse.0, &event);
     info!("Sent connection packet to {}", mse.0);
@@ -108,7 +109,9 @@ fn build_healthbar(
     let player_id = s.parent_entity();
     // spawn their hp bar
     let mut hp_bar = PbrBundle {
-        mesh: meshes.add(Mesh::from(Cuboid { half_size: Vec3::splat(0.5)  })),
+        mesh: meshes.add(Mesh::from(Cuboid {
+            half_size: Vec3::splat(0.5),
+        })),
         material: materials.add(Color::rgb(0.9, 0.3, 0.0)),
         transform: Transform::from_translation(Vec3::new(0.0, 0.4, 0.0) + offset),
         ..Default::default()

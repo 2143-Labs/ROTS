@@ -32,7 +32,9 @@ impl MenuButton {
     ) {
         commands.spawn((
             PbrBundle {
-                mesh: meshes.add(Mesh::from(Cuboid { half_size: Vec3::splat(0.5)  })),
+                mesh: meshes.add(Mesh::from(Cuboid {
+                    half_size: Vec3::splat(0.5),
+                })),
                 material: materials.add(Color::hex("#3090b0").unwrap()),
                 transform,
                 ..default()
@@ -222,7 +224,7 @@ fn _test_sub_render(
 
     //let cube_size = 1.0;
     let cube_handle = meshes.add(Mesh::from(Plane3d {
-        normal: Direction3d::Y
+        normal: Direction3d::Y,
     }));
 
     // Main pass cube, with material containing the rendered first pass texture.
