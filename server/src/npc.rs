@@ -122,7 +122,8 @@ fn apply_npc_movement_intents(
 ) {
     // Apply all the movement
     for (mut ply_tfm, ply_intent) in &mut npcs {
-        let delta_target = Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * 25.0 * time.delta_seconds();
+        let delta_target =
+            Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * 25.0 * time.delta_seconds();
         ply_tfm.translation += delta_target;
     }
 
@@ -164,18 +165,17 @@ fn apply_npc_movement_intents(
                     ply_tfm.translation += correction;
 
                     //error!(
-                        //dist = dist,
-                        //move_distance = pos_delta.length(),
-                        //new_dist = diff_xz.length(),
-                        //correction_length = correction_2d.length(),
-                        //"unit correcton"
+                    //dist = dist,
+                    //move_distance = pos_delta.length(),
+                    //new_dist = diff_xz.length(),
+                    //correction_length = correction_2d.length(),
+                    //"unit correcton"
                     //);
                     //// move back?
                     //correction -= pos_delta;
                     has_corrected = true;
                 }
             }
-
         }
 
         if !has_corrected {
