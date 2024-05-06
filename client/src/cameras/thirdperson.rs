@@ -256,7 +256,9 @@ pub(crate) fn spawn_targeting(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let cube = PbrBundle {
-        mesh: meshes.add(Mesh::from(Cuboid { half_size: Vec3::splat(0.5)  })),
+        mesh: meshes.add(Mesh::from(Cuboid {
+            half_size: Vec3::splat(0.5),
+        })),
         material: materials.add(Color::rgb(0.0, 0.3, 0.5)),
         transform: Transform::from_translation(Vec3::new(0.0, -1000.0, 0.0)),
         ..Default::default()

@@ -71,6 +71,7 @@ pub struct Chat {
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
 pub struct UnitDie {
     pub id: NetEntId,
+    pub disappear: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Event)]
