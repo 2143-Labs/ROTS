@@ -10,7 +10,13 @@ impl Plugin for ChatPlugin {
             .add_event::<LoadSaveState>()
             .add_systems(
                 Update,
-                (on_chat, on_chat_command, on_save_savestate, on_load_savestate).run_if(in_state(ServerState::Running)),
+                (
+                    on_chat,
+                    on_chat_command,
+                    on_save_savestate,
+                    on_load_savestate,
+                )
+                    .run_if(in_state(ServerState::Running)),
             );
     }
 }
@@ -20,8 +26,14 @@ use message_io::{network::Endpoint, node::NodeHandler};
 use serde::{Deserialize, Serialize};
 use shared::{
     event::{
-        client::{Chat, SpawnUnit, UnitDie}, server::SendChat, spells::NPC, EventFromEndpoint, NetEntId, UnitData, UnitType, ERFE
-    }, netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources}, stats::Health, AnyUnit
+        client::{Chat, SpawnUnit, UnitDie},
+        server::SendChat,
+        spells::NPC,
+        EventFromEndpoint, NetEntId, UnitData, UnitType, ERFE,
+    },
+    netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources},
+    stats::Health,
+    AnyUnit,
 };
 
 use crate::{
@@ -137,7 +149,9 @@ impl From<NPCSavestateQuery<'_>> for SaveStateUnit {
     fn from(value: NPCSavestateQuery<'_>) -> Self {
         Self {
             hp: value.1.clone(),
-            unit: UnitType::NPC { npc_type: value.0.clone() },
+            unit: UnitType::NPC {
+                npc_type: value.0.clone(),
+            },
             transform: value.2.clone(),
         }
     }
@@ -148,7 +162,6 @@ impl From<NPCSavestateQuery<'_>> for SaveStateUnit {
 struct NetworkableClientEndpoint {
     endpoint: Endpoint,
     handler: NodeHandler<()>,
-
 }
 
 #[derive(Event, Clone)]
@@ -160,23 +173,31 @@ fn on_save_savestate(
     // TODO capture players?
 ) {
     for save_state_request in cmd.read() {
-        let npcs: Vec<_> = cur_npc_query.iter().map(|x| SaveStateUnit::from(x)).collect();
+        let npcs: Vec<_> = cur_npc_query
+            .iter()
+            .map(|x| SaveStateUnit::from(x))
+            .collect();
 
-        let all_data = SaveStateData {
-            npcs,
-        };
+        let all_data = SaveStateData { npcs };
 
         let location = "./save.savestate.json";
-        let file = OpenOptions::new().write(true).truncate(true).create(true).open(location).unwrap();
+        let file = OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .create(true)
+            .open(location)
+            .unwrap();
         serde_json::to_writer_pretty(file, &all_data).unwrap();
 
         let event = EventToClient::Chat(Chat {
             source: None,
-            text: format!(
-                "Saved state: {}", location,
-            ),
+            text: format!("Saved state: {}", location,),
         });
-        send_event_to_server(&save_state_request.0.handler, save_state_request.0.endpoint, &event);
+        send_event_to_server(
+            &save_state_request.0.handler,
+            save_state_request.0.endpoint,
+            &event,
+        );
     }
 }
 
@@ -188,13 +209,10 @@ fn on_load_savestate(
 ) {
     for save_data in cmd.read() {
         // Remove all current entities
-        unit_die.send_batch(cur_npc_query.iter().map(|(net_ent_id, _)| {
-            UnitDie {
-                id: *net_ent_id,
-                disappear: true,
-            }
+        unit_die.send_batch(cur_npc_query.iter().map(|(net_ent_id, _)| UnitDie {
+            id: *net_ent_id,
+            disappear: true,
         }));
-
 
         for unit in save_data.0.npcs.clone() {
             spawn_npc.send(SpawnUnit {
@@ -203,12 +221,11 @@ fn on_load_savestate(
                     health: unit.hp,
                     transform: unit.transform,
                     ent_id: NetEntId(rand::random()),
-                }
+                },
             });
         }
     }
 }
-
 
 fn on_chat_command(
     mut cmd: EventReader<EventFromEndpoint<RunChatCommand>>,
@@ -279,7 +296,6 @@ fn on_chat_command(
                     endpoint: command.endpoint,
                     handler: sr.handler.clone(),
                 }));
-
             }
             ChatCommand::L => {
                 let location = "./save.savestate.json";
@@ -289,10 +305,7 @@ fn on_chat_command(
 
                 let event = EventToClient::Chat(Chat {
                     source: None,
-                    text: format!(
-                        "Loaded savestate: {}",
-                        location,
-                    ),
+                    text: format!("Loaded savestate: {}", location,),
                 });
                 send_event_to_server(&sr.handler, command.endpoint, &event);
             }

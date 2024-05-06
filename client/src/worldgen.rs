@@ -1,4 +1,4 @@
-use bevy::{prelude::*};
+use bevy::prelude::*;
 //use bevy_xpbd_3d::components::Collider;
 use noise::{NoiseFn, Simplex};
 use std::collections::HashMap;
@@ -61,10 +61,12 @@ fn init_mats(
     world.material_grass_dark = materials.add(Color::rgb(0.04, 0.48, 0.164));
     // TODO resize this again
     world.ground_mesh = meshes.add(Mesh::from(Plane3d {
-        normal: Direction3d::Y
+        normal: Direction3d::Y,
     }));
 
-    world.tree_mesh = meshes.add(Mesh::from(Cuboid { half_size: Vec3::new(0.30, TREE_HEIGHT, 0.30) } ));
+    world.tree_mesh = meshes.add(Mesh::from(Cuboid {
+        half_size: Vec3::new(0.30, TREE_HEIGHT, 0.30),
+    }));
     world.material_tree = materials.add(Color::rgb(0.4, 0.2, 0.0));
 
     if args.optimize_floor() {
@@ -72,7 +74,7 @@ fn init_mats(
             transform: Transform::from_xyz(0.0, -0.01, 0.0).with_scale(Vec3::splat(1000.0)),
 
             mesh: meshes.add(Mesh::from(Plane3d {
-                normal: Direction3d::Y
+                normal: Direction3d::Y,
             })),
             material: materials.add(Color::hex("#1f7840").unwrap()),
             ..Default::default()

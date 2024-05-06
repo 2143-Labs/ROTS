@@ -268,7 +268,10 @@ fn unit_damaged(
                     send_event_to_server(&sr.handler, c_net_client.0, &hp_event)
                 }
                 if ply_hp.0 <= 0 {
-                    death.send(UnitDie { id: *net_ent_id, disappear: false });
+                    death.send(UnitDie {
+                        id: *net_ent_id,
+                        disappear: false,
+                    });
                 }
             }
         }
