@@ -6,6 +6,8 @@ pub struct ChatPlugin;
 impl Plugin for ChatPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<EventFromEndpoint<RunChatCommand>>()
+            .add_event::<SaveSaveState>()
+            .add_event::<LoadSaveState>()
             .add_systems(
                 Update,
                 (on_chat, on_chat_command, on_save_savestate, on_load_savestate).run_if(in_state(ServerState::Running)),
@@ -18,7 +20,7 @@ use message_io::{network::Endpoint, node::NodeHandler};
 use serde::{Deserialize, Serialize};
 use shared::{
     event::{
-        client::{Chat, SpawnUnit}, server::SendChat, spells::NPC, EventFromEndpoint, NetEntId, UnitData, UnitType, ERFE
+        client::{Chat, SpawnUnit, UnitDie}, server::SendChat, spells::NPC, EventFromEndpoint, NetEntId, UnitData, UnitType, ERFE
     }, netlib::{send_event_to_server, EventToClient, EventToServer, ServerResources}, stats::Health, AnyUnit
 };
 
@@ -164,7 +166,7 @@ fn on_save_savestate(
             npcs,
         };
 
-        let location = "./save.json";
+        let location = "./save.savestate.json";
         let file = OpenOptions::new().write(true).truncate(true).create(true).open(location).unwrap();
         serde_json::to_writer_pretty(file, &all_data).unwrap();
 
@@ -179,16 +181,20 @@ fn on_save_savestate(
 }
 
 fn on_load_savestate(
-    mut commands: Commands,
     mut cmd: EventReader<LoadSaveState>,
-    cur_npc_query: Query<(Entity, &NPC), With<AnyUnit>>,
+    cur_npc_query: Query<(&NetEntId, &NPC), With<AnyUnit>>,
     mut spawn_npc: EventWriter<SpawnUnit>,
+    mut unit_die: EventWriter<UnitDie>,
 ) {
     for save_data in cmd.read() {
         // Remove all current entities
-        for (npc_ent, _) in &cur_npc_query {
-            commands.entity(npc_ent).despawn_recursive();
-        }
+        unit_die.send_batch(cur_npc_query.iter().map(|(net_ent_id, _)| {
+            UnitDie {
+                id: *net_ent_id,
+                disappear: true,
+            }
+        }));
+
 
         for unit in save_data.0.npcs.clone() {
             spawn_npc.send(SpawnUnit {
@@ -276,7 +282,7 @@ fn on_chat_command(
 
             }
             ChatCommand::L => {
-                let location = "./save.json";
+                let location = "./save.savestate.json";
                 let file = OpenOptions::new().read(true).open(location).unwrap();
                 let data: SaveStateData = serde_json::from_reader(file).unwrap();
                 load_savestate.send(LoadSaveState(data));

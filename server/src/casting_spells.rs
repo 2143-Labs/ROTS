@@ -268,7 +268,7 @@ fn unit_damaged(
                     send_event_to_server(&sr.handler, c_net_client.0, &hp_event)
                 }
                 if ply_hp.0 <= 0 {
-                    death.send(UnitDie { id: *net_ent_id });
+                    death.send(UnitDie { id: *net_ent_id, disappear: false });
                 }
             }
         }
@@ -352,7 +352,9 @@ fn on_die(
         let event = EventToClient::UnitDie(death.clone());
         for (unit_ent, unit_ent_id, unit_tfm) in &ents {
             if unit_ent_id == &death.id {
-                do_spawns.send(DoSpawnInteractable(unit_tfm.translation));
+                if !death.disappear {
+                    do_spawns.send(DoSpawnInteractable(unit_tfm.translation));
+                }
                 //warn!("Spawn interactable!");
                 commands.entity(unit_ent).despawn_recursive();
             }
