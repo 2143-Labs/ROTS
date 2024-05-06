@@ -121,7 +121,8 @@ fn apply_npc_movement_intents(
 ) {
     // Apply all the movement
     for (mut ply_tfm, ply_intent) in &mut npcs {
-        ply_tfm.translation += Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * 25.0 * time.delta_seconds();
+        let delta_target = Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * 25.0 * time.delta_seconds();
+        ply_tfm.translation += delta_target;
     }
 
     for i in 0..1 {
@@ -143,13 +144,14 @@ fn apply_npc_movement_intents(
             let new_pos = ply_tfm.translation;
             let old_pos = new_pos - pos_delta;
             for &other_unit in all_positions() {
+                const HITBOX_SIZE: f32 = 5.0;
                 if new_pos == other_unit {
                     // This is us
                     continue;
-                } else if new_pos.distance_squared(other_unit) <= 1.0 {
+                } else if new_pos.distance_squared(other_unit) <= HITBOX_SIZE {
                     let diff = other_unit - new_pos;
                     let diff_xz = diff.xz();
-                    let correction_2d = diff_xz.normalize() - diff_xz;
+                    let correction_2d = (diff_xz.normalize() * HITBOX_SIZE) - diff_xz;
                     error!("unit correcton {diff_xz}, {correction_2d}");
                     correction += correction_2d.xyy() * Vec3::new(1.0, 0.0, 1.0);
                     has_corrected = true;
