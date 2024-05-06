@@ -77,12 +77,12 @@ fn on_ai_tick(
     mut ai_units: Query<(&mut Transform, &mut MovementIntention, &AIType), Without<Controlled>>,
     non_ai: Query<(&Transform, &MovementIntention), With<Controlled>>,
 ) {
-    let positions: Vec<(&Transform, &MovementIntention)> = non_ai.iter().collect();
+    let all_player_positions: Vec<(&Transform, &MovementIntention)> = non_ai.iter().collect();
     for (mut unit_tfm, mut unit_mi, ai_type) in &mut ai_units {
         match ai_type {
             AIType::None => {}
             AIType::WalkToNearestPlayer => {
-                let closest = positions.iter().reduce(|acc, x| {
+                let closest = all_player_positions.iter().reduce(|acc, x| {
                     let dist_old = unit_tfm.translation.distance(acc.0.translation);
                     let dist_new = unit_tfm.translation.distance(x.0.translation);
                     if dist_old < dist_new {
@@ -115,12 +115,56 @@ fn on_ai_tick(
 }
 
 fn apply_npc_movement_intents(
-    mut npcs: Query<(&mut Transform, &MovementIntention), With<AIType>>,
+    mut npcs: Query<(&mut Transform, &MovementIntention), (With<AIType>, Without<Controlled>)>,
+    non_ai: Query<(&Transform, &MovementIntention), With<Controlled>>,
     time: Res<Time>,
 ) {
+    // Apply all the movement
     for (mut ply_tfm, ply_intent) in &mut npcs {
-        ply_tfm.translation +=
-            Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * 25.0 * time.delta_seconds();
+        ply_tfm.translation += Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * 25.0 * time.delta_seconds();
+    }
+
+    for i in 0..1 {
+        let mut has_corrected = false;
+
+        let mut all_npc_positions = Vec::with_capacity(npcs.iter().len());
+        for (ply_tfm, _) in &npcs {
+            all_npc_positions.push(ply_tfm.translation);
+        }
+
+        //let ent = npcs.single().0;
+        let all_player_positions: Vec<_> = non_ai.iter().map(|x| x.0.translation).collect();
+        let all_positions = || all_npc_positions.iter().chain(all_player_positions.iter());
+
+        // Look for any corrections we might need to do
+        for (mut ply_tfm, ply_intent) in &mut npcs {
+            let pos_delta = Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * 25.0 * time.delta_seconds();
+            let mut correction = Vec3::ZERO;
+            let new_pos = ply_tfm.translation;
+            let old_pos = new_pos - pos_delta;
+            for &other_unit in all_positions() {
+                if new_pos == other_unit {
+                    // This is us
+                    continue;
+                } else if new_pos.distance_squared(other_unit) <= 1.0 {
+                    let diff = other_unit - new_pos;
+                    let diff_xz = diff.xz();
+                    let correction_2d = diff_xz.normalize() - diff_xz;
+                    error!("unit correcton {diff_xz}, {correction_2d}");
+                    correction += correction_2d.xyy() * Vec3::new(1.0, 0.0, 1.0);
+                    has_corrected = true;
+                }
+            }
+
+            ply_tfm.translation = ply_tfm.translation + correction;
+        }
+
+        if !has_corrected {
+            if i >= 1 {
+                warn!(i, "Movement collision loops this frame");
+            }
+            break;
+        }
     }
 }
 
