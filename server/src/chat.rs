@@ -148,11 +148,11 @@ type NPCSavestateQuery<'a> = (&'a NPC, &'a Health, &'a Transform);
 impl From<NPCSavestateQuery<'_>> for SaveStateUnit {
     fn from(value: NPCSavestateQuery<'_>) -> Self {
         Self {
-            hp: value.1.clone(),
+            hp: *value.1,
             unit: UnitType::NPC {
                 npc_type: value.0.clone(),
             },
-            transform: value.2.clone(),
+            transform: *value.2,
         }
     }
 }
@@ -175,7 +175,7 @@ fn on_save_savestate(
     for save_state_request in cmd.read() {
         let npcs: Vec<_> = cur_npc_query
             .iter()
-            .map(|x| SaveStateUnit::from(x))
+            .map(SaveStateUnit::from)
             .collect();
 
         let all_data = SaveStateData { npcs };
