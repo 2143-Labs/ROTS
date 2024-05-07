@@ -8,7 +8,7 @@ use shared::{
         client::{BulletHit, SomeoneCast},
         NetEntId, ERFE,
     },
-    AnyUnit,
+    AnyUnit, Config,
 };
 
 use crate::{
@@ -202,6 +202,7 @@ fn on_someone_hit(
     bullets: Query<(Entity, &NetEntId, &CasterNetId)>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    config: Res<Config>,
 ) {
     for hit in someone_hit.read() {
         let mut bullet_caster_id = None;
@@ -227,17 +228,19 @@ fn on_someone_hit(
         for (ply_id, _ply_tfm, p_name, is_us) in &all_plys {
             if ply_id == &hit.event.player {
                 defender_name = p_name.map(|x| x.0.clone());
-                if is_us {
-                    commands.spawn(AudioBundle {
-                        source: asset_server.load("sounds/hit.ogg"),
-                        ..default()
-                    });
-                    debug!("We got hit!");
-                } else {
-                    commands.spawn(AudioBundle {
-                        source: asset_server.load("sounds/hitmarker.ogg"),
-                        ..default()
-                    });
+                if config.sound() {
+                    if is_us {
+                        commands.spawn(AudioBundle {
+                            source: asset_server.load("sounds/hit.ogg"),
+                            ..default()
+                        });
+                        debug!("We got hit!");
+                    } else {
+                        commands.spawn(AudioBundle {
+                            source: asset_server.load("sounds/hitmarker.ogg"),
+                            ..default()
+                        });
+                    }
                 }
             }
 

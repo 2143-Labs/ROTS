@@ -25,6 +25,7 @@ impl Plugin for NPCPlugin {
             .add_systems(
                 Update,
                 (on_ai_tick, apply_npc_movement_intents, on_unit_spawn)
+                    //.run_if(on_timer(Duration::from_millis(10)))
                     .run_if(in_state(ServerState::Running)),
             )
             .add_systems(
@@ -77,12 +78,12 @@ fn on_ai_tick(
     mut ai_units: Query<(&mut Transform, &mut MovementIntention, &AIType), Without<Controlled>>,
     non_ai: Query<(&Transform, &MovementIntention), With<Controlled>>,
 ) {
-    let positions: Vec<(&Transform, &MovementIntention)> = non_ai.iter().collect();
+    let all_player_positions: Vec<(&Transform, &MovementIntention)> = non_ai.iter().collect();
     for (mut unit_tfm, mut unit_mi, ai_type) in &mut ai_units {
         match ai_type {
             AIType::None => {}
             AIType::WalkToNearestPlayer => {
-                let closest = positions.iter().reduce(|acc, x| {
+                let closest = all_player_positions.iter().reduce(|acc, x| {
                     let dist_old = unit_tfm.translation.distance(acc.0.translation);
                     let dist_new = unit_tfm.translation.distance(x.0.translation);
                     if dist_old < dist_new {
@@ -115,12 +116,69 @@ fn on_ai_tick(
 }
 
 fn apply_npc_movement_intents(
-    mut npcs: Query<(&mut Transform, &MovementIntention), With<AIType>>,
+    mut npcs: Query<(&mut Transform, &mut MovementIntention), (With<AIType>, Without<Controlled>)>,
+    non_ai: Query<(&Transform, &MovementIntention), With<Controlled>>,
     time: Res<Time>,
 ) {
+    // Apply all the movement
     for (mut ply_tfm, ply_intent) in &mut npcs {
-        ply_tfm.translation +=
+        let delta_target =
             Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * 25.0 * time.delta_seconds();
+        ply_tfm.translation += delta_target;
+    }
+
+    // Now, if anyone is overlapping, we try to gently move them away from eachother
+    for i in 0..100 {
+        // Remember if we have done any corrections this frame
+        let mut has_corrected = false;
+
+        // First, we need to collection all the positions of all units so we can check.
+        let mut all_npc_positions = Vec::with_capacity(npcs.iter().len());
+        for (ply_tfm, _) in &npcs {
+            all_npc_positions.push(ply_tfm.translation);
+        }
+        let all_player_positions: Vec<_> = non_ai.iter().map(|x| x.0.translation).collect();
+
+        // Call this function to get an iterator
+        let all_positions = || all_npc_positions.iter().chain(all_player_positions.iter());
+
+        // Now, check for all other collisions
+        // TODO: This is O(n^3). If len npcs > 1000, maybe log a warning that we need to rewrite
+        // this?
+        for (mut ply_tfm, mut ply_intent) in &mut npcs {
+            let new_pos = ply_tfm.translation;
+            for &other_unit in all_positions() {
+                // Every unit has the same hitbox size for now
+                const HITBOX_SIZE: f32 = 2.0;
+
+                let dist = new_pos.xz().distance_squared(other_unit.xz());
+                if dist <= 0.005 {
+                    // This is too close, just let it stay here (minecraft mob stacking style)
+                    continue;
+                } else if dist <= HITBOX_SIZE * HITBOX_SIZE {
+                    // Now, calculate the offset we need to apply in 2d space
+                    let diff = new_pos - other_unit;
+                    let diff_xz = diff.xz();
+                    let correction_2d = (diff_xz.normalize() * HITBOX_SIZE) - diff_xz;
+
+                    // Apply that 2d correction to 3d space
+                    let correction = correction_2d.xyy() * Vec3::new(1.0, 0.0, 1.0);
+                    ply_tfm.translation += correction;
+
+                    // We are collding: stop trying to appear as if we are moving
+                    *ply_intent = MovementIntention(Vec2::ZERO);
+
+                    has_corrected = true;
+                }
+            }
+        }
+
+        if !has_corrected {
+            if i >= 10 {
+                warn!(i, "Movement collision loops this frame");
+            }
+            break;
+        }
     }
 }
 
