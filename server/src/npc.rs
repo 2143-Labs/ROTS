@@ -116,7 +116,7 @@ fn on_ai_tick(
 }
 
 fn apply_npc_movement_intents(
-    mut npcs: Query<(&mut Transform, &MovementIntention), (With<AIType>, Without<Controlled>)>,
+    mut npcs: Query<(&mut Transform, &mut MovementIntention), (With<AIType>, Without<Controlled>)>,
     non_ai: Query<(&Transform, &MovementIntention), With<Controlled>>,
     time: Res<Time>,
 ) {
@@ -127,59 +127,54 @@ fn apply_npc_movement_intents(
         ply_tfm.translation += delta_target;
     }
 
+    // Now, if anyone is overlapping, we try to gently move them away from eachother
     for i in 0..100 {
+        // Remember if we have done any corrections this frame
         let mut has_corrected = false;
 
+        // First, we need to collection all the positions of all units so we can check.
         let mut all_npc_positions = Vec::with_capacity(npcs.iter().len());
         for (ply_tfm, _) in &npcs {
             all_npc_positions.push(ply_tfm.translation);
         }
-
-        //let ent = npcs.single().0;
         let all_player_positions: Vec<_> = non_ai.iter().map(|x| x.0.translation).collect();
+
+        // Call this function to get an iterator
         let all_positions = || all_npc_positions.iter().chain(all_player_positions.iter());
 
-        // Look for any corrections we might need to do
-        for (mut ply_tfm, ply_intent) in &mut npcs {
-            let pos_delta =
-                Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * 25.0 * time.delta_seconds();
-
+        // Now, check for all other collisions
+        // TODO: This is O(n^3). If len npcs > 1000, maybe log a warning that we need to rewrite
+        // this?
+        for (mut ply_tfm, mut ply_intent) in &mut npcs {
             let new_pos = ply_tfm.translation;
-            let _old_pos = new_pos - pos_delta;
             for &other_unit in all_positions() {
-                const HITBOX_SIZE: f32 = 3.0;
+                // Every unit has the same hitbox size for now
+                const HITBOX_SIZE: f32 = 2.0;
+
                 let dist = new_pos.xz().distance_squared(other_unit.xz());
                 if dist <= 0.005 {
                     // This is too close, just let it stay here (minecraft mob stacking style)
                     continue;
                 } else if dist <= HITBOX_SIZE * HITBOX_SIZE {
-                    let diff = other_unit - new_pos;
-                    let diff_xz = -diff.xz();
+                    // Now, calculate the offset we need to apply in 2d space
+                    let diff = new_pos - other_unit;
+                    let diff_xz = diff.xz();
                     let correction_2d = (diff_xz.normalize() * HITBOX_SIZE) - diff_xz;
 
-                    //let new_pos = -diff_xz.normalize() * HITBOX_SIZE;
-                    //let new_pos = new_pos.xyy() * Vec3::new(1.0, 0.0, 1.0);
-                    //ply_tfm.translation = new_pos;
-                    //ply_tfm.translation = diff_xz.normalize() * HITBOX_SIZE;
+                    // Apply that 2d correction to 3d space
                     let correction = correction_2d.xyy() * Vec3::new(1.0, 0.0, 1.0);
                     ply_tfm.translation += correction;
 
-                    //error!(
-                    //dist = dist,
-                    //move_distance = pos_delta.length(),
-                    //new_dist = diff_xz.length(),
-                    //correction_length = correction_2d.length(),
-                    //"unit correcton"
-                    //);
-                    //// move back?
-                    //correction -= pos_delta;
+                    // We are collding: stop trying to appear as if we are moving
+                    *ply_intent = MovementIntention(Vec2::ZERO);
+
                     has_corrected = true;
                 }
             }
         }
 
         if !has_corrected {
-            if i >= 1 {
+            if i >= 10 {
                 warn!(i, "Movement collision loops this frame");
             }
             break;
