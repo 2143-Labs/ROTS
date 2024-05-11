@@ -57,7 +57,7 @@ impl Plugin for NetworkingPlugin {
             .add_systems(
                 Update,
                 (shared::event::client::drain_events, receive_world_data, )
-                    .run_if(in_state(GameState::ClientSendRequestPacket)),
+                    .run_if(in_state(GameState::ClientSendRequestPacket).or_else(in_state(GameState::ClientConnected))),
             )
             .add_systems(
                 Update,
@@ -69,9 +69,7 @@ impl Plugin for NetworkingPlugin {
             .add_systems(
                 Update,
                 (
-                    shared::event::client::drain_events,
                     // TODO receive new world data at any time?
-                    receive_world_data,
                     on_connect,
                     on_disconnect,
                     on_someone_move,

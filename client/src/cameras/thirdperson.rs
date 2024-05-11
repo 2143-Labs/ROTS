@@ -75,7 +75,7 @@ pub fn wow_camera_system(
 ) {
     let player_transform = match current_unit.get_single() {
         Ok(s) => s,
-        Err(_) => return,
+        Err(_) => return warn!("no matched player transform"),
     };
 
     for (mut camera_transform, mut camera_follow) in camera_query.iter_mut() {
