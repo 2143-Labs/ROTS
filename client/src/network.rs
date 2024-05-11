@@ -56,8 +56,10 @@ impl Plugin for NetworkingPlugin {
             // alive
             .add_systems(
                 Update,
-                (shared::event::client::drain_events, receive_world_data, )
-                    .run_if(in_state(GameState::ClientSendRequestPacket).or_else(in_state(GameState::ClientConnected))),
+                (shared::event::client::drain_events, receive_world_data).run_if(
+                    in_state(GameState::ClientSendRequestPacket)
+                        .or_else(in_state(GameState::ClientConnected)),
+                ),
             )
             .add_systems(
                 Update,
