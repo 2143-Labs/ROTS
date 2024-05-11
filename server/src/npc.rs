@@ -73,6 +73,9 @@ fn on_unit_spawn(
         }
     }
 }
+// Every unit has the same hitbox size for now
+const HITBOX_SIZE: f32 = 2.0;
+const HITBOX_SIZE_SQ: f32 = HITBOX_SIZE * HITBOX_SIZE;
 
 fn on_ai_tick(
     mut ai_units: Query<(&mut Transform, &mut MovementIntention, &AIType), Without<Controlled>>,
@@ -98,7 +101,7 @@ fn on_ai_tick(
                     let our_pos = unit_tfm.translation.xz();
 
                     let dir = target - our_pos;
-                    if dir.length_squared() > 1.0 {
+                    if dir.length_squared() > (HITBOX_SIZE_SQ + 1.5) {
                         let dir = dir.normalize();
                         unit_mi.0 = dir * 0.25;
                         unit_tfm.rotation = Quat::from_rotation_y(
@@ -115,6 +118,8 @@ fn on_ai_tick(
     }
 }
 
+
+
 fn apply_npc_movement_intents(
     mut npcs: Query<(&mut Transform, &mut MovementIntention), (With<AIType>, Without<Controlled>)>,
     non_ai: Query<(&Transform, &MovementIntention), With<Controlled>>,
@@ -128,7 +133,7 @@ fn apply_npc_movement_intents(
     }
 
     // Now, if anyone is overlapping, we try to gently move them away from eachother
-    for i in 0..100 {
+    for _i in 0..3 {
         // Remember if we have done any corrections this frame
         let mut has_corrected = false;
 
@@ -148,21 +153,20 @@ fn apply_npc_movement_intents(
         for (mut ply_tfm, mut ply_intent) in &mut npcs {
             let new_pos = ply_tfm.translation;
             for &other_unit in all_positions() {
-                // Every unit has the same hitbox size for now
-                const HITBOX_SIZE: f32 = 2.0;
 
                 let dist = new_pos.xz().distance_squared(other_unit.xz());
                 if dist <= 0.005 {
                     // This is too close, just let it stay here (minecraft mob stacking style)
                     continue;
-                } else if dist <= HITBOX_SIZE * HITBOX_SIZE {
+                } else if dist <= HITBOX_SIZE_SQ {
                     // Now, calculate the offset we need to apply in 2d space
                     let diff = new_pos - other_unit;
                     let diff_xz = diff.xz();
                     let correction_2d = (diff_xz.normalize() * HITBOX_SIZE) - diff_xz;
 
                     // Apply that 2d correction to 3d space
-                    let correction = correction_2d.xyy() * Vec3::new(1.0, 0.0, 1.0);
+                    // Ideal movement would be 0.5 because each unit will be moved away equally from eachother. but we do more than one correction to make it look nice
+                    let correction = correction_2d.xyy() * Vec3::new(1.0, 0.0, 1.0) * 0.25;
                     ply_tfm.translation += correction;
 
                     // We are collding: stop trying to appear as if we are moving
@@ -174,12 +178,10 @@ fn apply_npc_movement_intents(
         }
 
         if !has_corrected {
-            if i >= 10 {
-                warn!(i, "Movement collision loops this frame");
-            }
-            break;
+            return;
         }
     }
+    debug!("Too many collisions this frame");
 }
 
 fn send_networked_npc_move(

@@ -47,14 +47,30 @@ impl Plugin for NetworkingPlugin {
                 (
                     // Setup the client and immediatly advance the state
                     setup_client::<EventToClient>,
-                    |mut state: ResMut<NextState<GameState>>| state.set(GameState::ClientConnected),
+                    |mut state: ResMut<NextState<GameState>>| {
+                        state.set(GameState::ClientSendRequestPacket)
+                    },
                 ),
             )
-            .add_systems(OnEnter(GameState::ClientConnected), (send_connect_packet,))
+            // After sending the first packet, resend it every so often to see if the server comes
+            // alive
+            .add_systems(
+                Update,
+                (shared::event::client::drain_events, receive_world_data, )
+                    .run_if(in_state(GameState::ClientSendRequestPacket)),
+            )
+            .add_systems(
+                Update,
+                (send_connect_packet)
+                    .run_if(on_timer(Duration::from_millis(1000)))
+                    .run_if(in_state(GameState::ClientSendRequestPacket)),
+            )
+            // Once we are connected, advance normally
             .add_systems(
                 Update,
                 (
                     shared::event::client::drain_events,
+                    // TODO receive new world data at any time?
                     receive_world_data,
                     on_connect,
                     on_disconnect,
@@ -131,9 +147,11 @@ fn receive_world_data(
     mut spawn_units: EventWriter<SpawnUnit>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut game_state: ResMut<NextState<GameState>>,
     asset_server: ResMut<AssetServer>,
 ) {
     for event in world_data.read() {
+        game_state.set(GameState::ClientConnected);
         info!(?event, "Server has returned world data!");
 
         let my_id = event.event.your_unit_id;

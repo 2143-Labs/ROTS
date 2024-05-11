@@ -7,6 +7,7 @@ pub enum GameState {
 
     /// See also [shared::netlib::NetworkConnectionTarget]
     ClientConnecting,
+    ClientSendRequestPacket,
     ClientConnected,
 
     Quit,
