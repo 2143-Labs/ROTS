@@ -309,6 +309,10 @@ fn on_chat_command(
                 info!("Respawning user");
                 respawn_user.send();
             }
+            ChatCommand::C => {
+                info!("Clearing all");
+                respawn_user.send();
+            }
             ChatCommand::L => {
                 let location = "./save.savestate.json";
                 let file = OpenOptions::new().read(true).open(location).unwrap();
