@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 //use bevy_xpbd_3d::prelude::{Collider, RigidBody};
-use shared::{unit::MovementIntention, AnyUnit};
+use shared::{unit::{AttackIntention, MovementIntention}, AnyUnit};
 
 use crate::{skills::CurrentTargetingCursor, worldgen::ChunkPos};
 
@@ -54,6 +54,7 @@ pub fn spawn_player_sprite(
         //Collider::cuboid(1., 1., 1.),
         Name::new("Player"),
         MovementIntention(Vec2::ZERO),
+        AttackIntention::None,
         Player::default(),
         crate::cameras::FaceCamera,
         crate::physics::Jumper {

@@ -4,7 +4,7 @@ use shared::{
         client::{SpawnUnit, UnitDie},
         NetEntId, ERFE,
     },
-    unit::MovementIntention,
+    unit::{AttackIntention, MovementIntention},
     AnyUnit,
 };
 
@@ -57,6 +57,7 @@ fn on_npc_spawn(
                         OtherPlayer,
                         PlayerName(name.clone()),
                         MovementIntention(Vec2::ZERO),
+                        AttackIntention::None,
                         Name::new(format!("Player: {name}")),
                         // their NetEntId is a component
                         ud.ent_id,
@@ -81,6 +82,7 @@ fn on_npc_spawn(
                         npc_type.clone(),
                         Name::new(format!("NPC: {:?}", npc_type)),
                         MovementIntention(Vec2::ZERO),
+                        AttackIntention::None,
                         AnyUnit,
                     ))
                     .with_children(|s| {

@@ -13,12 +13,10 @@ use shared::{
         client::{PlayerDisconnected, SomeoneMoved, SpawnUnit, WorldData},
         server::{ChangeMovement, ConnectRequest, Heartbeat},
         NetEntId, ERFE,
-    },
-    netlib::{
+    }, netlib::{
         send_event_to_server, send_event_to_server_batch, setup_client, EventToClient,
         EventToServer, MainServerEndpoint, ServerResources,
-    },
-    AnyUnit, Config,
+    }, unit::AttackIntention, AnyUnit, Config
 };
 
 use shared::unit::MovementIntention;
@@ -244,6 +242,7 @@ fn send_interp(
     our_transform: Query<&MovementIntention, (With<Player>, Changed<MovementIntention>)>,
 ) {
     if let Ok(intent) = our_transform.get_single() {
+        // TODO add interp for `AttackIntent` here
         let event = EventToServer::ChangeMovement(ChangeMovement::Move2d(intent.0));
         send_event_to_server(&sr.handler, mse.0, &event);
     }
@@ -294,17 +293,20 @@ fn on_disconnect(
 
 fn on_someone_move(
     mut someone_moved: ERFE<SomeoneMoved>,
-    mut other_players: Query<(&NetEntId, &mut Transform, &mut MovementIntention), With<AnyUnit>>,
+    mut other_players: Query<(&NetEntId, &mut Transform, &mut MovementIntention, &mut AttackIntention), With<AnyUnit>>,
     //mut other_players: Query<(&NetEntId, &mut Transform, &mut MovementIntention), (With<AnyUnit>, Without<Player>)>,
 ) {
     for movement in someone_moved.read() {
-        for (ply_net, mut ply_tfm, mut ply_intent) in &mut other_players {
+        for (ply_net, mut ply_tfm, mut ply_intent, mut ply_attack_intent,) in &mut other_players {
             if &movement.event.id == ply_net {
-                match movement.event.movement {
-                    ChangeMovement::SetTransform(t) => *ply_tfm = t,
+                match &movement.event.movement {
+                    ChangeMovement::SetTransform(t) => *ply_tfm = *t,
                     ChangeMovement::StandStill => {}
+                    ChangeMovement::AttackIntent(intent) => {
+                        *ply_attack_intent = intent.clone();
+                    }
                     ChangeMovement::Move2d(intent) => {
-                        *ply_intent = MovementIntention(intent);
+                        *ply_intent = MovementIntention(*intent);
                     }
                 }
             }

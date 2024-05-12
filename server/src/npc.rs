@@ -22,9 +22,10 @@ pub struct NPCPlugin;
 impl Plugin for NPCPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<SpawnUnit>()
+            .add_event::<AIFinishAttack>()
             .add_systems(
                 Update,
-                (on_ai_tick, apply_npc_movement_intents, on_unit_spawn)
+                (on_ai_tick, apply_npc_movement_intents, on_unit_spawn, on_ai_finish_attack)
                     //.run_if(on_timer(Duration::from_millis(10)))
                     .run_if(in_state(ServerState::Running)),
             )
@@ -78,8 +79,12 @@ fn on_unit_spawn(
 const HITBOX_SIZE: f32 = 2.0;
 const HITBOX_SIZE_SQ: f32 = HITBOX_SIZE * HITBOX_SIZE;
 
+#[derive(Event, Default, Debug, Clone)]
+struct AIFinishAttack;
+
 fn on_ai_tick(
     mut ai_units: Query<(&mut Transform, &mut MovementIntention, &mut AttackIntention, &AIType), Without<Controlled>>,
+    mut ai_unit_finished_attack: EventWriter<AIFinishAttack>,
     non_ai: Query<(&Transform, &MovementIntention), With<Controlled>>,
     time: Res<Time>,
 ) {
@@ -118,33 +123,54 @@ fn on_ai_tick(
                     if dir.length_squared() < (HITBOX_SIZE_SQ + 3.0) {
                         match unit_atk.as_mut() {
                             AttackIntention::None => {
-                                *unit_atk = AttackIntention::AutoAttack(Duration::ZERO);
+                                const AUTO_ATTACK_SPEED: f32 = 0.5;
+                                *unit_atk = AttackIntention::AutoAttack(Timer::new(Duration::from_secs_f32(AUTO_ATTACK_SPEED), TimerMode::Repeating));
                             },
                             AttackIntention::AutoAttack(dur) => {
-                                *dur += Duration::from_secs_f64(time.delta_seconds_f64());
+                                dur.tick(time.delta());
+                                for _time in 0..dur.times_finished_this_tick() {
+                                    ai_unit_finished_attack.send_default();
+                                }
                             },
                         }
+                    } else {
+                        *unit_atk = AttackIntention::None;
                     }
                 } else if unit_mi.0.length_squared() > 0.0 {
                     unit_mi.0 = Vec2::ZERO;
+                    // TODO units will all stop attacking when there is no target
+                    *unit_atk = AttackIntention::None;
                 }
             }
         }
     }
 }
 
+fn on_ai_finish_attack(
+    mut ev: EventReader<AIFinishAttack>,
+) {
+    for e in ev.read() {
+        info!(?e);
+    }
+}
 
 
 fn apply_npc_movement_intents(
-    mut npcs: Query<(&mut Transform, &mut MovementIntention), (With<AIType>, Without<Controlled>)>,
+    mut npcs: Query<(&mut Transform, &mut MovementIntention, &AttackIntention), (With<AIType>, Without<Controlled>)>,
     non_ai: Query<(&Transform, &MovementIntention), With<Controlled>>,
     time: Res<Time>,
 ) {
     // Apply all the movement
-    for (mut ply_tfm, ply_intent) in &mut npcs {
+    for (mut ply_tfm, ply_intent, attack_intent) in &mut npcs {
         let delta_target =
             Vec3::new(ply_intent.0.x, 0.0, ply_intent.0.y) * 25.0 * time.delta_seconds();
         ply_tfm.translation += delta_target;
+        if let AttackIntention::AutoAttack(timer) = attack_intent {
+            // TODO path taken by unit is equal to
+            //  y = t % Q
+            // where Q is the timer repeat duration (0.5)
+            ply_tfm.translation.y = timer.elapsed_secs() * 1.5;
+        }
     }
 
     // Now, if anyone is overlapping, we try to gently move them away from eachother
@@ -154,7 +180,7 @@ fn apply_npc_movement_intents(
 
         // First, we need to collection all the positions of all units so we can check.
         let mut all_npc_positions = Vec::with_capacity(npcs.iter().len());
-        for (ply_tfm, _) in &npcs {
+        for (ply_tfm, _, _) in &npcs {
             all_npc_positions.push(ply_tfm.translation);
         }
         let all_player_positions: Vec<_> = non_ai.iter().map(|x| x.0.translation).collect();
@@ -165,7 +191,7 @@ fn apply_npc_movement_intents(
         // Now, check for all other collisions
         // TODO: This is O(n^3). If len npcs > 1000, maybe log a warning that we need to rewrite
         // this?
-        for (mut ply_tfm, mut ply_intent) in &mut npcs {
+        for (mut ply_tfm, mut ply_intent, _) in &mut npcs {
             let new_pos = ply_tfm.translation;
             for &other_unit in all_positions() {
 
@@ -201,17 +227,17 @@ fn apply_npc_movement_intents(
 
 fn send_networked_npc_move(
     npcs: Query<
-        (&Transform, &MovementIntention, &NetEntId),
+        (&Transform, &MovementIntention, &AttackIntention, &NetEntId),
         (
             With<AIType>,
-            Or<(Changed<Transform>, Changed<MovementIntention>)>,
+            Or<(Changed<Transform>, Changed<MovementIntention>, Changed<AttackIntention>)>,
         ),
     >,
     clients: Query<&PlayerEndpoint, With<ConnectedPlayerName>>,
     sr: Res<ServerResources<EventToServer>>,
 ) {
     let mut all_events = vec![];
-    for (&movement, mi, &id) in &npcs {
+    for (&movement, mi, attack_intent, &id) in &npcs {
         all_events.extend([
             EventToClient::SomeoneMoved(SomeoneMoved {
                 id,
@@ -220,6 +246,10 @@ fn send_networked_npc_move(
             EventToClient::SomeoneMoved(SomeoneMoved {
                 id,
                 movement: shared::event::server::ChangeMovement::Move2d(mi.0),
+            }),
+            EventToClient::SomeoneMoved(SomeoneMoved {
+                id,
+                movement: shared::event::server::ChangeMovement::AttackIntent(attack_intent.clone()),
             }),
         ]);
     }
