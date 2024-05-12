@@ -284,7 +284,9 @@ pub(crate) fn update_targeting(
     //mut last_movement: Local<LastMovement>,
     //time: Res<Time>,
 ) {
-    let (player_tfm, mut maybe_cusor) = player_query.single_mut();
+    let Ok((player_tfm, mut maybe_cusor)) = player_query.get_single_mut() else {
+        return;
+    };
 
     let mut dist = f32::MAX;
     let mut close = None;

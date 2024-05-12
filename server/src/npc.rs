@@ -3,17 +3,12 @@ use std::time::Duration;
 use bevy::prelude::*;
 use bevy_time::common_conditions::on_timer;
 use shared::{
-    event::{
-        client::{SomeoneMoved, SpawnUnit},
-        spells::AIType,
-        NetEntId,
-    },
-    netlib::{
+    animations::DoCast, event::{
+        client::{SomeoneCast, SomeoneMoved, SpawnUnit}, server::Cast, spells::AIType, NetEntId
+    }, netlib::{
         send_event_to_server, send_event_to_server_batch, EventToClient, EventToServer,
         ServerResources,
-    },
-    unit::{self, AttackIntention, MovementIntention},
-    AnyUnit, Controlled,
+    }, unit::{AttackIntention, MovementIntention}, AnyUnit, Controlled
 };
 
 use crate::{ConnectedPlayerName, PlayerEndpoint, ServerState};
@@ -79,17 +74,17 @@ fn on_unit_spawn(
 const HITBOX_SIZE: f32 = 2.0;
 const HITBOX_SIZE_SQ: f32 = HITBOX_SIZE * HITBOX_SIZE;
 
-#[derive(Event, Default, Debug, Clone)]
-struct AIFinishAttack;
+#[derive(Event, Debug)]
+struct AIFinishAttack(DoCast);
 
 fn on_ai_tick(
-    mut ai_units: Query<(&mut Transform, &mut MovementIntention, &mut AttackIntention, &AIType), Without<Controlled>>,
+    mut ai_units: Query<(&NetEntId, &mut Transform, &mut MovementIntention, &mut AttackIntention, &AIType), Without<Controlled>>,
     mut ai_unit_finished_attack: EventWriter<AIFinishAttack>,
     non_ai: Query<(&Transform, &MovementIntention), With<Controlled>>,
     time: Res<Time>,
 ) {
     let all_player_positions: Vec<(&Transform, &MovementIntention)> = non_ai.iter().collect();
-    for (mut unit_tfm, mut unit_mi, mut unit_atk, ai_type) in &mut ai_units {
+    for (ne_id, mut unit_tfm, mut unit_mi, mut unit_atk, ai_type) in &mut ai_units {
         match ai_type {
             AIType::None => {}
             AIType::WalkToNearestPlayer => {
@@ -128,8 +123,13 @@ fn on_ai_tick(
                             },
                             AttackIntention::AutoAttack(dur) => {
                                 dur.tick(time.delta());
+                                // The NPC has attacked
                                 for _time in 0..dur.times_finished_this_tick() {
-                                    ai_unit_finished_attack.send_default();
+                                    ai_unit_finished_attack.send(AIFinishAttack(DoCast(SomeoneCast {
+                                        caster_id: *ne_id,
+                                        cast_id: NetEntId::random(),
+                                        cast: Cast::Melee,
+                                    })));
                                 }
                             },
                         }
@@ -148,9 +148,11 @@ fn on_ai_tick(
 
 fn on_ai_finish_attack(
     mut ev: EventReader<AIFinishAttack>,
+    mut evw: EventWriter<DoCast>,
 ) {
     for e in ev.read() {
         info!(?e);
+        evw.send(e.0.clone());
     }
 }
 
