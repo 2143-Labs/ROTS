@@ -12,7 +12,7 @@ use shared::{
         send_event_to_server, send_event_to_server_batch, EventToClient, EventToServer,
         ServerResources,
     },
-    unit::MovementIntention,
+    unit::{self, AttackIntention, MovementIntention},
     AnyUnit, Controlled,
 };
 
@@ -48,6 +48,7 @@ fn on_unit_spawn(
         let mut base = commands.spawn((
             AnyUnit,
             MovementIntention(Vec2::ZERO),
+            AttackIntention::None,
             spawn.data.ent_id,
             spawn.data.health,
             spawn.data.transform,
@@ -78,11 +79,12 @@ const HITBOX_SIZE: f32 = 2.0;
 const HITBOX_SIZE_SQ: f32 = HITBOX_SIZE * HITBOX_SIZE;
 
 fn on_ai_tick(
-    mut ai_units: Query<(&mut Transform, &mut MovementIntention, &AIType), Without<Controlled>>,
+    mut ai_units: Query<(&mut Transform, &mut MovementIntention, &mut AttackIntention, &AIType), Without<Controlled>>,
     non_ai: Query<(&Transform, &MovementIntention), With<Controlled>>,
+    time: Res<Time>,
 ) {
     let all_player_positions: Vec<(&Transform, &MovementIntention)> = non_ai.iter().collect();
-    for (mut unit_tfm, mut unit_mi, ai_type) in &mut ai_units {
+    for (mut unit_tfm, mut unit_mi, mut unit_atk, ai_type) in &mut ai_units {
         match ai_type {
             AIType::None => {}
             AIType::WalkToNearestPlayer => {
@@ -101,14 +103,27 @@ fn on_ai_tick(
                     let our_pos = unit_tfm.translation.xz();
 
                     let dir = target - our_pos;
-                    if dir.length_squared() > (HITBOX_SIZE_SQ + 1.5) {
+                    // Movement Intentions
+                    if dir.length_squared() < (HITBOX_SIZE_SQ + 0.5) {
+                        unit_mi.0 = Vec2::ZERO;
+                    } else {
                         let dir = dir.normalize();
                         unit_mi.0 = dir * 0.25;
                         unit_tfm.rotation = Quat::from_rotation_y(
                             -(dir.y.atan2(dir.x)) - std::f32::consts::PI / 2.,
                         );
-                    } else {
-                        unit_mi.0 = Vec2::ZERO;
+                    }
+
+                    // Slightly larger attack radius
+                    if dir.length_squared() < (HITBOX_SIZE_SQ + 3.0) {
+                        match unit_atk.as_mut() {
+                            AttackIntention::None => {
+                                *unit_atk = AttackIntention::AutoAttack(Duration::ZERO);
+                            },
+                            AttackIntention::AutoAttack(dur) => {
+                                *dur += Duration::from_secs_f64(time.delta_seconds_f64());
+                            },
+                        }
                     }
                 } else if unit_mi.0.length_squared() > 0.0 {
                     unit_mi.0 = Vec2::ZERO;
