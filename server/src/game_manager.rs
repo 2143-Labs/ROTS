@@ -7,7 +7,7 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<GameManagerState>()
             .insert_resource(SpawnTimer(Timer::new(
-                Duration::from_secs(1),
+                Duration::from_millis(100),
                 TimerMode::Repeating,
             )))
             .add_systems(

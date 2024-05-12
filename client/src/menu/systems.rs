@@ -78,14 +78,14 @@ pub fn menu_select(
                 ip: "john2143.com".into(),
                 port: 25565,
             });
-            game_state.set(GameState::ClientConnecting);
+            game_state.set(GameState::ClientSendRequestPacket);
         }
         MenuButton::ConnectLocal => {
             commands.insert_resource(NetworkConnectionTarget {
                 ip: config.ip.clone(),
                 port: config.port,
             });
-            game_state.set(GameState::ClientConnecting);
+            game_state.set(GameState::ClientSendRequestPacket);
         }
         MenuButton::Quit => {
             game_state.set(GameState::Quit);

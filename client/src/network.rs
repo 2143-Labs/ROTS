@@ -13,12 +13,10 @@ use shared::{
         client::{PlayerDisconnected, SomeoneMoved, SpawnUnit, WorldData},
         server::{ChangeMovement, ConnectRequest, Heartbeat},
         NetEntId, ERFE,
-    },
-    netlib::{
+    }, netlib::{
         send_event_to_server, send_event_to_server_batch, setup_client, EventToClient,
         EventToServer, MainServerEndpoint, ServerResources,
-    },
-    AnyUnit, Config,
+    }, unit::AttackIntention, AnyUnit, Config
 };
 
 use shared::unit::MovementIntention;
@@ -47,15 +45,31 @@ impl Plugin for NetworkingPlugin {
                 (
                     // Setup the client and immediatly advance the state
                     setup_client::<EventToClient>,
-                    |mut state: ResMut<NextState<GameState>>| state.set(GameState::ClientConnected),
+                    |mut state: ResMut<NextState<GameState>>| {
+                        state.set(GameState::ClientSendRequestPacket)
+                    },
                 ),
             )
-            .add_systems(OnEnter(GameState::ClientConnected), (send_connect_packet,))
+            // After sending the first packet, resend it every so often to see if the server comes
+            // alive
+            .add_systems(
+                Update,
+                (shared::event::client::drain_events, receive_world_data).run_if(
+                    in_state(GameState::ClientSendRequestPacket)
+                        .or_else(in_state(GameState::ClientConnected)),
+                ),
+            )
+            .add_systems(
+                Update,
+                (send_connect_packet)
+                    .run_if(on_timer(Duration::from_millis(1000)))
+                    .run_if(in_state(GameState::ClientSendRequestPacket)),
+            )
+            // Once we are connected, advance normally
             .add_systems(
                 Update,
                 (
-                    shared::event::client::drain_events,
-                    receive_world_data,
+                    // TODO receive new world data at any time?
                     on_connect,
                     on_disconnect,
                     on_someone_move,
@@ -131,9 +145,11 @@ fn receive_world_data(
     mut spawn_units: EventWriter<SpawnUnit>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut game_state: ResMut<NextState<GameState>>,
     asset_server: ResMut<AssetServer>,
 ) {
     for event in world_data.read() {
+        game_state.set(GameState::ClientConnected);
         info!(?event, "Server has returned world data!");
 
         let my_id = event.event.your_unit_id;
@@ -226,6 +242,7 @@ fn send_interp(
     our_transform: Query<&MovementIntention, (With<Player>, Changed<MovementIntention>)>,
 ) {
     if let Ok(intent) = our_transform.get_single() {
+        // TODO add interp for `AttackIntent` here
         let event = EventToServer::ChangeMovement(ChangeMovement::Move2d(intent.0));
         send_event_to_server(&sr.handler, mse.0, &event);
     }
@@ -276,17 +293,20 @@ fn on_disconnect(
 
 fn on_someone_move(
     mut someone_moved: ERFE<SomeoneMoved>,
-    mut other_players: Query<(&NetEntId, &mut Transform, &mut MovementIntention), With<AnyUnit>>,
+    mut other_players: Query<(&NetEntId, &mut Transform, &mut MovementIntention, &mut AttackIntention), With<AnyUnit>>,
     //mut other_players: Query<(&NetEntId, &mut Transform, &mut MovementIntention), (With<AnyUnit>, Without<Player>)>,
 ) {
     for movement in someone_moved.read() {
-        for (ply_net, mut ply_tfm, mut ply_intent) in &mut other_players {
+        for (ply_net, mut ply_tfm, mut ply_intent, mut ply_attack_intent,) in &mut other_players {
             if &movement.event.id == ply_net {
-                match movement.event.movement {
-                    ChangeMovement::SetTransform(t) => *ply_tfm = t,
+                match &movement.event.movement {
+                    ChangeMovement::SetTransform(t) => *ply_tfm = *t,
                     ChangeMovement::StandStill => {}
+                    ChangeMovement::AttackIntent(intent) => {
+                        *ply_attack_intent = intent.clone();
+                    }
                     ChangeMovement::Move2d(intent) => {
-                        *ply_intent = MovementIntention(intent);
+                        *ply_intent = MovementIntention(*intent);
                     }
                 }
             }

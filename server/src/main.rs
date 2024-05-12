@@ -147,6 +147,7 @@ fn on_player_connect(
     mut commands: Commands,
 ) {
     for player in new_players.read() {
+        info!("Got packet");
         // Generate their name
         let name = player
             .event

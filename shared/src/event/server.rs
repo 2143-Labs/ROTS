@@ -1,4 +1,4 @@
-use crate::event::EventFromEndpoint;
+use crate::{event::EventFromEndpoint, unit::AttackIntention};
 use crate::netlib::ServerResources;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -35,6 +35,7 @@ pub enum ChangeMovement {
     StandStill,
     Move2d(Vec2),
     SetTransform(Transform),
+    AttackIntent(AttackIntention),
 }
 
 include!(concat!(env!("OUT_DIR"), "/server_event.rs"));
