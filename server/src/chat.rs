@@ -44,12 +44,16 @@ use crate::{
 #[command(name = "chat_command")]
 #[command(bin_name = "/")]
 pub enum ChatCommand {
+    /// Spawn unit
     Spawn(CmdSpawnUnit),
+    /// List units on the server
     List(CmdListUnits),
     ///SaveState
     S,
     ///StateState Load
     L,
+    ///Respawn yourself
+    R,
 
     Start,
     Stop,
@@ -227,6 +231,9 @@ fn on_load_savestate(
     }
 }
 
+#[derive(Event)];
+struct RespawnPlayer;
+
 fn on_chat_command(
     mut cmd: EventReader<EventFromEndpoint<RunChatCommand>>,
     players: Query<(Entity, &Transform, &NetEntId, &ConnectedPlayerName)>,
@@ -237,6 +244,7 @@ fn on_chat_command(
     mut load_savestate: EventWriter<LoadSaveState>,
     mut save_savestate: EventWriter<SaveSaveState>,
     mut next_game_manager_state: ResMut<NextState<GameManagerState>>,
+    mut spawn_npc: EventWriter<RespawnPlayer>,
     cur_game_manager_state: Res<State<GameManagerState>>,
 ) {
     for command in cmd.read() {
@@ -296,6 +304,10 @@ fn on_chat_command(
                     endpoint: command.endpoint,
                     handler: sr.handler.clone(),
                 }));
+            }
+            ChatCommand::R => {
+                info!("Respawning user");
+                respawn_user.send();
             }
             ChatCommand::L => {
                 let location = "./save.savestate.json";
