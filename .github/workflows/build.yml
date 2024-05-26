@@ -14,7 +14,7 @@ jobs:
     outputs:
       status: ${{ steps.check.outputs.status }}
       builds: ${{ steps.check.outputs.builds }}
-    runs-on: self-hosted
+    runs-on: ${{ env.MAIN_RUNNER }}
     steps:
       - name: Check labels to determine build steps
         id: check
@@ -30,9 +30,9 @@ jobs:
           fi
 
           if [ "$BUILD_WINDOWS" == "true" ]; then
-            echo 'builds=["windows-latest", "self-hosted"]' >> $GITHUB_OUTPUT
+            echo 'builds=["windows-latest", "${{ env.MAIN_RUNNER }}"]' >> $GITHUB_OUTPUT
           else
-            echo 'builds=["self-hosted"]' >> $GITHUB_OUTPUT
+            echo 'builds=["${{ env.MAIN_RUNNER }}"]' >> $GITHUB_OUTPUT
           fi
 
   build:
@@ -77,7 +77,7 @@ jobs:
         retention-days: 2
 
   create_docker:
-    runs-on: self-hosted
+    runs-on: ${{ env.MAIN_RUNNER }}
     needs: [ setup ]
     permissions:
       contents: write
@@ -108,7 +108,7 @@ jobs:
     if: needs.setup.outputs.status == 'ok'
     permissions:
       contents: write
-    runs-on: self-hosted
+    runs-on: ${{ env.MAIN_RUNNER }}
     steps:
     - uses: actions/checkout@v3
     - name: Upload Assets
@@ -121,7 +121,7 @@ jobs:
         retention-days: 2
 
   create_release:
-    runs-on: self-hosted
+    runs-on: ${{ env.MAIN_RUNNER }}
     needs: [ setup, build, upload_assets_as_artifact ]
     permissions:
       contents: write
