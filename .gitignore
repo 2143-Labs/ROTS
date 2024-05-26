@@ -2,3 +2,4 @@ target/
 config.yaml
 .vscode/
 *.savestate.json
+bin/

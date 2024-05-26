@@ -1,10 +1,13 @@
-FROM rust:latest
+FROM --platform=linux/amd64 debian:12-slim as runner
 
-WORKDIR /usr/src/rots
-COPY . .
+#RUN apt-get update
+#RUN apt-get install -y bash ca-certificates curl
 
-RUN rustup install nightly
-ENV CARGO_UNSTABLE_SPARSE_REGISTRY true
-RUN cargo +nightly install -Z no-index-update --path server
+RUN mkdir -p /rots
+WORKDIR /rots
 
-CMD ["server"]
+RUN adduser rots
+USER rots
+
+COPY --chown=app:app ./bin/server /app/server
+CMD ["bash", "-c", "echo starting server; /app/server"]
