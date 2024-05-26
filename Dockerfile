@@ -28,6 +28,6 @@ RUN mkdir -p /rots
 WORKDIR /rots
 RUN adduser rots
 
-
 COPY --from=builder --chown=rots:rots /rots/target/release/server /rots/server
+COPY --chown=rots:rots ./docker_server_config.yaml /rots/config.yaml
 CMD ["bash", "-c", "echo starting server; /rots/server"]
