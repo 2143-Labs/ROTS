@@ -14,7 +14,7 @@ jobs:
     outputs:
       status: ${{ steps.check.outputs.status }}
       builds: ${{ steps.check.outputs.builds }}
-    runs-on: ubuntu-latest
+    runs-on: john-k8s
     steps:
       - name: Check labels to determine build steps
         id: check
@@ -30,9 +30,9 @@ jobs:
           fi
 
           if [ "$BUILD_WINDOWS" == "true" ]; then
-            echo 'builds=["windows-latest", "ubuntu-latest"]' >> $GITHUB_OUTPUT
+            echo 'builds=["windows-latest", "john-k8s"]' >> $GITHUB_OUTPUT
           else
-            echo 'builds=["ubuntu-latest"]' >> $GITHUB_OUTPUT
+            echo 'builds=["john-k8s"]' >> $GITHUB_OUTPUT
           fi
 
   build:
@@ -52,7 +52,7 @@ jobs:
         os: ${{ fromJSON(needs.setup.outputs.builds) }}
         rust: [nightly]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Run sccache-cache
       if: ${{ !github.event.act }}
@@ -76,12 +76,39 @@ jobs:
           target/release/server.exe
         retention-days: 2
 
+  create_docker:
+    runs-on: john-k8s
+    needs: [ setup ]
+    permissions:
+      contents: write
+    #outputs:
+      #release_upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #release_tag_name: ${{ steps.create_release.outputs.tag_name }}
+      #release_id: ${{ steps.create_release.outputs.id }}
+      #release_node_id: ${{ steps.create_release.outputs.node_id }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Docker login
+      run: |
+        echo "${{ secrets.PAT_PACKAGES }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+
+    - name: Docker build
+      run: |
+        TAG=ghcr.io/2143-labs/rots:${{ github.run_number }}
+        docker build -t rots . --label "runnumber=${{ github.run_number }}"
+        docker tag rots $TAG
+        docker push $TAG
+
   upload_assets_as_artifact:
     needs: [ setup ]
     if: needs.setup.outputs.status == 'ok'
     permissions:
       contents: write
-    runs-on: ubuntu-latest
+    runs-on: john-k8s
     steps:
     - uses: actions/checkout@v3
     - name: Upload Assets
@@ -94,7 +121,7 @@ jobs:
         retention-days: 2
 
   create_release:
-    runs-on: ubuntu-latest
+    runs-on: ubntu-latest # no zip in current self image
     needs: [ setup, build, upload_assets_as_artifact ]
     permissions:
       contents: write
