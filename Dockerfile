@@ -9,5 +9,5 @@ WORKDIR /rots
 RUN adduser rots
 USER rots
 
-COPY --chown=app:app ./bin/server /app/server
-CMD ["bash", "-c", "echo starting server; /app/server"]
+COPY --chown=rots:rots ./bin/server /rots/server
+CMD ["bash", "-c", "echo starting server; /rots/server"]
