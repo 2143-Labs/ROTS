@@ -98,7 +98,7 @@ jobs:
 
     - name: Docker build
       run: |
-        TAG=ghcr.io/2143-Labs/ROTS:${{ github.run_number }}
+        TAG=ghcr.io/2143-labs/rots:${{ github.run_number }}
         docker build -t rots . --label "runnumber=${{ github.run_number }}"
         docker tag rots $TAG
         docker push $TAG
