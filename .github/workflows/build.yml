@@ -30,9 +30,9 @@ jobs:
           fi
 
           if [ "$BUILD_WINDOWS" == "true" ]; then
-            echo 'builds=["windows-latest", "ubuntu-latest"]' >> $GITHUB_OUTPUT
+            echo 'builds=["windows-latest", "john-k8s"]' >> $GITHUB_OUTPUT
           else
-            echo 'builds=["ubuntu-latest"]' >> $GITHUB_OUTPUT
+            echo 'builds=["john-k8s"]' >> $GITHUB_OUTPUT
           fi
 
   build:
@@ -121,7 +121,7 @@ jobs:
         retention-days: 2
 
   create_release:
-    runs-on: john-k8s
+    runs-on: ubntu-latest # no zip in current self image
     needs: [ setup, build, upload_assets_as_artifact ]
     permissions:
       contents: write
