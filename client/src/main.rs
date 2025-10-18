@@ -68,8 +68,10 @@ fn main() {
                 .set(window)
                 .set(ImagePlugin::default_nearest()),
             cameras::CameraPlugin,
+        )).add_plugins((
             cameras::notifications::NotificationPlugin,
             shared::ConfigPlugin,
+        )).add_plugins((
             states::StatePlugin,
             menu::MenuPlugin,
             // physics::PhysPlugin,
@@ -97,3 +99,36 @@ pub fn despawn_all_component<T: Component>(items: Query<Entity, With<T>>, mut co
         commands.entity(item).despawn_recursive();
     }
 }
+
+        //.add_plugins((
+            //bevy::log::LogPlugin::default(),
+            //TaskPoolPlugin::default(),
+            //TypeRegistrationPlugin::default(),
+            //FrameCountPlugin::default(),
+            //bevy::time::TimePlugin::default(),
+            //TransformPlugin::default(),
+            //HierarchyPlugin::default(),
+            //bevy::diagnostic::DiagnosticsPlugin::default(),
+            //bevy::input::InputPlugin::default(),
+        //)).add_plugins((
+            //AssetPlugin::default(),
+            //bevy::scene::ScenePlugin::default(),
+            //bevy::winit::WinitPlugin::default(),
+        //)).add_plugins((
+            //bevy::render::RenderPlugin::default(),
+            //#[cfg(not(target_arch = "wasm32"))]
+            //bevy::render::pipelined_rendering::PipelinedRenderingPlugin::default(
+            //),
+            //bevy::core_pipeline::CorePipelinePlugin::default(),
+        //)).add_plugins((
+            //bevy::sprite::SpritePlugin::default(),
+            //bevy::text::TextPlugin::default(),
+            //bevy::ui::UiPlugin::default(),
+            //bevy::pbr::PbrPlugin::default(),
+            //bevy::gltf::GltfPlugin::default(),
+            //bevy::audio::AudioPlugin::default(),
+            //GilrsPlugin::default(),
+            //AnimationPlugin::default(),
+            //window,
+            //ImagePlugin::default_nearest(),
+        //)).add_plugins((
