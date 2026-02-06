@@ -156,7 +156,6 @@ fn on_ai_finish_attack(
     }
 }
 
-
 fn apply_npc_movement_intents(
     mut npcs: Query<(&mut Transform, &mut MovementIntention, &AttackIntention), (With<AIType>, Without<Controlled>)>,
     non_ai: Query<(&Transform, &MovementIntention), With<Controlled>>,
@@ -171,7 +170,7 @@ fn apply_npc_movement_intents(
             // TODO path taken by unit is equal to
             //  y = t % Q
             // where Q is the timer repeat duration (0.5)
-            ply_tfm.translation.y = timer.elapsed_secs() * 1.5;
+            ply_tfm.translation.y = timer.elapsed_secs() * 5.0;
         }
     }
 
